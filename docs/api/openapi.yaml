@@ -1,0 +1,633 @@
+openapi: 3.0.3
+info:
+  title: KapiNotes Backend API
+  description: >
+    Backend contract for KapiNotes. The Android app currently implements every one of these
+    operations locally with mock repositories (see data/repository/MockAuthRepository.kt and
+    NotesRepositoryImpl.kt in the app). This spec is the target shape a real backend should
+    implement so the app can switch from local-only storage to account sync without any UI
+    changes - only the repository implementations behind AuthRepository / a new
+    RemoteSyncRepository change.
+  version: "0.1.0"
+servers:
+  - url: https://api.kapinotes.app/v1
+    description: Production (placeholder)
+  - url: https://staging-api.kapinotes.app/v1
+    description: Staging (placeholder)
+
+tags:
+  - name: Auth
+  - name: Notes
+  - name: Pages
+  - name: Strokes
+  - name: Sync
+  - name: DriveImport
+  - name: Backup
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Create a new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Email + password login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Logged in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/login/google:
+    post:
+      tags: [Auth]
+      summary: Exchange a Google Sign-In ID token for a KapiNotes session
+      description: >
+        The Android app already performs Google Sign-In for Drive access (scopes
+        drive.readonly + drive.file). This endpoint lets the same Google identity become a
+        KapiNotes account without a separate password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GoogleLoginRequest' }
+      responses:
+        '200':
+          description: Logged in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Exchange a refresh token for a new access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: New token pair
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke the current session's refresh token
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Logged out }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user profile
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+
+  /notes:
+    get:
+      tags: [Notes]
+      summary: List the current user's notes
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: filter
+          in: query
+          schema: { type: string, enum: [active, favorite, trashed], default: active }
+        - name: updatedSince
+          in: query
+          description: ISO-8601 timestamp; used by the sync flow for incremental pulls
+          schema: { type: string, format: date-time }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Page of notes
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotePage_List' }
+    post:
+      tags: [Notes]
+      summary: Create a blank note
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateNoteRequest' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Note' }
+
+  /notes/{noteId}:
+    parameters:
+      - name: noteId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Notes]
+      summary: Get one note (metadata only - pages are fetched separately)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Note
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Note' }
+        '404': { description: Not found }
+    patch:
+      tags: [Notes]
+      summary: Rename / favorite / trash / restore a note
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateNoteRequest' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Note' }
+    delete:
+      tags: [Notes]
+      summary: Permanently delete a note (must already be trashed)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Deleted }
+
+  /notes/{noteId}/pages:
+    parameters:
+      - name: noteId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Pages]
+      summary: List a note's pages, ordered by pageIndex
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Page' }
+    post:
+      tags: [Pages]
+      summary: Append a new page to a note
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePageRequest' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Page' }
+
+  /pages/{pageId}:
+    parameters:
+      - name: pageId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [Pages]
+      summary: Change paper type, orientation or flip
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdatePageRequest' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Page' }
+    delete:
+      tags: [Pages]
+      summary: Delete a page and its strokes
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Deleted }
+
+  /pages/{pageId}/strokes:
+    parameters:
+      - name: pageId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Strokes]
+      summary: List every stroke on a page
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Strokes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Stroke' }
+    post:
+      tags: [Strokes]
+      summary: Batch-upsert strokes added since the last save (debounced client-side)
+      description: >
+        The editor commits a stroke the instant a pen/highlighter gesture lifts, and an eraser
+        gesture deletes several strokes at once - see DELETE below. The client is expected to
+        batch several of these writes together (e.g. every few seconds or on screen/page
+        change) rather than calling this once per stroke.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [strokes]
+              properties:
+                strokes:
+                  type: array
+                  items: { $ref: '#/components/schemas/Stroke' }
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Stroke' }
+
+  /strokes/{strokeId}:
+    delete:
+      tags: [Strokes]
+      summary: Delete one stroke (used by undo and by the eraser tool)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: strokeId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+
+  /sync/pull:
+    get:
+      tags: [Sync]
+      summary: Delta-pull everything changed since a cursor
+      description: >
+        Returns notes/pages/strokes updated after `since`, plus tombstones for anything deleted
+        remotely so the client can mirror deletions. Mirrors MockAuthRepository.triggerSync()'s
+        contract today, where this always returns "nothing changed".
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: since
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Changes
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SyncPullResponse' }
+  /sync/push:
+    post:
+      tags: [Sync]
+      summary: Push local changes made while offline
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SyncPushRequest' }
+      responses:
+        '200':
+          description: >
+            Per-entity accepted/conflict result. A conflict means the server copy was modified
+            more recently (last-write-wins by updatedAt); the client should re-pull that entity.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SyncPushResponse' }
+
+  /notes/import-drive:
+    post:
+      tags: [DriveImport]
+      summary: Register a note that was created from a Google Drive file
+      description: >
+        The Android app downloads and rasterizes the Drive file itself (PdfRenderer for PDFs,
+        BitmapFactory for images) and uploads the resulting page images - this endpoint just
+        records which Drive file a note is linked to so re-opening the file later is possible.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ImportDriveRequest' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Note' }
+
+  /files:
+    post:
+      tags: [Backup]
+      summary: Upload a binary asset (page background image, exported PDF)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '201':
+          description: Uploaded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileRef' }
+
+  /files/{fileId}:
+    get:
+      tags: [Backup]
+      summary: Download a previously uploaded asset
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Binary content
+          content:
+            application/octet-stream: {}
+
+  /backup/export:
+    get:
+      tags: [Backup]
+      summary: Server-side equivalent of Settings > "Xuất dữ liệu" - a full account export
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: A zip identical in shape to the on-device backup (manifest.json + assets/)
+          content:
+            application/zip: {}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+
+    RegisterRequest:
+      type: object
+      required: [email, password, displayName]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        displayName: { type: string }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    GoogleLoginRequest:
+      type: object
+      required: [idToken]
+      properties:
+        idToken: { type: string }
+
+    TokenPair:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresInSeconds: { type: integer }
+
+    AuthResponse:
+      allOf:
+        - $ref: '#/components/schemas/TokenPair'
+        - type: object
+          properties:
+            user: { $ref: '#/components/schemas/User' }
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        avatarUrl: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    Note:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        source: { type: string, enum: [BLANK, DRIVE_IMPORT] }
+        driveFileId: { type: string, nullable: true }
+        driveFileName: { type: string, nullable: true }
+        thumbnailFileId: { type: string, nullable: true }
+        isFavorite: { type: boolean }
+        isTrashed: { type: boolean }
+        pageCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    NotePage_List:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Note' }
+        nextCursor: { type: string, nullable: true }
+
+    CreateNoteRequest:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        defaultPaperType: { type: string, enum: [BLANK, LINED, GRID, DOT], default: LINED }
+
+    UpdateNoteRequest:
+      type: object
+      properties:
+        title: { type: string }
+        isFavorite: { type: boolean }
+        isTrashed: { type: boolean }
+
+    Page:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        noteId: { type: string, format: uuid }
+        pageIndex: { type: integer }
+        paperType: { type: string, enum: [BLANK, LINED, GRID, DOT] }
+        orientation: { type: string, enum: [PORTRAIT, LANDSCAPE] }
+        flip: { type: string, enum: [NONE, HORIZONTAL] }
+        widthPx: { type: integer }
+        heightPx: { type: integer }
+        backgroundFileId: { type: string, nullable: true }
+        updatedAt: { type: string, format: date-time }
+
+    CreatePageRequest:
+      type: object
+      properties:
+        paperType: { type: string, enum: [BLANK, LINED, GRID, DOT], default: LINED }
+        orientation: { type: string, enum: [PORTRAIT, LANDSCAPE], default: PORTRAIT }
+
+    UpdatePageRequest:
+      type: object
+      properties:
+        paperType: { type: string, enum: [BLANK, LINED, GRID, DOT] }
+        orientation: { type: string, enum: [PORTRAIT, LANDSCAPE] }
+        flip: { type: string, enum: [NONE, HORIZONTAL] }
+
+    StrokePoint:
+      type: object
+      required: [x, y]
+      properties:
+        x: { type: number, format: float }
+        y: { type: number, format: float }
+        pressure: { type: number, format: float, minimum: 0, maximum: 1, default: 1 }
+
+    Stroke:
+      type: object
+      required: [id, pageId, tool, colorArgb, widthDp, points, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        pageId: { type: string, format: uuid }
+        tool: { type: string, enum: [PEN, HIGHLIGHTER, ERASER] }
+        colorArgb: { type: integer, format: int64, description: "32-bit ARGB packed into a signed 64-bit int, e.g. 0xFF3B82F6" }
+        widthDp: { type: number, format: float }
+        points:
+          type: array
+          items: { $ref: '#/components/schemas/StrokePoint' }
+        createdAt: { type: string, format: date-time }
+
+    SyncPullResponse:
+      type: object
+      properties:
+        serverTime: { type: string, format: date-time }
+        notes:
+          type: array
+          items: { $ref: '#/components/schemas/Note' }
+        pages:
+          type: array
+          items: { $ref: '#/components/schemas/Page' }
+        strokes:
+          type: array
+          items: { $ref: '#/components/schemas/Stroke' }
+        deletedNoteIds:
+          type: array
+          items: { type: string, format: uuid }
+        deletedStrokeIds:
+          type: array
+          items: { type: string, format: uuid }
+
+    SyncPushRequest:
+      type: object
+      properties:
+        notes:
+          type: array
+          items: { $ref: '#/components/schemas/Note' }
+        pages:
+          type: array
+          items: { $ref: '#/components/schemas/Page' }
+        strokes:
+          type: array
+          items: { $ref: '#/components/schemas/Stroke' }
+        deletedStrokeIds:
+          type: array
+          items: { type: string, format: uuid }
+
+    SyncPushResponse:
+      type: object
+      properties:
+        acceptedNoteIds: { type: array, items: { type: string, format: uuid } }
+        conflictingNoteIds: { type: array, items: { type: string, format: uuid } }
+        serverTime: { type: string, format: date-time }
+
+    ImportDriveRequest:
+      type: object
+      required: [title, driveFileId, driveFileName, pageFileIds]
+      properties:
+        title: { type: string }
+        driveFileId: { type: string }
+        driveFileName: { type: string }
+        pageFileIds:
+          type: array
+          items: { type: string, format: uuid }
+          description: Ids returned by POST /files for each rasterized page image
+
+    FileRef:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string }
+        mimeType: { type: string }
+        sizeBytes: { type: integer, format: int64 }

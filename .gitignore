@@ -1,0 +1,23 @@
+*.iml
+.claude/
+.gradle/
+/local.properties
+.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+app/build/
+build/
+
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Keystores / secrets - never commit
+*.jks
+*.keystore
+key.properties
