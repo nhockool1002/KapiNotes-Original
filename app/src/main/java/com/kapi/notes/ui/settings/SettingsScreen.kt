@@ -71,6 +71,13 @@ fun SettingsScreen(
                         viewModel.onGoogleSignInResult(null, message)
                     }
                 )
+        } else {
+            // The Drive-scope consent step sometimes round-trips through its own activity and
+            // reports back a non-OK result even though the OS already finished granting access -
+            // fall back to the cached account instead of leaving the user stuck needing to tap
+            // "Đăng nhập" a second time.
+            val account = viewModel.driveAuthManager.lastSignedInAccount()
+            if (account != null) viewModel.onGoogleSignInResult(account)
         }
     }
 

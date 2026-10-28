@@ -81,8 +81,17 @@ fun DrivePickerScreen(
                 onFailure = { e -> viewModel.onSignInResult(null, googleSignInErrorMessage(e)) }
             )
         } else {
-            // User backed out of the account picker - resultCode != OK with no exception, not a real error.
-            viewModel.onSignInResult(null, errorMessage = null)
+            // The Drive-scope consent step sometimes round-trips through its own activity and
+            // reports back a non-OK result even though the OS already finished granting access -
+            // fall back to the cached account instead of showing "cancelled" and making the user
+            // tap "Kết nối Google Drive" again.
+            val account = viewModel.driveAuthManager.lastSignedInAccount()
+            if (account != null) {
+                viewModel.onSignInResult(account)
+            } else {
+                // User genuinely backed out of the account picker - not a real error.
+                viewModel.onSignInResult(null, errorMessage = null)
+            }
         }
     }
 

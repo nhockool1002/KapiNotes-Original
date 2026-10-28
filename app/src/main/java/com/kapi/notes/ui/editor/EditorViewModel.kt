@@ -20,6 +20,7 @@ import com.kapi.notes.domain.model.TextBoxItem
 import com.kapi.notes.domain.model.TextFontFamily
 import com.kapi.notes.domain.model.ToolType
 import com.kapi.notes.pdf.NoteExporter
+import com.kapi.notes.pdf.PageContent
 import com.kapi.notes.ui.theme.PenColorSwatches
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -1091,5 +1092,37 @@ class EditorViewModel @Inject constructor(
 
     fun consumeExportedFile() {
         _state.update { it.copy(exportedFile = null) }
+    }
+
+    /** Renders the note's first page to a thumbnail file and points the note's thumbnailPath at
+     * it, then runs [onBack] - called from both the back button and the hardware/gesture back,
+     * so the dashboard card always reflects actual content instead of a stale/blank placeholder. */
+    fun saveThumbnailThenBack(onBack: () -> Unit) {
+        viewModelScope.launch {
+            runCatching { saveThumbnailSnapshot() }
+            onBack()
+        }
+    }
+
+    private suspend fun saveThumbnailSnapshot() {
+        val note = _state.value.note ?: return
+        val firstPage = _state.value.pages.minByOrNull { it.pageIndex } ?: return
+        val content = if (firstPage.id == _state.value.currentPage?.id) {
+            PageContent(
+                strokes = _state.value.strokes,
+                stickers = _state.value.stickers,
+                images = _state.value.images,
+                textBoxes = _state.value.textBoxes
+            )
+        } else {
+            PageContent(
+                strokes = notesRepository.getStrokes(firstPage.id),
+                stickers = notesRepository.getStickers(firstPage.id),
+                images = notesRepository.getImages(firstPage.id),
+                textBoxes = notesRepository.getTextBoxes(firstPage.id)
+            )
+        }
+        noteExporter.generateThumbnail(note.id, firstPage, content)
+            .onSuccess { file -> notesRepository.updateThumbnail(note.id, file.absolutePath) }
     }
 }

@@ -5,19 +5,31 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.kapi.notes.ui.about.AboutScreen
 import com.kapi.notes.ui.dashboard.DashboardScreen
 import com.kapi.notes.ui.drive.DrivePickerScreen
 import com.kapi.notes.ui.editor.EditorScreen
 import com.kapi.notes.ui.settings.SettingsScreen
+import com.kapi.notes.ui.splash.SplashScreen
 
 @Composable
 fun KapiNotesNavGraph(navController: NavHostController = rememberNavController()) {
-    NavHost(navController = navController, startDestination = Routes.DASHBOARD) {
+    NavHost(navController = navController, startDestination = Routes.SPLASH) {
+        composable(Routes.SPLASH) {
+            SplashScreen(
+                onFinished = {
+                    navController.navigate(Routes.DASHBOARD) {
+                        popUpTo(Routes.SPLASH) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(Routes.DASHBOARD) {
             DashboardScreen(
                 onOpenNote = { noteId -> navController.navigate(Routes.editor(noteId)) },
                 onOpenDrivePicker = { navController.navigate(Routes.DRIVE_PICKER) },
-                onOpenSettings = { navController.navigate(Routes.SETTINGS) }
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenAbout = { navController.navigate(Routes.ABOUT) }
             )
         }
         composable(Routes.DRIVE_PICKER) {
@@ -34,6 +46,9 @@ fun KapiNotesNavGraph(navController: NavHostController = rememberNavController()
         }
         composable(Routes.SETTINGS) {
             SettingsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.ABOUT) {
+            AboutScreen(onBack = { navController.popBackStack() })
         }
     }
 }

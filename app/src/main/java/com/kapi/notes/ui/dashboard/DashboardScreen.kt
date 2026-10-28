@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 
 package com.kapi.notes.ui.dashboard
 
@@ -10,10 +10,11 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,10 +25,12 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -36,9 +39,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Book
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.InsertDriveFile
+import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Search
@@ -62,8 +70,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
@@ -89,16 +100,18 @@ import com.kapi.notes.domain.model.PaperType
 import com.kapi.notes.ui.common.PaperBackground
 import com.kapi.notes.ui.common.formatNoteTimestamp
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun DashboardScreen(
     onOpenNote: (String) -> Unit,
     onOpenDrivePicker: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenAbout: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
+    var isManualUpdateDialogOpen by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     // Fires every time this screen becomes visible - including navigating back from the Editor -
@@ -136,6 +149,7 @@ fun DashboardScreen(
                     onSectionSelected = viewModel::selectSection,
                     onOpenDrive = onOpenDrivePicker,
                     onOpenSettings = onOpenSettings,
+                    onOpenAbout = onOpenAbout,
                     onClose = { isSidebarOpen = false }
                 )
             }
@@ -146,60 +160,57 @@ fun DashboardScreen(
                     onQueryChange = viewModel::onQueryChange,
                     session = state.session,
                     syncStatus = state.syncStatus,
+                    versionStatus = state.versionStatus,
+                    onVersionBadgeClick = { isManualUpdateDialogOpen = true },
                     onSync = viewModel::syncNow,
                     onAvatarClick = onOpenSettings,
                     onMenuClick = { isSidebarOpen = !isSidebarOpen }
                 )
 
             Column(Modifier.fillMaxSize().padding(if (isWideScreen) 24.dp else 16.dp)) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = when (state.section) {
-                            DashboardSection.MY_NOTES -> "Tài liệu gần đây"
-                            DashboardSection.FAVORITES -> "Mục yêu thích"
-                            DashboardSection.TRASH -> "Thùng rác"
-                        },
-                        style = MaterialTheme.typography.titleLarge,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    Row(
-                        Modifier
-                            .weight(1f, fill = false)
-                            .horizontalScroll(androidx.compose.foundation.rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Text(
+                    text = when (state.section) {
+                        DashboardSection.MY_NOTES -> "Tài liệu gần đây"
+                        DashboardSection.FAVORITES -> "Mục yêu thích"
+                        DashboardSection.TRASH -> "Thùng rác"
+                    },
+                    style = MaterialTheme.typography.titleLarge
+                )
+
+                if (state.section == DashboardSection.MY_NOTES) {
+                    Spacer(Modifier.height(14.dp))
+                    // Wraps onto a second line instead of forcing a horizontal-scroll strip -
+                    // every action stays visible at once, on both phone and tablet widths.
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        if (state.section == DashboardSection.MY_NOTES) {
-                            OutlinedButton(
-                                onClick = { localFilePicker.launch(arrayOf("application/pdf", "image/*")) },
-                                enabled = !state.isImportingLocalFile
-                            ) {
-                                if (state.isImportingLocalFile) {
-                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                                } else {
-                                    Icon(Icons.Rounded.UploadFile, contentDescription = null, modifier = Modifier.size(18.dp))
-                                }
-                                Spacer(Modifier.width(6.dp))
-                                Text("Tải ảnh/PDF từ máy")
+                        OutlinedButton(
+                            onClick = { localFilePicker.launch(arrayOf("application/pdf", "image/*")) },
+                            enabled = !state.isImportingLocalFile,
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            if (state.isImportingLocalFile) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Rounded.UploadFile, contentDescription = null, modifier = Modifier.size(18.dp))
                             }
-                            OutlinedButton(onClick = onOpenDrivePicker) {
-                                Icon(Icons.Rounded.InsertDriveFile, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text("Nhập từ Drive")
-                            }
-                            Button(
-                                onClick = { showCreateDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                            ) {
-                                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text("Tạo ghi chú")
-                            }
+                            Spacer(Modifier.width(6.dp))
+                            Text("Tải ảnh/PDF từ máy")
+                        }
+                        OutlinedButton(onClick = onOpenDrivePicker, shape = MaterialTheme.shapes.medium) {
+                            Icon(Icons.Rounded.InsertDriveFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Nhập từ Drive")
+                        }
+                        Button(
+                            onClick = { showCreateDialog = true },
+                            shape = MaterialTheme.shapes.medium,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Tạo ghi chú")
                         }
                     }
                 }
@@ -257,6 +268,7 @@ fun DashboardScreen(
                     onSectionSelected = { viewModel.selectSection(it); isSidebarOpen = false },
                     onOpenDrive = { isSidebarOpen = false; onOpenDrivePicker() },
                     onOpenSettings = { isSidebarOpen = false; onOpenSettings() },
+                    onOpenAbout = { isSidebarOpen = false; onOpenAbout() },
                     onClose = { isSidebarOpen = false }
                 )
             }
@@ -281,6 +293,98 @@ fun DashboardScreen(
             confirmButton = { TextButton(onClick = viewModel::dismissImportError) { Text("Đã hiểu") } }
         )
     }
+
+    // App isn't on Play Store yet, so there is no store update prompt - whenever GitHub has a
+    // release newer than this build, show a MANDATORY, non-dismissible dialog (no Cancel/skip,
+    // back press and tapping outside both do nothing) automatically. The same dialog content is
+    // also reachable any time by tapping the version badge in the header - there it is a normal,
+    // dismissible dialog instead (useful mainly to check "what's new" while already up to date).
+    state.versionStatus?.let { status ->
+        if (!status.isUpToDate) {
+            UpdateDialog(status = status, mandatory = true, onDismiss = {})
+        } else if (isManualUpdateDialogOpen) {
+            UpdateDialog(status = status, mandatory = false, onDismiss = { isManualUpdateDialogOpen = false })
+        }
+    }
+}
+
+/** Small colored pill in the header showing the installed version - green when it matches
+ * GitHub's latest release, orange when 1-2 releases behind, red when further behind than that.
+ * Tapping it re-opens the update dialog even when already up to date, so the user can always
+ * check "what's new" voluntarily, not only when forced to update. */
+@Composable
+private fun VersionBadge(status: com.kapi.notes.update.VersionStatus, onClick: () -> Unit) {
+    val color = when {
+        status.newerCount <= 0 -> Color(0xFF22C55E)
+        status.newerCount <= 2 -> Color(0xFFF97316)
+        else -> Color(0xFFEF4444)
+    }
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(50))
+            .background(color)
+            .combinedClickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        Text(
+            "v${status.localVersion}",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelSmall
+        )
+    }
+}
+
+@Composable
+private fun UpdateDialog(
+    status: com.kapi.notes.update.VersionStatus,
+    mandatory: Boolean,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(
+            dismissOnBackPress = !mandatory,
+            dismissOnClickOutside = !mandatory
+        ),
+        icon = { Icon(Icons.Rounded.CloudDownload, contentDescription = null) },
+        title = { Text(if (status.isUpToDate) "Bạn đang dùng bản mới nhất" else "Đã có bản cập nhật mới") },
+        text = {
+            Column {
+                Text(
+                    if (status.isUpToDate) {
+                        "Phiên bản ${status.localVersion} là phiên bản mới nhất hiện có trên GitHub."
+                    } else {
+                        "Phiên bản ${status.latestVersion} đã sẵn sàng trên GitHub." +
+                            (if (mandatory) " Vui lòng cập nhật để tiếp tục sử dụng KapiNotes." else "")
+                    },
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                status.latestReleaseNotes?.let { notes ->
+                    Spacer(Modifier.height(12.dp))
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 180.dp)
+                            .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                    ) {
+                        Text(notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (!status.isUpToDate && status.latestReleaseUrl != null) {
+                Button(onClick = {
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(status.latestReleaseUrl))
+                    context.startActivity(intent)
+                }) { Text("Tải bản cập nhật") }
+            } else {
+                TextButton(onClick = onDismiss) { Text("Đóng") }
+            }
+        }
+    )
 }
 
 @Composable
@@ -289,73 +393,67 @@ private fun DashboardSidebar(
     onSectionSelected: (DashboardSection) -> Unit,
     onOpenDrive: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenAbout: () -> Unit,
     onClose: (() -> Unit)? = null
 ) {
-    Column(
-        Modifier
-            .width(240.dp)
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline)),
+    Surface(
+        modifier = Modifier.width(240.dp).fillMaxSize(),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 3.dp
     ) {
-        Row(
-            Modifier.padding(start = 20.dp, end = if (onClose != null) 4.dp else 20.dp, top = 20.dp, bottom = 20.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(
-                Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center
+        Column(Modifier.fillMaxSize()) {
+            Row(
+                Modifier.padding(start = 20.dp, end = if (onClose != null) 4.dp else 20.dp, top = 20.dp, bottom = 20.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("K", color = Color.White, fontWeight = FontWeight.Bold)
-            }
-            Text("KapiNotes", style = MaterialTheme.typography.titleMedium)
-            }
-            if (onClose != null) {
-                IconButton(onClick = onClose) {
-                    Text("✕", style = MaterialTheme.typography.titleMedium)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    com.kapi.notes.ui.common.KapiLogo(modifier = Modifier.size(32.dp), shape = RoundedCornerShape(8.dp))
+                    Text("KapiNotes", style = MaterialTheme.typography.titleMedium)
+                }
+                if (onClose != null) {
+                    IconButton(onClick = onClose) {
+                        Icon(Icons.Rounded.Close, contentDescription = "Đóng")
+                    }
                 }
             }
-        }
 
-        Column(Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            SidebarItem(
-                icon = Icons.Rounded.Book,
-                label = DashboardSection.MY_NOTES.labelVi,
-                selected = section == DashboardSection.MY_NOTES,
-                onClick = { onSectionSelected(DashboardSection.MY_NOTES) }
-            )
-            SidebarItem(
-                icon = Icons.Rounded.InsertDriveFile,
-                label = "Google Drive",
-                selected = false,
-                onClick = onOpenDrive,
-                tint = Color(0xFF22C55E)
-            )
-            SidebarItem(
-                icon = Icons.Rounded.Star,
-                label = DashboardSection.FAVORITES.labelVi,
-                selected = section == DashboardSection.FAVORITES,
-                onClick = { onSectionSelected(DashboardSection.FAVORITES) },
-                tint = Color(0xFFFACC15)
-            )
-            SidebarItem(
-                icon = Icons.Rounded.Delete,
-                label = DashboardSection.TRASH.labelVi,
-                selected = section == DashboardSection.TRASH,
-                onClick = { onSectionSelected(DashboardSection.TRASH) }
-            )
-        }
+            Column(Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                SidebarItem(
+                    icon = Icons.Rounded.Book,
+                    label = DashboardSection.MY_NOTES.labelVi,
+                    selected = section == DashboardSection.MY_NOTES,
+                    onClick = { onSectionSelected(DashboardSection.MY_NOTES) }
+                )
+                SidebarItem(
+                    icon = Icons.Rounded.InsertDriveFile,
+                    label = "Google Drive",
+                    selected = false,
+                    onClick = onOpenDrive,
+                    tint = Color(0xFF22C55E)
+                )
+                SidebarItem(
+                    icon = Icons.Rounded.Star,
+                    label = DashboardSection.FAVORITES.labelVi,
+                    selected = section == DashboardSection.FAVORITES,
+                    onClick = { onSectionSelected(DashboardSection.FAVORITES) },
+                    tint = Color(0xFFFACC15)
+                )
+                SidebarItem(
+                    icon = Icons.Rounded.Delete,
+                    label = DashboardSection.TRASH.labelVi,
+                    selected = section == DashboardSection.TRASH,
+                    onClick = { onSectionSelected(DashboardSection.TRASH) }
+                )
+            }
 
-        Spacer(Modifier.weight(1f))
+            Spacer(Modifier.weight(1f))
 
-        Column(Modifier.padding(16.dp)) {
-            SidebarItem(icon = Icons.Rounded.Settings, label = "Cài đặt", selected = false, onClick = onOpenSettings)
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                SidebarItem(icon = Icons.Rounded.Info, label = "Giới thiệu", selected = false, onClick = onOpenAbout)
+                SidebarItem(icon = Icons.Rounded.Settings, label = "Cài đặt", selected = false, onClick = onOpenSettings)
+            }
         }
     }
 }
@@ -391,75 +489,93 @@ private fun DashboardHeader(
     onQueryChange: (String) -> Unit,
     session: com.kapi.notes.domain.model.UserSession?,
     syncStatus: com.kapi.notes.domain.model.SyncStatus,
+    versionStatus: com.kapi.notes.update.VersionStatus?,
+    onVersionBadgeClick: () -> Unit,
     onSync: () -> Unit,
     onAvatarClick: () -> Unit,
     onMenuClick: () -> Unit
 ) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .height(80.dp)
-            .background(MaterialTheme.colorScheme.surface)
-            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline))
-            .padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 2.dp
     ) {
-        Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onMenuClick) {
-                Text("☰", style = MaterialTheme.typography.titleLarge)
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .height(76.dp)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onMenuClick) {
+                    Icon(Icons.Rounded.Menu, contentDescription = "Mở menu")
+                }
+                Spacer(Modifier.width(4.dp))
+                TextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    placeholder = { Text("Tìm kiếm tài liệu...", maxLines = 1) },
+                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(50),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent
+                    ),
+                    modifier = Modifier.weight(1f, fill = false).widthIn(max = 360.dp)
+                )
             }
-            Spacer(Modifier.width(4.dp))
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                placeholder = { Text("Tìm kiếm tài liệu...", maxLines = 1) },
-                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
-                singleLine = true,
-                shape = RoundedCornerShape(50),
-                modifier = Modifier.weight(1f, fill = false).widthIn(max = 360.dp)
-            )
-        }
 
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (session != null) {
-                TooltipBox(
-                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                    tooltip = {
-                        PlainTooltip {
-                            Text(
-                                when (syncStatus) {
-                                    com.kapi.notes.domain.model.SyncStatus.SYNCING -> "Đang đồng bộ..."
-                                    else -> "Đồng bộ ghi chú với Google Drive"
-                                }
-                            )
-                        }
-                    },
-                    state = rememberTooltipState()
-                ) {
-                    IconButton(onClick = onSync, enabled = syncStatus != com.kapi.notes.domain.model.SyncStatus.SYNCING) {
-                        if (syncStatus == com.kapi.notes.domain.model.SyncStatus.SYNCING) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Rounded.Sync, contentDescription = "Đồng bộ ngay")
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                versionStatus?.let { status ->
+                    VersionBadge(status = status, onClick = onVersionBadgeClick)
+                }
+
+                if (session != null) {
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        tooltip = {
+                            PlainTooltip {
+                                Text(
+                                    when (syncStatus) {
+                                        com.kapi.notes.domain.model.SyncStatus.SYNCING -> "Đang đồng bộ..."
+                                        else -> "Đồng bộ ghi chú với Google Drive"
+                                    }
+                                )
+                            }
+                        },
+                        state = rememberTooltipState()
+                    ) {
+                        IconButton(onClick = onSync, enabled = syncStatus != com.kapi.notes.domain.model.SyncStatus.SYNCING) {
+                            if (syncStatus == com.kapi.notes.domain.model.SyncStatus.SYNCING) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Rounded.Sync, contentDescription = "Đồng bộ ngay")
+                            }
                         }
                     }
                 }
-            }
 
-            Box(
-                Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-                    .combinedClickable(onClick = onAvatarClick),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    (session?.displayName?.firstOrNull() ?: 'U').uppercase(),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
+                Box(
+                    Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .combinedClickable(onClick = onAvatarClick),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        (session?.displayName?.firstOrNull() ?: 'U').uppercase(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
@@ -482,12 +598,25 @@ private fun NoteCard(
     Column(Modifier.combinedClickable(onClick = onClick)) {
         Card(
             modifier = Modifier.aspectRatio(3f / 4f),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            shape = MaterialTheme.shapes.medium,
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Box(Modifier.fillMaxSize()) {
-                if (note.source == NoteSource.DRIVE_IMPORT) {
+                if (note.thumbnailPath != null) {
+                    // Real snapshot of the note's first page, regenerated every time the editor
+                    // is left - keyed on updatedAt so Coil reloads it instead of showing a stale
+                    // cached bitmap from before the edit.
+                    coil.compose.AsyncImage(
+                        model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                            .data(note.thumbnailPath)
+                            .memoryCacheKey("${note.id}_${note.updatedAt}")
+                            .diskCacheKey("${note.id}_${note.updatedAt}")
+                            .build(),
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else if (note.source == NoteSource.DRIVE_IMPORT) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Icon(
                             Icons.Rounded.PictureAsPdf,
@@ -563,6 +692,18 @@ private fun EmptyState(section: DashboardSection) {
     }
 }
 
+private val PaperType.labelVi: String
+    get() = when (this) {
+        PaperType.BLANK -> "Trơn"
+        PaperType.LINED -> "Kẻ dòng"
+        PaperType.GRID -> "Ô vuông"
+        PaperType.DOT -> "Chấm bi"
+        PaperType.CORNELL -> "Cornell"
+        PaperType.CHECKLIST -> "Việc cần làm"
+        PaperType.TIMETABLE -> "TKB"
+        PaperType.CHINESE_CHARACTER_GRID -> "Ô chữ Hán"
+    }
+
 @Composable
 private fun CreateNoteDialog(
     onDismiss: () -> Unit,
@@ -573,7 +714,8 @@ private fun CreateNoteDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Tạo ghi chú mới") },
+        shape = MaterialTheme.shapes.large,
+        title = { Text("Tạo ghi chú mới", style = MaterialTheme.typography.titleLarge) },
         text = {
             Column {
                 OutlinedTextField(
@@ -581,24 +723,35 @@ private fun CreateNoteDialog(
                     onValueChange = { title = it },
                     label = { Text("Tên ghi chú") },
                     singleLine = true,
+                    shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(Modifier.height(16.dp))
-                Text("Loại giấy", style = MaterialTheme.typography.labelSmall)
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PaperType.entries.forEach { type ->
-                        PaperChoiceSwatch(
-                            type = type,
-                            selected = paperType == type,
-                            onClick = { paperType = type }
-                        )
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    "Loại giấy",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(10.dp))
+                // Fixed 4-column grid: 8 paper types lay out as two perfectly even rows instead
+                // of a ragged scrolling strip, so every option is visible and easy to compare.
+                PaperType.entries.chunked(4).forEach { rowTypes ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        rowTypes.forEach { type ->
+                            PaperChoiceSwatch(
+                                type = type,
+                                selected = paperType == type,
+                                onClick = { paperType = type },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
+                    Spacer(Modifier.height(12.dp))
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onCreate(title, paperType) }) { Text("Tạo") }
+            Button(onClick = { onCreate(title, paperType) }, shape = MaterialTheme.shapes.medium) { Text("Tạo") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Hủy") }
@@ -607,17 +760,41 @@ private fun CreateNoteDialog(
 }
 
 @Composable
-private fun PaperChoiceSwatch(type: PaperType, selected: Boolean, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .size(44.dp)
-            .clip(RoundedCornerShape(6.dp))
-            .border(
-                BorderStroke(if (selected) 2.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
-                RoundedCornerShape(6.dp)
-            )
-            .combinedClickable(onClick = onClick)
+private fun PaperChoiceSwatch(type: PaperType, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.combinedClickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        PaperBackground(paperType = type)
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(10.dp))
+                .border(
+                    BorderStroke(if (selected) 2.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                    RoundedCornerShape(10.dp)
+                )
+        ) {
+            PaperBackground(paperType = type)
+            if (selected) {
+                Box(Modifier.align(Alignment.TopEnd).padding(3.dp)) {
+                    Icon(
+                        Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            type.labelVi,
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 }

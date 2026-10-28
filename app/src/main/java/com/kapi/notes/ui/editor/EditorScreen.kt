@@ -10,8 +10,11 @@ import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
@@ -97,6 +100,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipBox
@@ -113,6 +117,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -134,6 +140,11 @@ import com.kapi.notes.ui.theme.PenColorSwatches
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
+
+/** Shared by both pinch-zoom and the quick-zoom slider: lets the user zoom out a bit below
+ * 100% (e.g. to see a whole wide page at once) while still capping how far in they can go. */
+private const val MIN_ZOOM = 0.5f
+private const val MAX_ZOOM = 4f
 
 /** Only tracks pan/zoom once a SECOND finger goes down, leaving every single-finger gesture
  * (drawing, moving objects...) untouched for the DrawingCanvas beneath to handle. */
@@ -207,6 +218,10 @@ fun EditorScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+
+    // Hardware/gesture back also needs to refresh the dashboard thumbnail, not just the top
+    // bar's arrow button.
+    androidx.activity.compose.BackHandler { viewModel.saveThumbnailThenBack(onBack) }
 
     state.exportedFile?.let { file ->
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
@@ -292,7 +307,7 @@ fun EditorScreen(
         if (!state.isFullscreen) {
             EditorTopBar(
                 title = state.note?.title.orEmpty(),
-                onBack = onBack,
+                onBack = { viewModel.saveThumbnailThenBack(onBack) },
                 onRenameConfirmed = viewModel::renameNote,
                 canUndo = state.canUndo,
                 canRedo = state.canRedo,
@@ -395,7 +410,7 @@ fun EditorScreen(
                 .clipToBounds()
                 .twoFingerPanZoom(
                     onTransform = { zoomChange, panChange ->
-                        zoom = (zoom * zoomChange).coerceIn(1f, 4f)
+                        zoom = (zoom * zoomChange).coerceIn(MIN_ZOOM, MAX_ZOOM)
                         pan += panChange
                     }
                 ),
@@ -471,6 +486,20 @@ fun EditorScreen(
                     Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.TopEnd) {
                         TooltipIconButton(icon = Icons.Rounded.FullscreenExit, tooltip = "Thoát toàn màn hình", onClick = viewModel::toggleFullscreen)
                     }
+                }
+
+                // Quick zoom control alongside pinch-to-zoom: bottom-end on both phone and
+                // tablet keeps it reachable with a thumb without sitting over the page centre
+                // where drawing actually happens, and it floats over the (unscaled) outer box so
+                // it is never itself affected by the zoom/pan transform below it.
+                Box(Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.BottomEnd) {
+                    ZoomControl(
+                        zoom = zoom,
+                        onZoomChange = { newZoom ->
+                            zoom = newZoom.coerceIn(MIN_ZOOM, MAX_ZOOM)
+                            if (zoom <= 1f) pan = Offset.Zero
+                        }
+                    )
                 }
             }
         }
@@ -1033,6 +1062,121 @@ private fun inkToolLabel(tool: EditorTool): String = when (tool) {
     EditorTool.BRUSH -> "Cọ lông"
     EditorTool.HIGHLIGHTER -> "Bút dạ quang"
     else -> "Bút mực"
+}
+
+/** Floating quick-zoom pill shown over the page (bottom-end) as an alternative to two-finger
+ * pinch - a vertical slider plus +/- buttons so a one-handed drag zooms without needing a second
+ * finger, and a tap on the percentage label resets back to 100%. Laid out vertically and kept
+ * small (narrow + short slider track) on purpose: a wide horizontal bar was covering too much of
+ * the page on small phone screens, where every pixel of drawing area matters. Same compact
+ * footprint works unchanged on tablet too, since it's a fixed-size overlay, not part of the page
+ * layout. */
+@Composable
+private fun ZoomControl(
+    zoom: Float,
+    onZoomChange: (Float) -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 4.dp
+    ) {
+        Column(
+            Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
+            IconButton(
+                onClick = { onZoomChange(zoom + 0.25f) },
+                enabled = zoom < MAX_ZOOM,
+                modifier = Modifier.size(26.dp)
+            ) {
+                Icon(Icons.Rounded.Add, contentDescription = "Phóng to", modifier = Modifier.size(15.dp))
+            }
+            Spacer(Modifier.height(2.dp))
+            // Rotating a real Material3 Slider (via Modifier.rotate(), and even via the "correct"
+            // layout{}-swap technique for vertical sliders) turned out unreliable in practice here:
+            // taps jumped to the right value, but continuous dragging did not track the finger at
+            // all. Drawing the track/thumb by hand and reading drag position directly off the Y
+            // axis sidesteps rotation entirely, so there is no transform for hit-testing to get
+            // wrong - it is just "where is the finger" the whole way through the gesture.
+            VerticalZoomSlider(
+                zoom = zoom,
+                onZoomChange = onZoomChange,
+                modifier = Modifier.width(30.dp).height(84.dp)
+            )
+            Spacer(Modifier.height(2.dp))
+            IconButton(
+                onClick = { onZoomChange(zoom - 0.25f) },
+                enabled = zoom > MIN_ZOOM,
+                modifier = Modifier.size(26.dp)
+            ) {
+                Icon(Icons.Rounded.Remove, contentDescription = "Thu nhỏ", modifier = Modifier.size(15.dp))
+            }
+            Text(
+                "${(zoom * 100).toInt()}%",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(top = 2.dp)
+                    .clickable { onZoomChange(1f) }
+            )
+        }
+    }
+}
+
+/** A vertical slider drawn by hand (track + thumb on a Canvas) instead of a rotated Material3
+ * Slider - top of [modifier]'s bounds is [MAX_ZOOM], bottom is [MIN_ZOOM], matching the ＋/－
+ * buttons placed above/below it. Both an initial tap and every subsequent drag position map
+ * straight to a Y fraction of the track, so there is no gesture-recognition ambiguity. */
+@Composable
+private fun VerticalZoomSlider(
+    zoom: Float,
+    onZoomChange: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val trackColor = MaterialTheme.colorScheme.outline
+    val activeColor = MaterialTheme.colorScheme.primary
+    var heightPx by remember { mutableStateOf(1f) }
+
+    fun updateFromY(y: Float) {
+        val fraction = (1f - (y / heightPx)).coerceIn(0f, 1f)
+        onZoomChange(MIN_ZOOM + fraction * (MAX_ZOOM - MIN_ZOOM))
+    }
+
+    Canvas(
+        modifier
+            .onSizeChanged { heightPx = it.height.toFloat().coerceAtLeast(1f) }
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { offset -> updateFromY(offset.y) },
+                    onDrag = { change, _ -> change.consume(); updateFromY(change.position.y) }
+                )
+            }
+            .pointerInput(Unit) {
+                detectTapGestures { offset -> updateFromY(offset.y) }
+            }
+    ) {
+        val trackX = size.width / 2f
+        drawLine(
+            color = trackColor,
+            start = Offset(trackX, 0f),
+            end = Offset(trackX, size.height),
+            strokeWidth = 4.dp.toPx(),
+            cap = StrokeCap.Round
+        )
+        val fraction = ((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)).coerceIn(0f, 1f)
+        val thumbY = size.height * (1f - fraction)
+        drawLine(
+            color = activeColor,
+            start = Offset(trackX, thumbY),
+            end = Offset(trackX, size.height),
+            strokeWidth = 4.dp.toPx(),
+            cap = StrokeCap.Round
+        )
+        drawCircle(color = activeColor, radius = 9.dp.toPx(), center = Offset(trackX, thumbY))
+        drawCircle(color = Color.White, radius = 4.dp.toPx(), center = Offset(trackX, thumbY))
+    }
 }
 
 @Composable

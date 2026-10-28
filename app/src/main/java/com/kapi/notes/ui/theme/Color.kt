@@ -23,6 +23,11 @@ val Red500 = Color(0xFFEF4444)
 val Green500 = Color(0xFF22C55E)
 val Yellow400 = Color(0xFFFACC15)
 
+// Accent used for the splash screen gradient, the About screen and selected-state highlights -
+// a cooler violet that pairs with the brand blue without competing with it.
+val Indigo600 = Color(0xFF4F46E5)
+val Violet600 = Color(0xFF7C3AED)
+
 val PenColorSwatches: List<Long> = listOf(
     0xFF000000L, // black
     0xFFEF4444L, // red

@@ -11,6 +11,8 @@ import com.kapi.notes.domain.model.PaperType
 import com.kapi.notes.domain.model.SyncStatus
 import com.kapi.notes.domain.model.UserSession
 import com.kapi.notes.pdf.DocumentPageRenderer
+import com.kapi.notes.update.UpdateChecker
+import com.kapi.notes.update.VersionStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.FlowPreview
@@ -42,7 +44,8 @@ data class DashboardUiState(
     val syncStatus: SyncStatus = SyncStatus.IDLE,
     val isCreatingNote: Boolean = false,
     val isImportingLocalFile: Boolean = false,
-    val importError: String? = null
+    val importError: String? = null,
+    val versionStatus: VersionStatus? = null
 )
 
 @OptIn(FlowPreview::class)
@@ -51,6 +54,7 @@ class DashboardViewModel @Inject constructor(
     private val notesRepository: NotesRepository,
     private val authRepository: AuthRepository,
     private val pageRenderer: DocumentPageRenderer,
+    private val updateChecker: UpdateChecker,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -59,6 +63,17 @@ class DashboardViewModel @Inject constructor(
     private val isCreatingNote = MutableStateFlow(false)
     private val isImportingLocalFile = MutableStateFlow(false)
     private val importError = MutableStateFlow<String?>(null)
+    private val versionStatus = MutableStateFlow<VersionStatus?>(null)
+
+    init {
+        // Not on Play Store yet, so there is no store-driven update prompt - check the GitHub
+        // repo's releases once per app session. Drives both the mandatory "update available"
+        // dialog (when outdated) and the small version badge in the header. Silently does
+        // nothing on failure/offline - the badge just stays hidden until the next launch.
+        viewModelScope.launch {
+            updateChecker.checkStatus().onSuccess { status -> versionStatus.value = status }
+        }
+    }
 
     private val notesForSection = section.flatMapLatest {
         when (it) {
@@ -76,7 +91,7 @@ class DashboardViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val uiState: StateFlow<DashboardUiState> = combine(
-        section, query, notesForSection, authRepository.session, isCreatingNote, isImportingLocalFile, importError, authRepository.syncStatus, contentSearchResults
+        section, query, notesForSection, authRepository.session, isCreatingNote, isImportingLocalFile, importError, authRepository.syncStatus, contentSearchResults, versionStatus
     ) { values ->
         val q = values[1] as String
         val sectionNotes = (values[2] as List<*>).filterIsInstance<Note>()
@@ -94,7 +109,8 @@ class DashboardViewModel @Inject constructor(
             isCreatingNote = values[4] as Boolean,
             isImportingLocalFile = values[5] as Boolean,
             importError = values[6] as String?,
-            syncStatus = values[7] as SyncStatus
+            syncStatus = values[7] as SyncStatus,
+            versionStatus = values[9] as VersionStatus?
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 

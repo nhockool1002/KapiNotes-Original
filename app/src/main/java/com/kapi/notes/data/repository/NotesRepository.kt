@@ -130,5 +130,9 @@ interface NotesRepository {
 
     suspend fun touchNote(noteId: String)
 
+    /** Points the dashboard card's thumbnail at a freshly rendered snapshot of the note's first
+     * page - called after leaving the editor so the thumbnail reflects actual content. */
+    suspend fun updateThumbnail(noteId: String, thumbnailPath: String)
+
     suspend fun deleteAllData()
 }

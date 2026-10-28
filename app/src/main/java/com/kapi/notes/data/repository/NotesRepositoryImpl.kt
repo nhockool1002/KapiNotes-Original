@@ -464,6 +464,11 @@ class NotesRepositoryImpl @Inject constructor(
         dao.update(entity.copy(updatedAt = System.currentTimeMillis()))
     }
 
+    override suspend fun updateThumbnail(noteId: String, thumbnailPath: String) {
+        val entity = dao.getNote(noteId) ?: return
+        dao.update(entity.copy(thumbnailPath = thumbnailPath, updatedAt = System.currentTimeMillis()))
+    }
+
     override suspend fun deleteAllData() {
         dao.deleteAll()
     }

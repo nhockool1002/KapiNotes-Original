@@ -84,6 +84,34 @@ class NoteExporter @Inject constructor(
         }
     }
 
+    /** Renders [page] (same [renderPage] used for PDF/PNG export) at a small, fixed size and
+     * writes it to a stable per-note path (overwriting any previous thumbnail) - the dashboard's
+     * note card thumbnail, kept in sync with the page's actual strokes/images/text instead of
+     * always showing a blank placeholder. */
+    suspend fun generateThumbnail(
+        noteId: String,
+        page: NotePage,
+        content: PageContent,
+        maxWidthPx: Int = 480
+    ): Result<File> = withContext(Dispatchers.IO) {
+        runCatching {
+            val fullBitmap = android.graphics.Bitmap.createBitmap(page.widthPx, page.heightPx, android.graphics.Bitmap.Config.ARGB_8888)
+            renderPage(Canvas(fullBitmap), page, content)
+
+            val scale = (maxWidthPx.toFloat() / page.widthPx).coerceAtMost(1f)
+            val outW = (page.widthPx * scale).toInt().coerceAtLeast(1)
+            val outH = (page.heightPx * scale).toInt().coerceAtLeast(1)
+            val thumbBitmap = android.graphics.Bitmap.createScaledBitmap(fullBitmap, outW, outH, true)
+            fullBitmap.recycle()
+
+            val thumbDir = File(context.filesDir, "thumbnails").apply { mkdirs() }
+            val outFile = File(thumbDir, "$noteId.png")
+            outFile.outputStream().use { thumbBitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 90, it) }
+            thumbBitmap.recycle()
+            outFile
+        }
+    }
+
     private fun renderPage(canvas: Canvas, page: NotePage, content: PageContent) {
         canvas.drawColor(Color.WHITE)
 
