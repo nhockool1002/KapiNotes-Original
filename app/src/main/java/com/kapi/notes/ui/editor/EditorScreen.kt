@@ -10,11 +10,10 @@ import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
@@ -26,6 +25,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,6 +48,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.Redo
 import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Adjust
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Backspace
@@ -393,15 +394,22 @@ fun EditorScreen(
         // one stable state instance for the whole screen and just reset its value on page change.
         var zoom by remember { mutableStateOf(1f) }
         var pan by remember { mutableStateOf(Offset.Zero) }
+        // The zoom panel starts docked/hidden at the screen edge so it doesn't sit over the page
+        // by default - only its small tab handle shows until the user explicitly asks for it.
+        var isZoomPanelExpanded by remember { mutableStateOf(false) }
         androidx.compose.runtime.LaunchedEffect(state.currentPageIndex) {
             zoom = 1f
             pan = Offset.Zero
         }
 
+        // Outer, unpadded wrapper: the inner Box below keeps the 24dp inset + clip that stops the
+        // zoomed page from bleeding into the toolbars, but the floating zoom handle needs to sit
+        // flush against the TRUE screen edge, outside that inset - so it lives in this outer Box
+        // instead, as a sibling of the (padded/clipped) page box rather than a child of it.
+        Box(Modifier.weight(1f).fillMaxWidth()) {
         Box(
             Modifier
-                .weight(1f)
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(if (state.isFullscreen) 4.dp else 24.dp)
                 // Clips the zoomed/panned page content to this box's own bounds, which sit strictly
                 // below the top bars and above the bottom dock/page switcher - without it, Compose's
@@ -487,18 +495,36 @@ fun EditorScreen(
                         TooltipIconButton(icon = Icons.Rounded.FullscreenExit, tooltip = "Thoát toàn màn hình", onClick = viewModel::toggleFullscreen)
                     }
                 }
+            }
+        }
 
-                // Quick zoom control alongside pinch-to-zoom: bottom-end on both phone and
-                // tablet keeps it reachable with a thumb without sitting over the page centre
-                // where drawing actually happens, and it floats over the (unscaled) outer box so
-                // it is never itself affected by the zoom/pan transform below it.
-                Box(Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.BottomEnd) {
-                    ZoomControl(
-                        zoom = zoom,
-                        onZoomChange = { newZoom ->
-                            zoom = newZoom.coerceIn(MIN_ZOOM, MAX_ZOOM)
-                            if (zoom <= 1f) pan = Offset.Zero
-                        }
+            // Quick zoom control alongside pinch-to-zoom: bottom-end on both phone and tablet
+            // keeps it reachable with a thumb without sitting over the page centre where drawing
+            // actually happens. Lives in the outer (unpadded) box so it can sit flush against the
+            // real screen edge instead of floating 24dp away from it. One single capsule shape
+            // (not two separate floating pieces) that smoothly grows/shrinks in place, with the
+            // magnifier toggle always anchored at its bottom - docked/collapsed by default so it
+            // doesn't sit over the page the whole time.
+            Box(Modifier.fillMaxSize().padding(bottom = 12.dp), contentAlignment = Alignment.BottomEnd) {
+                ZoomControl(
+                    zoom = zoom,
+                    onZoomChange = { newZoom ->
+                        zoom = newZoom.coerceIn(MIN_ZOOM, MAX_ZOOM)
+                        if (zoom <= 1f) pan = Offset.Zero
+                    },
+                    expanded = isZoomPanelExpanded,
+                    onToggleExpanded = { isZoomPanelExpanded = !isZoomPanelExpanded }
+                )
+            }
+
+            // Same reasoning as the zoom control above - lives in the outer unpadded box so it
+            // can sit flush against the real screen edge, and this Box's own bounds already stop
+            // above the bottom toolbar/page switcher so it can never cover them.
+            state.versionStatus?.let { status ->
+                Box(Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.BottomStart) {
+                    com.kapi.notes.ui.common.VersionBadge(
+                        status = status,
+                        onClick = { viewModel.toggleManualUpdateDialog(true) }
                     )
                 }
             }
@@ -519,6 +545,16 @@ fun EditorScreen(
                 onDuplicatePage = viewModel::duplicateCurrentPage,
                 onDeletePage = viewModel::deleteCurrentPage,
                 onMovePage = viewModel::movePageBy
+            )
+        }
+    }
+
+    if (state.isManualUpdateDialogOpen) {
+        state.versionStatus?.let { status ->
+            com.kapi.notes.ui.common.UpdateDialog(
+                status = status,
+                mandatory = false,
+                onDismiss = { viewModel.toggleManualUpdateDialog(false) }
             )
         }
     }
@@ -1064,17 +1100,20 @@ private fun inkToolLabel(tool: EditorTool): String = when (tool) {
     else -> "Bút mực"
 }
 
-/** Floating quick-zoom pill shown over the page (bottom-end) as an alternative to two-finger
+/** Floating quick-zoom control shown over the page (bottom-end) as an alternative to two-finger
  * pinch - a vertical slider plus +/- buttons so a one-handed drag zooms without needing a second
- * finger, and a tap on the percentage label resets back to 100%. Laid out vertically and kept
- * small (narrow + short slider track) on purpose: a wide horizontal bar was covering too much of
- * the page on small phone screens, where every pixel of drawing area matters. Same compact
- * footprint works unchanged on tablet too, since it's a fixed-size overlay, not part of the page
- * layout. */
+ * finger, and a tap on the percentage label resets back to 100%. A SINGLE capsule the whole time
+ * (never two separate floating pieces with a gap between them): the magnifier toggle is always
+ * anchored at its bottom, and the zoom controls above it grow/shrink in place with
+ * [Modifier.animateContentSize], so collapsing it leaves just a small circle-ish pill docked at
+ * the edge and expanding it smoothly grows the very same shape upward - one continuous shadow,
+ * one continuous outline, not two blobs side by side. */
 @Composable
 private fun ZoomControl(
     zoom: Float,
-    onZoomChange: (Float) -> Unit
+    onZoomChange: (Float) -> Unit,
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(50),
@@ -1082,45 +1121,68 @@ private fun ZoomControl(
         shadowElevation = 4.dp
     ) {
         Column(
-            Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(0.dp)
+            Modifier
+                .animateContentSize(animationSpec = androidx.compose.animation.core.tween(220))
+                .padding(horizontal = 4.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            IconButton(
-                onClick = { onZoomChange(zoom + 0.25f) },
-                enabled = zoom < MAX_ZOOM,
-                modifier = Modifier.size(26.dp)
+            androidx.compose.animation.AnimatedVisibility(
+                visible = expanded,
+                enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(180, delayMillis = 80)),
+                exit = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(120))
             ) {
-                Icon(Icons.Rounded.Add, contentDescription = "Phóng to", modifier = Modifier.size(15.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    IconButton(
+                        onClick = { onZoomChange(zoom + 0.25f) },
+                        enabled = zoom < MAX_ZOOM,
+                        modifier = Modifier.size(26.dp)
+                    ) {
+                        Icon(Icons.Rounded.Add, contentDescription = "Phóng to", modifier = Modifier.size(15.dp))
+                    }
+                    Spacer(Modifier.height(2.dp))
+                    // Rotating a real Material3 Slider (via Modifier.rotate(), and even via the
+                    // "correct" layout{}-swap technique for vertical sliders) turned out unreliable
+                    // in practice here: taps jumped to the right value, but continuous dragging did
+                    // not track the finger at all. Drawing the track/thumb by hand and reading drag
+                    // position directly off the Y axis sidesteps rotation entirely, so there is no
+                    // transform for hit-testing to get wrong - it is just "where is the finger" the
+                    // whole way through the gesture.
+                    VerticalZoomSlider(
+                        zoom = zoom,
+                        onZoomChange = onZoomChange,
+                        modifier = Modifier.width(30.dp).height(84.dp)
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    IconButton(
+                        onClick = { onZoomChange(zoom - 0.25f) },
+                        enabled = zoom > MIN_ZOOM,
+                        modifier = Modifier.size(26.dp)
+                    ) {
+                        Icon(Icons.Rounded.Remove, contentDescription = "Thu nhỏ", modifier = Modifier.size(15.dp))
+                    }
+                    Text(
+                        "${(zoom * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .padding(top = 2.dp, bottom = 6.dp)
+                            .clickable { onZoomChange(1f) }
+                    )
+                    androidx.compose.material3.Divider(
+                        modifier = Modifier.width(24.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
             }
-            Spacer(Modifier.height(2.dp))
-            // Rotating a real Material3 Slider (via Modifier.rotate(), and even via the "correct"
-            // layout{}-swap technique for vertical sliders) turned out unreliable in practice here:
-            // taps jumped to the right value, but continuous dragging did not track the finger at
-            // all. Drawing the track/thumb by hand and reading drag position directly off the Y
-            // axis sidesteps rotation entirely, so there is no transform for hit-testing to get
-            // wrong - it is just "where is the finger" the whole way through the gesture.
-            VerticalZoomSlider(
-                zoom = zoom,
-                onZoomChange = onZoomChange,
-                modifier = Modifier.width(30.dp).height(84.dp)
-            )
-            Spacer(Modifier.height(2.dp))
-            IconButton(
-                onClick = { onZoomChange(zoom - 0.25f) },
-                enabled = zoom > MIN_ZOOM,
-                modifier = Modifier.size(26.dp)
-            ) {
-                Icon(Icons.Rounded.Remove, contentDescription = "Thu nhỏ", modifier = Modifier.size(15.dp))
+            IconButton(onClick = onToggleExpanded, modifier = Modifier.size(44.dp)) {
+                Icon(
+                    Icons.Rounded.Search,
+                    contentDescription = if (expanded) "Thu gọn thanh zoom" else "Mở thanh zoom",
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            Text(
-                "${(zoom * 100).toInt()}%",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .padding(top = 2.dp)
-                    .clickable { onZoomChange(1f) }
-            )
         }
     }
 }
@@ -1147,14 +1209,26 @@ private fun VerticalZoomSlider(
     Canvas(
         modifier
             .onSizeChanged { heightPx = it.height.toFloat().coerceAtLeast(1f) }
+            // detectDragGestures + detectTapGestures as two separate pointerInput blocks on the
+            // same node turned out to interfere with each other once the value reached an edge
+            // (MIN/MAX) - dragging back off the edge stopped registering, even though a plain tap
+            // and the +/- buttons still worked. A single hand-rolled gesture loop (down, then every
+            // move until up, all in one place) removes the ambiguity between two competing
+            // detectors entirely.
             .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { offset -> updateFromY(offset.y) },
-                    onDrag = { change, _ -> change.consume(); updateFromY(change.position.y) }
-                )
-            }
-            .pointerInput(Unit) {
-                detectTapGestures { offset -> updateFromY(offset.y) }
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    updateFromY(down.position.y)
+                    var pointerId = down.id
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == pointerId } ?: break
+                        if (!change.pressed) break
+                        change.consume()
+                        updateFromY(change.position.y)
+                        pointerId = change.id
+                    }
+                }
             }
     ) {
         val trackX = size.width / 2f

@@ -22,6 +22,8 @@ import com.kapi.notes.domain.model.ToolType
 import com.kapi.notes.pdf.NoteExporter
 import com.kapi.notes.pdf.PageContent
 import com.kapi.notes.ui.theme.PenColorSwatches
+import com.kapi.notes.update.UpdateChecker
+import com.kapi.notes.update.VersionStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -76,7 +78,9 @@ data class EditorUiState(
     val isImportingBackground: Boolean = false,
     val isSharingLink: Boolean = false,
     val shareLink: String? = null,
-    val error: String? = null
+    val error: String? = null,
+    val versionStatus: VersionStatus? = null,
+    val isManualUpdateDialogOpen: Boolean = false
 ) {
     val currentPage: NotePage? get() = pages.getOrNull(currentPageIndex)
     val editingTextBox: TextBoxItem? get() = editingTextBoxId?.let { id -> textBoxes.firstOrNull { it.id == id } }
@@ -100,6 +104,7 @@ class EditorViewModel @Inject constructor(
     private val documentPageRenderer: com.kapi.notes.pdf.DocumentPageRenderer,
     private val driveAuthManager: com.kapi.notes.drive.DriveAuthManager,
     private val driveRepository: com.kapi.notes.drive.DriveRepository,
+    private val updateChecker: UpdateChecker,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -124,6 +129,15 @@ class EditorViewModel @Inject constructor(
                 audioClips.collect { clips -> _state.update { it.copy(audioClips = clips) } }
             }
         }
+        // Same small version badge as the Dashboard (not the mandatory blocking dialog here -
+        // the Editor just shows the badge for awareness, opened on tap).
+        viewModelScope.launch {
+            updateChecker.checkStatus().onSuccess { status -> _state.update { it.copy(versionStatus = status) } }
+        }
+    }
+
+    fun toggleManualUpdateDialog(open: Boolean) {
+        _state.update { it.copy(isManualUpdateDialogOpen = open) }
     }
 
     private suspend fun loadPageContent() {

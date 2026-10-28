@@ -73,25 +73,27 @@ fun DrivePickerScreen(
     val state by viewModel.state.collectAsState()
 
     val signInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            runCatching {
-                GoogleSignIn.getSignedInAccountFromIntent(result.data).result
-            }.fold(
-                onSuccess = { account -> viewModel.onSignInResult(account) },
-                onFailure = { e -> viewModel.onSignInResult(null, googleSignInErrorMessage(e)) }
-            )
+        // The Drive-scope consent step is often still finishing up (silently, at the Play
+        // services level) at the exact moment this callback fires: getSignedInAccountFromIntent()
+        // can report a failure, or the activity itself can return a non-OK result, even though
+        // the account+scopes end up fully granted a moment later - the user's SECOND tap then
+        // "just works" because it's reading a cache that's already settled. Checking
+        // lastSignedInAccount() as a fallback on ANY failure (not just a non-OK result code)
+        // catches that and completes login in one tap instead of needing a retry.
+        val signInResult = if (result.resultCode == Activity.RESULT_OK) {
+            runCatching { GoogleSignIn.getSignedInAccountFromIntent(result.data).result }
         } else {
-            // The Drive-scope consent step sometimes round-trips through its own activity and
-            // reports back a non-OK result even though the OS already finished granting access -
-            // fall back to the cached account instead of showing "cancelled" and making the user
-            // tap "Kết nối Google Drive" again.
-            val account = viewModel.driveAuthManager.lastSignedInAccount()
-            if (account != null) {
-                viewModel.onSignInResult(account)
-            } else {
-                // User genuinely backed out of the account picker - not a real error.
-                viewModel.onSignInResult(null, errorMessage = null)
-            }
+            null
+        }
+        val account = signInResult?.getOrNull() ?: viewModel.driveAuthManager.lastSignedInAccount()
+        if (account != null) {
+            viewModel.onSignInResult(account)
+        } else {
+            // A genuine cancel (non-OK result, or an OK result with no exception at all) isn't a
+            // real error; only a result we can actually attribute to a Google Sign-In exception
+            // gets a message.
+            val e = signInResult?.exceptionOrNull()
+            viewModel.onSignInResult(null, errorMessage = e?.let { googleSignInErrorMessage(it) })
         }
     }
 

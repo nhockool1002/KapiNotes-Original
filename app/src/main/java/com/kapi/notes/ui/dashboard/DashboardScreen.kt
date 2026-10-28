@@ -98,6 +98,8 @@ import com.kapi.notes.domain.model.Note
 import com.kapi.notes.domain.model.NoteSource
 import com.kapi.notes.domain.model.PaperType
 import com.kapi.notes.ui.common.PaperBackground
+import com.kapi.notes.ui.common.UpdateDialog
+import com.kapi.notes.ui.common.VersionBadge
 import com.kapi.notes.ui.common.formatNoteTimestamp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
@@ -154,14 +156,13 @@ fun DashboardScreen(
                 )
             }
 
+            Box(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize()) {
                 DashboardHeader(
                     query = state.query,
                     onQueryChange = viewModel::onQueryChange,
                     session = state.session,
                     syncStatus = state.syncStatus,
-                    versionStatus = state.versionStatus,
-                    onVersionBadgeClick = { isManualUpdateDialogOpen = true },
                     onSync = viewModel::syncNow,
                     onAvatarClick = onOpenSettings,
                     onMenuClick = { isSidebarOpen = !isSidebarOpen }
@@ -241,6 +242,19 @@ fun DashboardScreen(
                 }
             }
             }
+
+            // Floats over the content pane only (not the sidebar) so it never gets clipped by a
+            // narrow screen's layout and never sits under the sidebar's own items on tablet.
+            state.versionStatus?.let { status ->
+                VersionBadge(
+                    status = status,
+                    onClick = { isManualUpdateDialogOpen = true },
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp)
+                )
+            }
+            }
         }
 
         // Phone layout: sidebar floats over the content as a drawer with a dismissible scrim,
@@ -308,84 +322,6 @@ fun DashboardScreen(
     }
 }
 
-/** Small colored pill in the header showing the installed version - green when it matches
- * GitHub's latest release, orange when 1-2 releases behind, red when further behind than that.
- * Tapping it re-opens the update dialog even when already up to date, so the user can always
- * check "what's new" voluntarily, not only when forced to update. */
-@Composable
-private fun VersionBadge(status: com.kapi.notes.update.VersionStatus, onClick: () -> Unit) {
-    val color = when {
-        status.newerCount <= 0 -> Color(0xFF22C55E)
-        status.newerCount <= 2 -> Color(0xFFF97316)
-        else -> Color(0xFFEF4444)
-    }
-    Box(
-        Modifier
-            .clip(RoundedCornerShape(50))
-            .background(color)
-            .combinedClickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp)
-    ) {
-        Text(
-            "v${status.localVersion}",
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.labelSmall
-        )
-    }
-}
-
-@Composable
-private fun UpdateDialog(
-    status: com.kapi.notes.update.VersionStatus,
-    mandatory: Boolean,
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        properties = androidx.compose.ui.window.DialogProperties(
-            dismissOnBackPress = !mandatory,
-            dismissOnClickOutside = !mandatory
-        ),
-        icon = { Icon(Icons.Rounded.CloudDownload, contentDescription = null) },
-        title = { Text(if (status.isUpToDate) "Bạn đang dùng bản mới nhất" else "Đã có bản cập nhật mới") },
-        text = {
-            Column {
-                Text(
-                    if (status.isUpToDate) {
-                        "Phiên bản ${status.localVersion} là phiên bản mới nhất hiện có trên GitHub."
-                    } else {
-                        "Phiên bản ${status.latestVersion} đã sẵn sàng trên GitHub." +
-                            (if (mandatory) " Vui lòng cập nhật để tiếp tục sử dụng KapiNotes." else "")
-                    },
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                status.latestReleaseNotes?.let { notes ->
-                    Spacer(Modifier.height(12.dp))
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 180.dp)
-                            .verticalScroll(androidx.compose.foundation.rememberScrollState())
-                    ) {
-                        Text(notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            if (!status.isUpToDate && status.latestReleaseUrl != null) {
-                Button(onClick = {
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(status.latestReleaseUrl))
-                    context.startActivity(intent)
-                }) { Text("Tải bản cập nhật") }
-            } else {
-                TextButton(onClick = onDismiss) { Text("Đóng") }
-            }
-        }
-    )
-}
 
 @Composable
 private fun DashboardSidebar(
@@ -489,8 +425,6 @@ private fun DashboardHeader(
     onQueryChange: (String) -> Unit,
     session: com.kapi.notes.domain.model.UserSession?,
     syncStatus: com.kapi.notes.domain.model.SyncStatus,
-    versionStatus: com.kapi.notes.update.VersionStatus?,
-    onVersionBadgeClick: () -> Unit,
     onSync: () -> Unit,
     onAvatarClick: () -> Unit,
     onMenuClick: () -> Unit
@@ -533,10 +467,6 @@ private fun DashboardHeader(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                versionStatus?.let { status ->
-                    VersionBadge(status = status, onClick = onVersionBadgeClick)
-                }
-
                 if (session != null) {
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),

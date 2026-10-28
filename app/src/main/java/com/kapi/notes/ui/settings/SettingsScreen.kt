@@ -57,27 +57,30 @@ fun SettingsScreen(
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
 
     val signInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
+        // The Drive-scope consent step is often still finishing up (silently, at the Play
+        // services level) at the exact moment this callback fires: getSignedInAccountFromIntent()
+        // can report a failure, or the activity itself can return a non-OK result, even though
+        // the account+scopes end up fully granted a moment later - the user's SECOND tap then
+        // "just works" because it's reading a cache that's already settled. Checking
+        // lastSignedInAccount() as a fallback on ANY failure (not just a non-OK result code)
+        // catches that and completes login in one tap instead of needing a retry.
+        val signInResult = if (result.resultCode == Activity.RESULT_OK) {
             runCatching { GoogleSignIn.getSignedInAccountFromIntent(result.data).result }
-                .fold(
-                    onSuccess = { account -> viewModel.onGoogleSignInResult(account) },
-                    onFailure = { e ->
-                        val code = (e as? ApiException)?.statusCode
-                        val message = if (code == CommonStatusCodes.DEVELOPER_ERROR) {
-                            "Lỗi cấu hình OAuth (DEVELOPER_ERROR) - xem README.md mục 3"
-                        } else {
-                            "Đăng nhập thất bại" + (code?.let { " (mã $it)" } ?: "")
-                        }
-                        viewModel.onGoogleSignInResult(null, message)
-                    }
-                )
         } else {
-            // The Drive-scope consent step sometimes round-trips through its own activity and
-            // reports back a non-OK result even though the OS already finished granting access -
-            // fall back to the cached account instead of leaving the user stuck needing to tap
-            // "Đăng nhập" a second time.
-            val account = viewModel.driveAuthManager.lastSignedInAccount()
-            if (account != null) viewModel.onGoogleSignInResult(account)
+            Result.failure(IllegalStateException("non-OK activity result"))
+        }
+        val account = signInResult.getOrNull() ?: viewModel.driveAuthManager.lastSignedInAccount()
+        if (account != null) {
+            viewModel.onGoogleSignInResult(account)
+        } else {
+            val code = (signInResult.exceptionOrNull() as? ApiException)?.statusCode
+            val message = when {
+                code == CommonStatusCodes.DEVELOPER_ERROR ->
+                    "Lỗi cấu hình OAuth (DEVELOPER_ERROR) - xem README.md mục 3"
+                code != null -> "Đăng nhập thất bại (mã $code)"
+                else -> null
+            }
+            viewModel.onGoogleSignInResult(null, message)
         }
     }
 
