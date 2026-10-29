@@ -5,4 +5,5 @@
     <files-path name="backups" path="backups/" />
     <files-path name="pages" path="pages/" />
     <files-path name="audio" path="audio/" />
+    <files-path name="logs" path="logs/" />
 </paths>

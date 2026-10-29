@@ -17,5 +17,10 @@ data class Note(
     val isTrashed: Boolean = false,
     val createdAt: Long,
     val updatedAt: Long,
-    val pageCount: Int = 1
+    val pageCount: Int = 1,
+    /** Short free-text label ("Công việc", "Ôn thi"...) with its own color, shown as a colored
+     * chip on the dashboard card - lets notes be grouped/filtered by category, distinct from a
+     * single page's own tag-color dot inside the editor. */
+    val labelText: String? = null,
+    val labelColorArgb: Long? = null
 )

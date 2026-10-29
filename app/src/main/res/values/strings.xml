@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">KapiNotes</string>
+    <string name="app_name">Kapi Notes</string>
+    <string name="widget_quick_note">Tạo ghi chú</string>
 </resources>

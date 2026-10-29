@@ -1,10 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Kapi Notes brand mark: darker-teal folded corner + white "K" stroke + highlighter accent
+     dots, on top of the solid teal ic_launcher_background. Matches the brand guidelines'
+     "App Icon" treatment. Content is translated to sit inside Android's adaptive-icon safe
+     zone (centered, within ~66dp of the 108dp canvas). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M34,24 L34,84 L44,84 L44,58 L70,84 L84,84 L54,54 L82,24 L68,24 L44,50 L44,24 Z" />
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <group android:translateX="-12.5" android:translateY="9.5">
+        <path
+            android:fillColor="#0D9488"
+            android:pathData="M100,45 L70,15 L70,33 C70,39.6274 75.3726,45 82,45 L100,45 Z" />
+        <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="12"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M45,40 V80 M45,60 L65,40 M45,60 L70,80" />
+        <path
+            android:fillColor="#FBBF24"
+            android:pathData="M81,70 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
+        <path
+            android:fillColor="#FB7185"
+            android:pathData="M81,82 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
+    </group>
 </vector>

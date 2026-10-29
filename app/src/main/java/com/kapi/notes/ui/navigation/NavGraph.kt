@@ -13,7 +13,11 @@ import com.kapi.notes.ui.settings.SettingsScreen
 import com.kapi.notes.ui.splash.SplashScreen
 
 @Composable
-fun KapiNotesNavGraph(navController: NavHostController = rememberNavController()) {
+fun KapiNotesNavGraph(
+    navController: NavHostController = rememberNavController(),
+    quickNoteRequested: Boolean = false,
+    onQuickNoteConsumed: () -> Unit = {}
+) {
     NavHost(navController = navController, startDestination = Routes.SPLASH) {
         composable(Routes.SPLASH) {
             SplashScreen(
@@ -29,7 +33,9 @@ fun KapiNotesNavGraph(navController: NavHostController = rememberNavController()
                 onOpenNote = { noteId -> navController.navigate(Routes.editor(noteId)) },
                 onOpenDrivePicker = { navController.navigate(Routes.DRIVE_PICKER) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                onOpenAbout = { navController.navigate(Routes.ABOUT) }
+                onOpenAbout = { navController.navigate(Routes.ABOUT) },
+                quickNoteRequested = quickNoteRequested,
+                onQuickNoteConsumed = onQuickNoteConsumed
             )
         }
         composable(Routes.DRIVE_PICKER) {

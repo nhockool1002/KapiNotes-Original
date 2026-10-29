@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kapi.notes.audio.AudioRecorderManager
+import com.kapi.notes.data.datastore.AppSettingsStore
 import com.kapi.notes.data.repository.NotesRepository
 import com.kapi.notes.domain.model.AudioClip
 import com.kapi.notes.domain.model.EmojiSticker
@@ -80,7 +81,8 @@ data class EditorUiState(
     val shareLink: String? = null,
     val error: String? = null,
     val versionStatus: VersionStatus? = null,
-    val isManualUpdateDialogOpen: Boolean = false
+    val isManualUpdateDialogOpen: Boolean = false,
+    val palmRejectionEnabled: Boolean = true
 ) {
     val currentPage: NotePage? get() = pages.getOrNull(currentPageIndex)
     val editingTextBox: TextBoxItem? get() = editingTextBoxId?.let { id -> textBoxes.firstOrNull { it.id == id } }
@@ -105,6 +107,7 @@ class EditorViewModel @Inject constructor(
     private val driveAuthManager: com.kapi.notes.drive.DriveAuthManager,
     private val driveRepository: com.kapi.notes.drive.DriveRepository,
     private val updateChecker: UpdateChecker,
+    private val appSettingsStore: AppSettingsStore,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -133,6 +136,13 @@ class EditorViewModel @Inject constructor(
         // the Editor just shows the badge for awareness, opened on tap).
         viewModelScope.launch {
             updateChecker.checkStatus().onSuccess { status -> _state.update { it.copy(versionStatus = status) } }
+        }
+        // Continuously collected (not just read once) so flipping the toggle in Settings takes
+        // effect immediately in an Editor that's already open, not just on the next launch.
+        viewModelScope.launch {
+            appSettingsStore.palmRejectionEnabled.collect { enabled ->
+                _state.update { it.copy(palmRejectionEnabled = enabled) }
+            }
         }
     }
 

@@ -36,6 +36,10 @@ enum class DashboardSection(val labelVi: String) {
     TRASH("Thùng rác")
 }
 
+/** A note's label as it appears in the dashboard's filter row - just the distinct (text, color)
+ * pairs currently in use in this section, so the row only ever shows labels that actually exist. */
+data class NoteLabelFilter(val text: String, val colorArgb: Long)
+
 data class DashboardUiState(
     val section: DashboardSection = DashboardSection.MY_NOTES,
     val query: String = "",
@@ -45,7 +49,9 @@ data class DashboardUiState(
     val isCreatingNote: Boolean = false,
     val isImportingLocalFile: Boolean = false,
     val importError: String? = null,
-    val versionStatus: VersionStatus? = null
+    val versionStatus: VersionStatus? = null,
+    val availableLabels: List<NoteLabelFilter> = emptyList(),
+    val selectedLabel: String? = null
 )
 
 @OptIn(FlowPreview::class)
@@ -64,6 +70,7 @@ class DashboardViewModel @Inject constructor(
     private val isImportingLocalFile = MutableStateFlow(false)
     private val importError = MutableStateFlow<String?>(null)
     private val versionStatus = MutableStateFlow<VersionStatus?>(null)
+    private val selectedLabel = MutableStateFlow<String?>(null)
 
     init {
         // Not on Play Store yet, so there is no store-driven update prompt - check the GitHub
@@ -91,26 +98,39 @@ class DashboardViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val uiState: StateFlow<DashboardUiState> = combine(
-        section, query, notesForSection, authRepository.session, isCreatingNote, isImportingLocalFile, importError, authRepository.syncStatus, contentSearchResults, versionStatus
+        section, query, notesForSection, authRepository.session, isCreatingNote, isImportingLocalFile, importError, authRepository.syncStatus, contentSearchResults, versionStatus, selectedLabel
     ) { values ->
         val q = values[1] as String
         val sectionNotes = (values[2] as List<*>).filterIsInstance<Note>()
         val titleFiltered = if (q.isBlank()) sectionNotes else sectionNotes.filter { it.title.contains(q, ignoreCase = true) }
         @Suppress("UNCHECKED_CAST")
         val contentMatches = values[8] as List<Note>?
+        val searchFiltered = if (!q.isBlank() && contentMatches != null) {
+            val sectionIds = sectionNotes.map { it.id }.toSet()
+            (titleFiltered + contentMatches.filter { it.id in sectionIds }).distinctBy { it.id }
+        } else titleFiltered
+
+        val label = values[10] as String?
+        val labelFiltered = if (label == null) searchFiltered else searchFiltered.filter { it.labelText == label }
+
+        // Only labels actually present in THIS section (not every label ever created), so the
+        // filter row never shows a chip that would immediately produce an empty grid.
+        val labels = sectionNotes.mapNotNull { note ->
+            note.labelText?.let { text -> NoteLabelFilter(text, note.labelColorArgb ?: 0xFF64748BL) }
+        }.distinctBy { it.text }
+
         DashboardUiState(
             section = values[0] as DashboardSection,
             query = q,
-            notes = if (!q.isBlank() && contentMatches != null) {
-                val sectionIds = sectionNotes.map { it.id }.toSet()
-                (titleFiltered + contentMatches.filter { it.id in sectionIds }).distinctBy { it.id }
-            } else titleFiltered,
+            notes = labelFiltered,
             session = values[3] as UserSession?,
             isCreatingNote = values[4] as Boolean,
             isImportingLocalFile = values[5] as Boolean,
             importError = values[6] as String?,
             syncStatus = values[7] as SyncStatus,
-            versionStatus = values[9] as VersionStatus?
+            versionStatus = values[9] as VersionStatus?,
+            availableLabels = labels,
+            selectedLabel = label
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 
@@ -226,5 +246,17 @@ class DashboardViewModel @Inject constructor(
     /** Duplicates the whole note (every page + its strokes/stickers/images/text boxes). */
     fun duplicateNote(note: Note) {
         viewModelScope.launch { notesRepository.duplicateNote(note.id) }
+    }
+
+    /** Sets/clears a note's colored label (passing a blank text clears it). */
+    fun setNoteLabel(note: Note, text: String, colorArgb: Long) {
+        viewModelScope.launch {
+            notesRepository.setNoteLabel(note.id, text.trim().ifBlank { null }, if (text.isBlank()) null else colorArgb)
+        }
+    }
+
+    /** Tapping an already-selected filter chip clears the filter again. */
+    fun toggleLabelFilter(label: String) {
+        selectedLabel.value = if (selectedLabel.value == label) null else label
     }
 }

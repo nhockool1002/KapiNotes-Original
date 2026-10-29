@@ -155,6 +155,11 @@ class NotesRepositoryImpl @Inject constructor(
         dao.setFavorite(noteId, favorite, System.currentTimeMillis())
     }
 
+    override suspend fun setNoteLabel(noteId: String, text: String?, colorArgb: Long?) {
+        val entity = dao.getNote(noteId) ?: return
+        dao.update(entity.copy(labelText = text, labelColorArgb = colorArgb, updatedAt = System.currentTimeMillis()))
+    }
+
     override suspend fun moveToTrash(noteId: String) {
         dao.moveToTrash(noteId, System.currentTimeMillis())
     }

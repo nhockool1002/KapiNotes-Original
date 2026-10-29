@@ -41,7 +41,9 @@ private data class NoteDto(
     val isFavorite: Boolean,
     val isTrashed: Boolean,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val labelText: String? = null,
+    val labelColorArgb: Long? = null
 )
 
 @Serializable
@@ -188,7 +190,9 @@ class BackupRepository @Inject constructor(
                         isFavorite = it.isFavorite,
                         isTrashed = it.isTrashed,
                         createdAt = it.createdAt,
-                        updatedAt = it.updatedAt
+                        updatedAt = it.updatedAt,
+                        labelText = it.labelText,
+                        labelColorArgb = it.labelColorArgb
                     )
                 },
                 pages = pages.map {
@@ -379,7 +383,9 @@ class BackupRepository @Inject constructor(
                     isFavorite = dto.isFavorite,
                     isTrashed = dto.isTrashed,
                     createdAt = dto.createdAt,
-                    updatedAt = dto.updatedAt
+                    updatedAt = dto.updatedAt,
+                    labelText = dto.labelText ?: local?.labelText,
+                    labelColorArgb = dto.labelColorArgb ?: local?.labelColorArgb
                 )
             )
         }

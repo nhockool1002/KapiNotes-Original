@@ -75,9 +75,17 @@ fun AboutScreen(onBack: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(8.dp))
-            com.kapi.notes.ui.common.KapiLogo(modifier = Modifier.size(88.dp), shape = RoundedCornerShape(24.dp))
+            Box(
+                Modifier
+                    .size(88.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(12.dp)
+            ) {
+                com.kapi.notes.ui.common.KapiBrandMark(modifier = Modifier.fillMaxSize())
+            }
             Spacer(Modifier.height(16.dp))
-            Text("KapiNotes", style = MaterialTheme.typography.headlineSmall)
+            Text("Kapi Notes", style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(4.dp))
             Text(
                 "Phiên bản 1.0.0",

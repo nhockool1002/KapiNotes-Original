@@ -26,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -90,14 +91,34 @@ fun SettingsScreen(
 
     LaunchedEffect(state.lastExportedFile) {
         state.lastExportedFile?.let { file ->
-            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                type = "application/zip"
-                putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            context.startActivity(android.content.Intent.createChooser(intent, "Lưu file backup"))
+            // A misconfigured FileProvider path (or any other surprise here) must never crash the
+            // whole app over something as recoverable as "couldn't open the share sheet" - the
+            // backup file itself was already written successfully at this point.
+            runCatching {
+                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "application/zip"
+                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(android.content.Intent.createChooser(intent, "Lưu file backup"))
+            }.onFailure { snackbarMessage = "Không mở được hộp thoại chia sẻ: ${it.message}" }
             viewModel.consumeExportedFile()
+        }
+    }
+
+    LaunchedEffect(state.lastSharedLogFile) {
+        state.lastSharedLogFile?.let { file ->
+            runCatching {
+                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(android.content.Intent.createChooser(intent, "Chia sẻ log đồng bộ"))
+            }.onFailure { snackbarMessage = "Không mở được hộp thoại chia sẻ: ${it.message}" }
+            viewModel.consumeSharedLogFile()
         }
     }
 
@@ -123,8 +144,29 @@ fun SettingsScreen(
                 state = state,
                 onSignIn = { signInLauncher.launch(viewModel.driveAuthManager.signInIntent()) },
                 onLogout = viewModel::logout,
-                onSync = viewModel::triggerSync
+                onSync = viewModel::triggerSync,
+                onShareLog = viewModel::shareSyncLog
             )
+
+            Spacer(Modifier.height(24.dp))
+            Text("Viết & vẽ", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Card(Modifier.fillMaxWidth()) {
+                Row(
+                    Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Bàn tay nghỉ trên màn hình (palm rejection)", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Khi dùng bút cảm ứng, các điểm chạm bằng ngón tay/lòng bàn tay nghỉ trên màn hình sẽ bị bỏ qua để tránh vẽ nhầm.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(checked = state.palmRejectionEnabled, onCheckedChange = viewModel::setPalmRejectionEnabled)
+                }
+            }
 
             Spacer(Modifier.height(24.dp))
             Text("Dữ liệu trên máy", style = MaterialTheme.typography.titleMedium)
@@ -174,7 +216,8 @@ private fun AccountSection(
     state: SettingsUiState,
     onSignIn: () -> Unit,
     onLogout: () -> Unit,
-    onSync: () -> Unit
+    onSync: () -> Unit,
+    onShareLog: () -> Unit
 ) {
     Text("Tài khoản & đồng bộ", style = MaterialTheme.typography.titleMedium)
     Spacer(Modifier.height(4.dp))
@@ -223,6 +266,11 @@ private fun AccountSection(
                     } else {
                         OutlinedButton(onClick = onSync) { Text("Đồng bộ ngay") }
                     }
+                }
+                // Always reachable (not just after an error) so the user can grab the log right
+                // after a timeout too, or just to double-check what the last sync actually did.
+                TextButton(onClick = onShareLog, modifier = Modifier.fillMaxWidth()) {
+                    Text("Chia sẻ log đồng bộ (để điều tra lỗi/timeout)")
                 }
             }
         }

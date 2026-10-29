@@ -33,12 +33,31 @@
             android:exported="true"
             android:screenOrientation="unspecified"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
-            android:theme="@style/Theme.KapiNotes">
+            android:theme="@style/Theme.KapiNotes"
+            android:resizeableActivity="true"
+            android:launchMode="standard">
+            <!-- No custom launchMode beyond the platform default ("standard") on purpose: that is
+                 what lets a tablet's "Open in new window" put TWO separate instances of KapiNotes
+                 side by side (e.g. two different notes at once) instead of collapsing them back
+                 into the same task. resizeableActivity is explicit here (it already defaults to
+                 true for targetSdk 35) so split-screen/multi-window is a documented, supported
+                 configuration rather than an accident of the default. -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".widget.QuickNoteWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_note_info" />
+        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"

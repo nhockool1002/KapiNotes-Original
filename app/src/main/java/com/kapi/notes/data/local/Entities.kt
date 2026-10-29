@@ -29,7 +29,9 @@ data class NoteEntity(
     val isFavorite: Boolean,
     val isTrashed: Boolean,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val labelText: String? = null,
+    val labelColorArgb: Long? = null
 )
 
 @Entity(

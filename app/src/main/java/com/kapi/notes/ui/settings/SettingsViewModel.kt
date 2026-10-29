@@ -4,11 +4,13 @@ import android.content.Context
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kapi.notes.data.datastore.AppSettingsStore
 import com.kapi.notes.data.repository.AuthRepository
 import com.kapi.notes.data.repository.BackupRepository
 import com.kapi.notes.domain.model.SyncStatus
 import com.kapi.notes.drive.DriveAuthManager
 import com.kapi.notes.domain.model.UserSession
+import com.kapi.notes.sync.SyncLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +31,9 @@ data class SettingsUiState(
     val isWorkingOnBackup: Boolean = false,
     val backupMessage: String? = null,
     val lastExportedFile: File? = null,
-    val showDeleteConfirm: Boolean = false
+    val showDeleteConfirm: Boolean = false,
+    val lastSharedLogFile: File? = null,
+    val palmRejectionEnabled: Boolean = true
 )
 
 @HiltViewModel
@@ -37,6 +41,8 @@ class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository,
     private val backupRepository: BackupRepository,
+    private val syncLogger: SyncLogger,
+    private val appSettingsStore: AppSettingsStore,
     val driveAuthManager: DriveAuthManager
 ) : ViewModel() {
 
@@ -46,18 +52,19 @@ class SettingsViewModel @Inject constructor(
     private val backupMessage = MutableStateFlow<String?>(null)
     private val lastExportedFile = MutableStateFlow<File?>(null)
     private val showDeleteConfirm = MutableStateFlow(false)
+    private val lastSharedLogFile = MutableStateFlow<File?>(null)
 
     private data class AccountPart(val session: UserSession?, val syncStatus: SyncStatus, val isLoggingIn: Boolean, val loginError: String?)
-    private data class BackupPart(val isWorkingOnBackup: Boolean, val backupMessage: String?, val lastExportedFile: File?, val showDeleteConfirm: Boolean)
+    private data class BackupPart(val isWorkingOnBackup: Boolean, val backupMessage: String?, val lastExportedFile: File?, val showDeleteConfirm: Boolean, val lastSharedLogFile: File?)
 
     private val accountPart = combine(authRepository.session, authRepository.syncStatus, isLoggingIn, loginError) { session, syncStatus, loggingIn, error ->
         AccountPart(session, syncStatus, loggingIn, error)
     }
-    private val backupPart = combine(isWorkingOnBackup, backupMessage, lastExportedFile, showDeleteConfirm) { working, message, file, confirm ->
-        BackupPart(working, message, file, confirm)
+    private val backupPart = combine(isWorkingOnBackup, backupMessage, lastExportedFile, showDeleteConfirm, lastSharedLogFile) { working, message, file, confirm, logFile ->
+        BackupPart(working, message, file, confirm, logFile)
     }
 
-    val uiState: StateFlow<SettingsUiState> = combine(accountPart, backupPart) { account, backup ->
+    val uiState: StateFlow<SettingsUiState> = combine(accountPart, backupPart, appSettingsStore.palmRejectionEnabled) { account, backup, palmRejection ->
         SettingsUiState(
             session = account.session,
             syncStatus = account.syncStatus,
@@ -66,7 +73,9 @@ class SettingsViewModel @Inject constructor(
             isWorkingOnBackup = backup.isWorkingOnBackup,
             backupMessage = backup.backupMessage,
             lastExportedFile = backup.lastExportedFile,
-            showDeleteConfirm = backup.showDeleteConfirm
+            showDeleteConfirm = backup.showDeleteConfirm,
+            lastSharedLogFile = backup.lastSharedLogFile,
+            palmRejectionEnabled = palmRejection
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
@@ -97,7 +106,12 @@ class SettingsViewModel @Inject constructor(
     fun exportBackup() {
         viewModelScope.launch {
             isWorkingOnBackup.value = true
-            val dest = File(context.cacheDir, "kapinotes_backup_${UUID.randomUUID().toString().take(6)}.kapibackup")
+            // Must land under cacheDir/exports/ (not the cache root) - that's the only cache
+            // subpath file_paths.xml exposes to FileProvider; a file saved directly in cacheDir's
+            // root makes the share-sheet LaunchedEffect below crash with "Failed to find
+            // configured root" the moment it calls FileProvider.getUriForFile() on it.
+            val exportsDir = File(context.cacheDir, "exports").apply { mkdirs() }
+            val dest = File(exportsDir, "kapinotes_backup_${UUID.randomUUID().toString().take(6)}.kapibackup")
             backupRepository.exportToFile(dest)
                 .onSuccess { file ->
                     lastExportedFile.value = file
@@ -142,5 +156,20 @@ class SettingsViewModel @Inject constructor(
 
     fun dismissMessage() {
         backupMessage.value = null
+    }
+
+    /** "Chia sẻ log đồng bộ" - lets the user hand the step-by-step sync log straight to a bug
+     * report or support chat when a sync failed or timed out, instead of just a generic error
+     * message with no way to tell which step actually got stuck. */
+    fun shareSyncLog() {
+        lastSharedLogFile.value = syncLogger.file()
+    }
+
+    fun consumeSharedLogFile() {
+        lastSharedLogFile.value = null
+    }
+
+    fun setPalmRejectionEnabled(enabled: Boolean) {
+        viewModelScope.launch { appSettingsStore.setPalmRejectionEnabled(enabled) }
     }
 }

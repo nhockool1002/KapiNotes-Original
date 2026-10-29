@@ -2,31 +2,29 @@ package com.kapi.notes.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Lifted straight from the Tailwind palette the wireframe (kilonotes_wireframe.html) uses.
-val Blue50 = Color(0xFFEFF6FF)
-val Blue200 = Color(0xFFBFDBFE)
-val Blue500 = Color(0xFF3B82F6)
-val Blue600 = Color(0xFF2563EB)
-val Blue700 = Color(0xFF1D4ED8)
+// Kapi Notes brand palette - lifted from the official brand guidelines
+// (kapi_notes_brandbook.html): "Kapi Teal" primary, paper neutrals for backgrounds/text,
+// and two highlighter-style accents (yellow for highlights, coral for alerts/destructive).
+val Kapi50 = Color(0xFFF0FDFA)
+val Kapi100 = Color(0xFFCCFBF1)
+val Kapi200 = Color(0xFF99F6E4)
+val Kapi300 = Color(0xFF5EEAD4)
+val Kapi400 = Color(0xFF2DD4BF)
+val Kapi500 = Color(0xFF14B8A6) // Kapi Teal (Primary)
+val Kapi600 = Color(0xFF0D9488)
+val Kapi700 = Color(0xFF0F766E)
+val Kapi800 = Color(0xFF115E59)
+val Kapi900 = Color(0xFF134E4A)
 
-val Slate50 = Color(0xFFF8FAFC)
-val Slate100 = Color(0xFFF1F5F9)
-val Slate200 = Color(0xFFE2E8F0)
-val Slate300 = Color(0xFFCBD5E1)
-val Slate400 = Color(0xFF94A3B8)
-val Slate500 = Color(0xFF64748B)
-val Slate600 = Color(0xFF475569)
-val Slate800 = Color(0xFF1E293B)
+val Paper50 = Color(0xFFFCFCFC)
+val Paper100 = Color(0xFFF7F7F8)
+val Paper200 = Color(0xFFE5E7EB)
 
-val Red400 = Color(0xFFF87171)
-val Red500 = Color(0xFFEF4444)
-val Green500 = Color(0xFF22C55E)
-val Yellow400 = Color(0xFFFACC15)
+val InkMain = Color(0xFF0F172A)
+val InkMuted = Color(0xFF475569)
 
-// Accent used for the splash screen gradient, the About screen and selected-state highlights -
-// a cooler violet that pairs with the brand blue without competing with it.
-val Indigo600 = Color(0xFF4F46E5)
-val Violet600 = Color(0xFF7C3AED)
+val AccentYellow = Color(0xFFFBBF24) // Highlighter Yellow
+val AccentCoral = Color(0xFFFB7185)  // Error / Alert Coral
 
 val PenColorSwatches: List<Long> = listOf(
     0xFF000000L, // black

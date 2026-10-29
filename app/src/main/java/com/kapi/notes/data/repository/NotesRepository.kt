@@ -40,6 +40,8 @@ interface NotesRepository {
 
     suspend fun renameNote(noteId: String, newTitle: String)
     suspend fun setFavorite(noteId: String, favorite: Boolean)
+    /** Sets or clears (both null) the note's colored label used to group/filter it on the dashboard. */
+    suspend fun setNoteLabel(noteId: String, text: String?, colorArgb: Long?)
     suspend fun moveToTrash(noteId: String)
     suspend fun restoreFromTrash(noteId: String)
 

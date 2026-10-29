@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sized for a tablet home screen grid (bigger min size than a typical phone 1x1 widget) since
+     this is meant for the Xiaomi Pad Pro's large screen, not a phone - see MainActivity's note on
+     "tablet-sized" placement for the same reasoning applied to the multi-window support. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="140dp"
+    android:minHeight="140dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_quick_note"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:previewImage="@mipmap/ic_launcher" />

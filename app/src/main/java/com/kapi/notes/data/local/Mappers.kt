@@ -20,7 +20,9 @@ fun NoteEntity.toDomain(pageCount: Int = 1): Note = Note(
     isTrashed = isTrashed,
     createdAt = createdAt,
     updatedAt = updatedAt,
-    pageCount = pageCount
+    pageCount = pageCount,
+    labelText = labelText,
+    labelColorArgb = labelColorArgb
 )
 
 fun Note.toEntity(): NoteEntity = NoteEntity(
@@ -33,7 +35,9 @@ fun Note.toEntity(): NoteEntity = NoteEntity(
     isFavorite = isFavorite,
     isTrashed = isTrashed,
     createdAt = createdAt,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    labelText = labelText,
+    labelColorArgb = labelColorArgb
 )
 
 fun PageEntity.toDomain(): NotePage = NotePage(

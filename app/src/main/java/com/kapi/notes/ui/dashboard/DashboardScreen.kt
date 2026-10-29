@@ -46,6 +46,7 @@ import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.InsertDriveFile
+import androidx.compose.material.icons.rounded.Label
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PictureAsPdf
@@ -109,12 +110,25 @@ fun DashboardScreen(
     onOpenDrivePicker: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
+    quickNoteRequested: Boolean = false,
+    onQuickNoteConsumed: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
     var isManualUpdateDialogOpen by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    // Launched from the home-screen widget: skip the Dashboard and its "Tạo ghi chú" dialog
+    // entirely and land straight in a brand-new blank note. onQuickNoteConsumed clears the
+    // one-shot flag immediately so recomposition (or coming back to Dashboard later) can never
+    // fire this a second time.
+    LaunchedEffect(quickNoteRequested) {
+        if (quickNoteRequested) {
+            onQuickNoteConsumed()
+            viewModel.createBlankNote("", com.kapi.notes.domain.model.PaperType.LINED) { id -> onOpenNote(id) }
+        }
+    }
 
     // Fires every time this screen becomes visible - including navigating back from the Editor -
     // not just once per process, so switching devices (or just finishing an edit) pulls/pushes
@@ -216,11 +230,27 @@ fun DashboardScreen(
                     }
                 }
 
+                // Only shown once at least one note in this section actually has a label - tapping
+                // a chip filters the grid to just that label, tapping it again clears the filter.
+                if (state.availableLabels.isNotEmpty()) {
+                    Spacer(Modifier.height(14.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        state.availableLabels.forEach { label ->
+                            LabelFilterChip(
+                                label = label,
+                                selected = state.selectedLabel == label.text,
+                                onClick = { viewModel.toggleLabelFilter(label.text) }
+                            )
+                        }
+                    }
+                }
+
                 Spacer(Modifier.height(20.dp))
 
                 if (state.notes.isEmpty()) {
                     EmptyState(section = state.section)
                 } else {
+                    var labelDialogNote by remember { mutableStateOf<Note?>(null) }
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 110.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -235,9 +265,20 @@ fun DashboardScreen(
                                 onTrash = { viewModel.moveToTrash(note) },
                                 onRestore = { viewModel.restoreFromTrash(note) },
                                 onDeleteForever = { viewModel.deletePermanently(note) },
-                                onDuplicate = { viewModel.duplicateNote(note) }
+                                onDuplicate = { viewModel.duplicateNote(note) },
+                                onEditLabel = { labelDialogNote = note }
                             )
                         }
+                    }
+                    labelDialogNote?.let { note ->
+                        LabelDialog(
+                            note = note,
+                            onDismiss = { labelDialogNote = null },
+                            onSave = { text, color ->
+                                viewModel.setNoteLabel(note, text, color)
+                                labelDialogNote = null
+                            }
+                        )
                     }
                 }
             }
@@ -346,7 +387,7 @@ private fun DashboardSidebar(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     com.kapi.notes.ui.common.KapiLogo(modifier = Modifier.size(32.dp), shape = RoundedCornerShape(8.dp))
-                    Text("KapiNotes", style = MaterialTheme.typography.titleMedium)
+                    Text("Kapi Notes", style = MaterialTheme.typography.titleMedium)
                 }
                 if (onClose != null) {
                     IconButton(onClick = onClose) {
@@ -521,7 +562,8 @@ private fun NoteCard(
     onTrash: () -> Unit,
     onRestore: () -> Unit,
     onDeleteForever: () -> Unit,
-    onDuplicate: () -> Unit
+    onDuplicate: () -> Unit,
+    onEditLabel: () -> Unit = {}
 ) {
     var menuOpen by remember { mutableStateOf(false) }
 
@@ -579,11 +621,36 @@ private fun NoteCard(
                                 leadingIcon = { Icon(Icons.Rounded.ContentCopy, contentDescription = null) }
                             )
                             DropdownMenuItem(
+                                text = { Text(if (note.labelText != null) "Sửa nhãn" else "Gắn nhãn") },
+                                onClick = { menuOpen = false; onEditLabel() },
+                                leadingIcon = { Icon(Icons.Rounded.Label, contentDescription = null) }
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Chuyển vào thùng rác") },
                                 onClick = { menuOpen = false; onTrash() },
                                 leadingIcon = { Icon(Icons.Rounded.Delete, contentDescription = null) }
                             )
                         }
+                    }
+                }
+
+                note.labelText?.let { labelText ->
+                    Row(
+                        Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(6.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(Color(note.labelColorArgb ?: 0xFF64748BL))
+                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            labelText,
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
@@ -727,4 +794,89 @@ private fun PaperChoiceSwatch(type: PaperType, selected: Boolean, onClick: () ->
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
     }
+}
+
+@Composable
+private fun LabelFilterChip(label: NoteLabelFilter, selected: Boolean, onClick: () -> Unit) {
+    val bg = Color(label.colorArgb)
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(50))
+            .let {
+                if (selected) it.border(BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface), RoundedCornerShape(50)) else it
+            }
+            .background(bg)
+            .combinedClickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        if (selected) Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+        Text(label.text, color = Color.White, style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+/** Curated palette for note labels - deliberately separate from [com.kapi.notes.ui.theme.PenColorSwatches]
+ * (those are tuned to read well as thin ink on white paper; a label chip is a solid filled
+ * background with white text, so it needs saturated-but-not-neon colors that stay legible). */
+private val LabelColorSwatches: List<Long> = listOf(
+    0xFFEF4444L, 0xFFF97316L, 0xFFEAB308L, 0xFF22C55EL,
+    0xFF06B6D4L, 0xFF3B82F6L, 0xFF8B5CF6L, 0xFFEC4899L, 0xFF64748BL
+)
+
+@Composable
+private fun LabelDialog(
+    note: Note,
+    onDismiss: () -> Unit,
+    onSave: (String, Long) -> Unit
+) {
+    var text by remember { mutableStateOf(note.labelText.orEmpty()) }
+    var color by remember { mutableStateOf(note.labelColorArgb ?: LabelColorSwatches.first()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.large,
+        title = { Text("Nhãn ghi chú") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = { Text("Tên nhãn (vd: Công việc, Ôn thi)") },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(16.dp))
+                Text("Màu nhãn", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(8.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LabelColorSwatches.forEach { swatch ->
+                        Box(
+                            Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color(swatch))
+                                .border(
+                                    BorderStroke(if (color == swatch) 3.dp else 0.dp, MaterialTheme.colorScheme.onSurface),
+                                    CircleShape
+                                )
+                                .combinedClickable(onClick = { color = swatch })
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onSave(text, color) }, shape = MaterialTheme.shapes.medium) { Text("Lưu") }
+        },
+        dismissButton = {
+            Row {
+                if (note.labelText != null) {
+                    TextButton(onClick = { onSave("", color) }) { Text("Xóa nhãn", color = MaterialTheme.colorScheme.error) }
+                }
+                TextButton(onClick = onDismiss) { Text("Hủy") }
+            }
+        }
+    )
 }

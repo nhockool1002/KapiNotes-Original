@@ -148,8 +148,16 @@ private const val MIN_ZOOM = 0.5f
 private const val MAX_ZOOM = 4f
 
 /** Only tracks pan/zoom once a SECOND finger goes down, leaving every single-finger gesture
- * (drawing, moving objects...) untouched for the DrawingCanvas beneath to handle. */
-private fun Modifier.twoFingerPanZoom(onTransform: (Float, Offset) -> Unit): Modifier = this.pointerInput(Unit) {
+ * (drawing, moving objects...) untouched for the DrawingCanvas beneath to handle. Keyed on
+ * [palmRejectionEnabled] (not Unit) so toggling the setting while the Editor is already open
+ * picks up the new value right away - safe to relaunch here (unlike zoom/pan's own state, this
+ * gesture loop holds no state that would be orphaned by a restart, just local vars that simply
+ * reset). With palm rejection on, a palm/finger touching down beside an already-pressed stylus
+ * doesn't count as that second finger - see [effectivePressed] in DrawingCanvas.kt. */
+private fun Modifier.twoFingerPanZoom(
+    palmRejectionEnabled: Boolean,
+    onTransform: (Float, Offset) -> Unit
+): Modifier = this.pointerInput(palmRejectionEnabled) {
     awaitEachGesture {
         awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
         var zooming = false
@@ -157,7 +165,7 @@ private fun Modifier.twoFingerPanZoom(onTransform: (Float, Offset) -> Unit): Mod
         var previousCentroid = Offset.Zero
         do {
             val event = awaitPointerEvent(PointerEventPass.Initial)
-            val pressed = event.changes.filter { it.pressed }
+            val pressed = effectivePressed(event.changes, palmRejectionEnabled)
             if (pressed.size >= 2) {
                 val p0 = pressed[0].position
                 val p1 = pressed[1].position
@@ -417,6 +425,7 @@ fun EditorScreen(
                 // overlapped the toolbar above it (reported on both phone and tablet sizes).
                 .clipToBounds()
                 .twoFingerPanZoom(
+                    palmRejectionEnabled = state.palmRejectionEnabled,
                     onTransform = { zoomChange, panChange ->
                         zoom = (zoom * zoomChange).coerceIn(MIN_ZOOM, MAX_ZOOM)
                         pan += panChange
@@ -457,6 +466,7 @@ fun EditorScreen(
                         lassoRectMode = state.lassoRectMode,
                         rulerMode = state.rulerMode,
                         compassMode = state.compassMode,
+                        palmRejectionEnabled = state.palmRejectionEnabled,
                         backgroundBitmap = backgroundBitmap,
                         onStrokeFinished = viewModel::commitStroke,
                         onEraseAt = { point -> viewModel.eraseAt(point, radiusDp = 10f) },
@@ -673,7 +683,7 @@ fun EditorScreen(
                 Column {
                     Text("Bất kỳ ai có link này đều xem được ghi chú (không chỉnh sửa được):", style = MaterialTheme.typography.bodySmall)
                     Spacer(Modifier.height(8.dp))
-                    Text(link, style = MaterialTheme.typography.bodySmall, color = Color(0xFF2563EB))
+                    Text(link, style = MaterialTheme.typography.bodySmall, color = Color(0xFF0D9488))
                 }
             },
             confirmButton = {
@@ -900,7 +910,7 @@ private fun EditorTopBar(
                                     .clickable { onPageTagColorSelected(null) },
                                 contentAlignment = Alignment.Center
                             ) { if (currentPageTagColor == null) Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(12.dp)) }
-                            listOf(0xFFEF4444L, 0xFFF59E0BL, 0xFF22C55EL, 0xFF3B82F6L, 0xFFA855F7L).forEach { c ->
+                            listOf(0xFFEF4444L, 0xFFF59E0BL, 0xFF22C55EL, 0xFF14B8A6L, 0xFFA855F7L).forEach { c ->
                                 Box(
                                     Modifier
                                         .size(22.dp)
@@ -1052,7 +1062,7 @@ private fun DockToolButton(icon: ImageVector, label: String, selected: Boolean, 
     Column(
         Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (selected) Color(0xFFEFF6FF) else Color.Transparent)
+            .background(if (selected) Color(0xFFF0FDFA) else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp, horizontal = 10.dp)
             .widthIn(min = 52.dp),
@@ -1061,14 +1071,14 @@ private fun DockToolButton(icon: ImageVector, label: String, selected: Boolean, 
         Icon(
             icon,
             contentDescription = label,
-            tint = if (selected) Color(0xFF2563EB) else Color(0xFF475569),
+            tint = if (selected) Color(0xFF0D9488) else Color(0xFF475569),
             modifier = Modifier.size(24.dp)
         )
         Spacer(Modifier.height(3.dp))
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
-            color = if (selected) Color(0xFF2563EB) else Color(0xFF475569),
+            color = if (selected) Color(0xFF0D9488) else Color(0xFF475569),
             maxLines = 1
         )
     }
@@ -1291,12 +1301,12 @@ private fun InlineToolIconButton(icon: ImageVector, selected: Boolean, contentDe
                 .padding(horizontal = 2.dp)
                 .size(34.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(if (selected) Color(0xFFEFF6FF) else Color.Transparent)
-                .then(if (selected) Modifier.border(1.dp, Color(0xFFBFDBFE), RoundedCornerShape(10.dp)) else Modifier),
+                .background(if (selected) Color(0xFFF0FDFA) else Color.Transparent)
+                .then(if (selected) Modifier.border(1.dp, Color(0xFF99F6E4), RoundedCornerShape(10.dp)) else Modifier),
             contentAlignment = Alignment.Center
         ) {
             IconButton(onClick = onClick) {
-                Icon(icon, contentDescription = null, tint = if (selected) Color(0xFF2563EB) else Color(0xFF475569), modifier = Modifier.size(18.dp))
+                Icon(icon, contentDescription = null, tint = if (selected) Color(0xFF0D9488) else Color(0xFF475569), modifier = Modifier.size(18.dp))
             }
         }
     }
@@ -1308,7 +1318,7 @@ private fun PaperSwatchButton(type: PaperType, selected: Boolean, onClick: () ->
         Modifier
             .size(40.dp)
             .clip(RoundedCornerShape(6.dp))
-            .border(if (selected) 2.dp else 1.dp, if (selected) Color(0xFF3B82F6) else Color(0xFFE2E8F0), RoundedCornerShape(6.dp))
+            .border(if (selected) 2.dp else 1.dp, if (selected) Color(0xFF14B8A6) else Color(0xFFE2E8F0), RoundedCornerShape(6.dp))
             .background(Color.White)
     ) {
         PaperBackground(paperType = type, modifier = Modifier.clip(RoundedCornerShape(6.dp)))
@@ -1391,7 +1401,7 @@ private fun SecondaryToolbar(
                         .size(22.dp)
                         .clip(CircleShape)
                         .background(Color(swatch))
-                        .border(if (colorArgb == swatch) 2.dp else 0.dp, Color(0xFF3B82F6), CircleShape)
+                        .border(if (colorArgb == swatch) 2.dp else 0.dp, Color(0xFF14B8A6), CircleShape)
                 ) {
                     IconButton(onClick = { onColorSelected(swatch) }, modifier = Modifier.fillMaxSize()) {}
                 }
@@ -1472,15 +1482,15 @@ private fun LassoModeChip(label: String, icon: ImageVector, selected: Boolean, o
     Row(
         Modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(if (selected) Color(0xFFEFF6FF) else Color(0xFFF1F5F9))
-            .border(1.dp, if (selected) Color(0xFF3B82F6) else Color.Transparent, RoundedCornerShape(16.dp))
+            .background(if (selected) Color(0xFFF0FDFA) else Color(0xFFF1F5F9))
+            .border(1.dp, if (selected) Color(0xFF14B8A6) else Color.Transparent, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (selected) Color(0xFF3B82F6) else Color(0xFF475569))
+        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (selected) Color(0xFF14B8A6) else Color(0xFF475569))
         Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = if (selected) Color(0xFF3B82F6) else Color(0xFF475569))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = if (selected) Color(0xFF14B8A6) else Color(0xFF475569))
     }
 }
 
@@ -1489,7 +1499,7 @@ private fun StyleToggleChip(label: String, active: Boolean, onClick: () -> Unit)
     Box(
         Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(if (active) Color(0xFF3B82F6) else Color(0xFFF1F5F9))
+            .background(if (active) Color(0xFF14B8A6) else Color(0xFFF1F5F9))
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
@@ -1519,7 +1529,7 @@ private fun AudioClipsBar(
                 Row(
                     Modifier
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (isPlaying) Color(0xFFEFF6FF) else Color(0xFFF1F5F9))
+                        .background(if (isPlaying) Color(0xFFF0FDFA) else Color(0xFFF1F5F9))
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -1573,7 +1583,7 @@ private fun PageSwitcher(
                             .padding(horizontal = 4.dp)
                             .size(28.dp)
                             .clip(CircleShape)
-                            .background(if (i == currentIndex) Color(0xFF3B82F6) else Color(0xFFE2E8F0))
+                            .background(if (i == currentIndex) Color(0xFF14B8A6) else Color(0xFFE2E8F0))
                     ) {
                         IconButton(onClick = { onPageSelected(i) }, modifier = Modifier.fillMaxSize()) {
                             Text("${i + 1}", color = if (i == currentIndex) Color.White else Color.Black)

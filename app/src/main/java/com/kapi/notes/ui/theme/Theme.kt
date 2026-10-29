@@ -15,39 +15,46 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 private val LightColors = lightColorScheme(
-    primary = Blue600,
+    primary = Kapi500,
     onPrimary = Color.White,
-    primaryContainer = Blue50,
-    onPrimaryContainer = Blue700,
-    secondary = Slate600,
-    tertiary = Violet600,
-    onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFEDE9FE),
-    onTertiaryContainer = Violet600,
-    background = Slate50,
+    primaryContainer = Kapi50,
+    onPrimaryContainer = Kapi700,
+    secondary = InkMuted,
+    onSecondary = Color.White,
+    tertiary = AccentYellow,
+    onTertiary = InkMain,
+    tertiaryContainer = Color(0xFFFEF3C7),
+    onTertiaryContainer = Color(0xFF92650C),
+    background = Paper50,
     surface = Color.White,
-    onSurface = Slate800,
-    surfaceVariant = Slate100,
-    onSurfaceVariant = Slate600,
-    outline = Slate200,
-    outlineVariant = Slate100,
-    error = Red500
+    onSurface = InkMain,
+    surfaceVariant = Paper100,
+    onSurfaceVariant = InkMuted,
+    outline = Paper200,
+    outlineVariant = Paper100,
+    error = AccentCoral,
+    onError = Color.White
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Blue500,
-    primaryContainer = Slate800,
-    tertiary = Color(0xFFA78BFA),
-    onTertiary = Color(0xFF1E1333),
-    tertiaryContainer = Color(0xFF2E1F4D),
-    onTertiaryContainer = Color(0xFFDDD6FE),
-    background = Color(0xFF0F172A),
+    primary = Kapi400,
+    onPrimary = Kapi900,
+    primaryContainer = Kapi800,
+    onPrimaryContainer = Kapi100,
+    secondary = Color(0xFF94A3B8),
+    tertiary = Color(0xFFFCD34D),
+    onTertiary = Color(0xFF451A03),
+    tertiaryContainer = Color(0xFF78350F),
+    onTertiaryContainer = Color(0xFFFEF3C7),
+    background = InkMain,
     surface = Color(0xFF1E293B),
-    onSurface = Slate100,
+    onSurface = Color(0xFFF1F5F9),
     surfaceVariant = Color(0xFF334155),
-    outline = Slate600,
+    onSurfaceVariant = Color(0xFFCBD5E1),
+    outline = Color(0xFF475569),
     outlineVariant = Color(0xFF334155),
-    error = Red400
+    error = Color(0xFFFCA5A5),
+    onError = Color(0xFF450A0A)
 )
 
 // A soft, rounded shape scale (used throughout dashboard/dialog redesign) instead of the
@@ -60,17 +67,19 @@ private val AppShapes = Shapes(
     extraLarge = RoundedCornerShape(32.dp)
 )
 
+// Outfit for headings/titles (brand "heading" font), Plus Jakarta Sans for body/labels
+// (brand "body/UI" font) - matches the brand guidelines' typographic pairing.
 private val AppTypography = Typography(
-    displaySmall = TextStyle(fontWeight = FontWeight.Bold, fontSize = 32.sp),
-    headlineSmall = TextStyle(fontWeight = FontWeight.Bold, fontSize = 26.sp),
-    titleLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 22.sp),
-    titleMedium = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 18.sp),
-    titleSmall = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 15.sp),
-    bodyLarge = TextStyle(fontWeight = FontWeight.Normal, fontSize = 16.sp),
-    bodyMedium = TextStyle(fontWeight = FontWeight.Normal, fontSize = 14.sp),
-    bodySmall = TextStyle(fontWeight = FontWeight.Normal, fontSize = 13.sp),
-    labelLarge = TextStyle(fontWeight = FontWeight.Medium, fontSize = 14.sp),
-    labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp)
+    displaySmall = TextStyle(fontFamily = OutfitFontFamily, fontWeight = FontWeight.ExtraBold, fontSize = 32.sp),
+    headlineSmall = TextStyle(fontFamily = OutfitFontFamily, fontWeight = FontWeight.Bold, fontSize = 26.sp),
+    titleLarge = TextStyle(fontFamily = OutfitFontFamily, fontWeight = FontWeight.Bold, fontSize = 22.sp),
+    titleMedium = TextStyle(fontFamily = OutfitFontFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp),
+    titleSmall = TextStyle(fontFamily = OutfitFontFamily, fontWeight = FontWeight.Medium, fontSize = 15.sp),
+    bodyLarge = TextStyle(fontFamily = PlusJakartaSansFontFamily, fontWeight = FontWeight.Normal, fontSize = 16.sp),
+    bodyMedium = TextStyle(fontFamily = PlusJakartaSansFontFamily, fontWeight = FontWeight.Normal, fontSize = 14.sp),
+    bodySmall = TextStyle(fontFamily = PlusJakartaSansFontFamily, fontWeight = FontWeight.Normal, fontSize = 13.sp),
+    labelLarge = TextStyle(fontFamily = PlusJakartaSansFontFamily, fontWeight = FontWeight.Medium, fontSize = 14.sp),
+    labelSmall = TextStyle(fontFamily = PlusJakartaSansFontFamily, fontWeight = FontWeight.Medium, fontSize = 12.sp)
 )
 
 @Composable

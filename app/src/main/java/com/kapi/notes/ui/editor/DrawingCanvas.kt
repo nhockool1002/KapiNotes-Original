@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
@@ -46,6 +48,19 @@ private const val TAP_SLOP_PX = 10f
 private const val HANDLE_HIT_RADIUS_PX = 36f
 
 private enum class TransformMode { MOVE, RESIZE, ROTATE }
+
+/** Palm rejection: while a stylus pointer is pressed, any simultaneous finger/palm (Touch-type)
+ * pointer doesn't count as "a second pointer" for gesture purposes - it is simply invisible to
+ * the drawing loop below, so it can neither start a stray stroke nor get treated as the second
+ * finger of a pinch/pan gesture. A pure finger-drawing session (no stylus involved at all) is
+ * completely unaffected: this only ever filters anything once a Stylus pointer is actually down,
+ * which is the one reliable signal that "this is a pen in hand, so the other touch is a palm". */
+internal fun effectivePressed(changes: List<PointerInputChange>, palmRejectionEnabled: Boolean): List<PointerInputChange> {
+    val pressed = changes.filter { it.pressed }
+    if (!palmRejectionEnabled) return pressed
+    val stylusOnly = pressed.filter { it.type == PointerType.Stylus }
+    return stylusOnly.ifEmpty { pressed }
+}
 
 /**
  * The page workspace from the wireframe (`#paperContainer` + `#drawingCanvas`): paper background
@@ -80,6 +95,7 @@ fun DrawingCanvas(
     lassoRectMode: Boolean,
     rulerMode: Boolean = false,
     compassMode: Boolean = false,
+    palmRejectionEnabled: Boolean = true,
     backgroundBitmap: ImageBitmap?,
     onStrokeFinished: (List<StrokePoint>) -> Unit,
     onEraseAt: (Offset) -> Unit,
@@ -154,7 +170,7 @@ fun DrawingCanvas(
         modifier = modifier
             .fillMaxSize()
             .graphicsLayer(scaleX = scaleX)
-            .pointerInput(page.id, tool, colorArgb, strokeWidthDp, selectedStrokeIds, lassoRectMode, rulerMode, compassMode, stickers, images, textBoxes) {
+            .pointerInput(page.id, tool, colorArgb, strokeWidthDp, selectedStrokeIds, lassoRectMode, rulerMode, compassMode, palmRejectionEnabled, stickers, images, textBoxes) {
                 // Ink/shape/eraser input never records a point outside the page itself, so a drag
                 // that runs off the edge (or a stray coordinate from a zoom-gesture handoff) can't
                 // leave marks - or stray strokes - beyond the paper bounds.
@@ -165,11 +181,14 @@ fun DrawingCanvas(
                 awaitPointerEventScope {
                     while (true) {
                         val firstEvent = awaitPointerEvent(PointerEventPass.Main)
+                        val firstPressed = effectivePressed(firstEvent.changes, palmRejectionEnabled)
                         // A second finger landing while the first is already down means the user is
                         // starting a pinch-zoom/pan gesture (handled by an ancestor Modifier) - never
                         // start a fresh draw/erase/etc gesture from that first finger's own down event.
-                        if (firstEvent.changes.count { it.pressed } > 1) continue
-                        val down = firstEvent.changes.firstOrNull { it.pressed } ?: continue
+                        // (With palm rejection on and a stylus involved, a palm touching down beside
+                        // it does NOT count as that second finger - see effectivePressed above.)
+                        if (firstPressed.size > 1) continue
+                        val down = firstPressed.firstOrNull() ?: continue
                         var lastPos = down.position.clampToPage()
                         val downPos = lastPos
                         var totalMoved = 0f
@@ -273,7 +292,9 @@ fun DrawingCanvas(
                             // A second finger touching down mid-gesture hands off to the ancestor's
                             // pinch-zoom/pan handler - finish this gesture now instead of continuing to
                             // feed it coordinates that are about to be thrown off by the zoom transform.
-                            if (!change.pressed || event.changes.count { it.pressed } > 1) {
+                            // (Same palm-aware count as above: a palm beside an active stylus doesn't
+                            // trigger this early finish.)
+                            if (!change.pressed || effectivePressed(event.changes, palmRejectionEnabled).size > 1) {
                                 when (tool) {
                                     EditorTool.ERASER -> onEraseFinished()
                                     EditorTool.LASSO -> {
@@ -508,7 +529,7 @@ fun DrawingCanvas(
         if (selectedStrokeIds.isNotEmpty() && !draggingSelection && !rotatingSelectionLive) {
             strokesBounds(strokes.filter { it.id in selectedStrokeIds })?.let { bounds ->
                 drawRect(
-                    color = Color(0xFF3B82F6),
+                    color = Color(0xFF14B8A6),
                     topLeft = Offset(bounds.left - 12f, bounds.top - 12f),
                     size = androidx.compose.ui.geometry.Size(bounds.width + 24f, bounds.height + 24f),
                     style = DrawStroke(width = 3f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 10f)))
@@ -525,7 +546,7 @@ fun DrawingCanvas(
             // Faint grab handle behind every sticker so it's obvious they can be dragged.
             stickers.forEach { sticker ->
                 drawCircle(
-                    color = Color(0xFF3B82F6).copy(alpha = if (sticker.id == draggingStickerId) 0.18f else 0.08f),
+                    color = Color(0xFF14B8A6).copy(alpha = if (sticker.id == draggingStickerId) 0.18f else 0.08f),
                     radius = sticker.sizePx * 0.65f,
                     center = Offset(sticker.x, sticker.y)
                 )
@@ -636,7 +657,7 @@ fun DrawingCanvas(
             }
             drawPath(
                 path = path,
-                color = Color(0xFF3B82F6),
+                color = Color(0xFF14B8A6),
                 style = DrawStroke(width = 3f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 10f)))
             )
         }
@@ -657,7 +678,7 @@ private fun rotateAround(point: Offset, center: Offset, degrees: Float): Offset 
 private fun DrawScope.drawTransformHandles(cx: Float, cy: Float, w: Float, h: Float, rotationDegrees: Float) {
     val resize = rotateAround(Offset(cx + w / 2f, cy + h / 2f), Offset(cx, cy), rotationDegrees)
     val rotate = rotateAround(Offset(cx + w / 2f, cy - h / 2f - 28f), Offset(cx, cy), rotationDegrees)
-    drawCircle(color = Color(0xFF3B82F6), radius = 14f, center = resize)
+    drawCircle(color = Color(0xFF14B8A6), radius = 14f, center = resize)
     drawCircle(color = Color.White, radius = 7f, center = resize)
     drawCircle(color = Color(0xFF16A34A), radius = 14f, center = rotate)
     drawCircle(color = Color.White, radius = 7f, center = rotate)
