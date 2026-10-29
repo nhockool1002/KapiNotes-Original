@@ -124,6 +124,81 @@ fun PaperBackground(paperType: PaperType, modifier: Modifier = Modifier) {
                     y += cell
                 }
             }
+            PaperType.GENKOU_YOUSHI -> {
+                val cell = 40f
+                val borderColor = Color(0xFF94A3B8)
+                var y = 0f
+                while (y < size.height) {
+                    var x = 0f
+                    while (x < size.width) {
+                        drawRect(
+                            borderColor,
+                            topLeft = Offset(x, y),
+                            size = androidx.compose.ui.geometry.Size(cell, cell),
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1f)
+                        )
+                        x += cell
+                    }
+                    y += cell
+                }
+            }
+            PaperType.MUSIC_STAFF -> {
+                val boldColor = Color(0xFF94A3B8)
+                val lineGap = 10f
+                val staffGap = 50f
+                var staffTop = 30f
+                while (staffTop + lineGap * 4 < size.height) {
+                    repeat(5) { i ->
+                        val y = staffTop + lineGap * i
+                        drawLine(boldColor, Offset(20f, y), Offset(size.width - 20f, y), strokeWidth = 1.2f)
+                    }
+                    staffTop += lineGap * 4 + staffGap
+                }
+            }
+            PaperType.TABLE -> {
+                val boldColor = Color(0xFF94A3B8)
+                val cols = 4
+                val rowH = 60f
+                val colW = size.width / cols
+                var y = 0f
+                while (y <= size.height) {
+                    drawLine(boldColor, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.2f)
+                    y += rowH
+                }
+                for (c in 0..cols) {
+                    val x = colW * c
+                    drawLine(boldColor, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.2f)
+                }
+            }
+            PaperType.ISOMETRIC_DOT -> {
+                val spacing = 24f
+                val rowH = spacing * 0.866f
+                var row = 0
+                var y = 0f
+                while (y < size.height) {
+                    val offset = if (row % 2 == 1) spacing / 2f else 0f
+                    var x = offset
+                    while (x < size.width) {
+                        drawCircle(dotColor, radius = 1.5f, center = Offset(x, y))
+                        x += spacing
+                    }
+                    y += rowH
+                    row++
+                }
+            }
+            PaperType.HANDWRITING_GUIDE -> {
+                val boldColor = Color(0xFF475569)
+                val dash = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
+                val groupH = 70f
+                var top = 30f
+                while (top + groupH < size.height) {
+                    drawLine(lineColor, Offset(0f, top), Offset(size.width, top), strokeWidth = 1f)
+                    drawLine(lineColor, Offset(0f, top + groupH * 0.4f), Offset(size.width, top + groupH * 0.4f), strokeWidth = 1f, pathEffect = dash)
+                    drawLine(boldColor, Offset(0f, top + groupH * 0.75f), Offset(size.width, top + groupH * 0.75f), strokeWidth = 1.5f)
+                    drawLine(lineColor, Offset(0f, top + groupH), Offset(size.width, top + groupH), strokeWidth = 1f)
+                    top += groupH + 20f
+                }
+            }
         }
     }
 }

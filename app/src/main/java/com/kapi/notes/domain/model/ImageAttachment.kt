@@ -12,5 +12,6 @@ data class ImageAttachment(
     val heightPx: Float,
     /** Clockwise rotation in degrees around the image's center. */
     val rotationDegrees: Float = 0f,
+    val layerId: String = DEFAULT_LAYER_ID,
     val updatedAt: Long = System.currentTimeMillis()
 )

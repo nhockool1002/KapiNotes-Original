@@ -68,6 +68,10 @@ interface NotesRepository {
     suspend fun transformImage(imageId: String, widthPx: Float, heightPx: Float, rotationDegrees: Float)
     suspend fun removeImage(imageId: String)
 
+    /** Replaces an image attachment's underlying file (and on-page box) after a crop - used by
+     * the "Cắt ảnh" tool. [imagePath] points at the newly cropped file. */
+    suspend fun replaceImage(imageId: String, imagePath: String, widthPx: Float, heightPx: Float)
+
     fun observeTextBoxes(pageId: String): Flow<List<TextBoxItem>>
     suspend fun getTextBoxes(pageId: String): List<TextBoxItem>
     suspend fun addTextBox(textBox: TextBoxItem)
@@ -137,4 +141,9 @@ interface NotesRepository {
     suspend fun updateThumbnail(noteId: String, thumbnailPath: String)
 
     suspend fun deleteAllData()
+
+    /** Replaces a page's whole layer stack + active layer in one write ("Tách lớp" panel) - the
+     * ViewModel computes the new [layers] list (add/rename/toggle-visible/delete) from its own
+     * state and this just persists it, same pattern as [updatePageLayout]. */
+    suspend fun setPageLayers(pageId: String, layers: List<com.kapi.notes.domain.model.PageLayer>, activeLayerId: String)
 }

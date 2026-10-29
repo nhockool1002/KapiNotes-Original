@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -699,6 +700,11 @@ private val PaperType.labelVi: String
         PaperType.CHECKLIST -> "Việc cần làm"
         PaperType.TIMETABLE -> "TKB"
         PaperType.CHINESE_CHARACTER_GRID -> "Ô chữ Hán"
+        PaperType.GENKOU_YOUSHI -> "Ô chữ Nhật"
+        PaperType.MUSIC_STAFF -> "Khuông nhạc"
+        PaperType.TABLE -> "Bảng kẻ"
+        PaperType.ISOMETRIC_DOT -> "Chấm đẳng cự"
+        PaperType.HANDWRITING_GUIDE -> "Tập viết"
     }
 
 @Composable
@@ -714,7 +720,11 @@ private fun CreateNoteDialog(
         shape = MaterialTheme.shapes.large,
         title = { Text("Tạo ghi chú mới", style = MaterialTheme.typography.titleLarge) },
         text = {
-            Column {
+            Column(
+                Modifier
+                    .heightIn(max = 460.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -730,8 +740,8 @@ private fun CreateNoteDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(10.dp))
-                // Fixed 4-column grid: 8 paper types lay out as two perfectly even rows instead
-                // of a ragged scrolling strip, so every option is visible and easy to compare.
+                // Fixed 4-column grid, scrollable now that there are more than 2 rows' worth of
+                // paper types - every option stays reachable instead of overflowing the dialog.
                 PaperType.entries.chunked(4).forEach { rowTypes ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         rowTypes.forEach { type ->
@@ -742,6 +752,9 @@ private fun CreateNoteDialog(
                                 modifier = Modifier.weight(1f)
                             )
                         }
+                        // Pad an incomplete last row with empty weighted slots so its swatches
+                        // stay the same size as a full row instead of stretching to fill it.
+                        repeat(4 - rowTypes.size) { Spacer(Modifier.weight(1f)) }
                     }
                     Spacer(Modifier.height(12.dp))
                 }

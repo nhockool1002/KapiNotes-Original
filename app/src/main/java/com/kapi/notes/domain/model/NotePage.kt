@@ -21,5 +21,10 @@ data class NotePage(
      * a long note without scrolling through every page. */
     val isBookmarked: Boolean = false,
     /** Used for last-write-wins merging when two devices sync the same account's Drive backup. */
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    /** This page's drawing layers (see [PageLayer]) - every stroke/image/sticker/text box on the
+     * page points at one of these by id. Always has at least one entry. */
+    val layers: List<PageLayer> = DefaultPageLayers,
+    /** Newly drawn/placed content is stamped with this layer's id. */
+    val activeLayerId: String = DEFAULT_LAYER_ID
 )

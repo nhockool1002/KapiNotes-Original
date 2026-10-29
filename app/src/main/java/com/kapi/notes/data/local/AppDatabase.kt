@@ -10,10 +10,10 @@ import androidx.room.TypeConverters
         StickerEntity::class, TombstoneEntity::class,
         ImageAttachmentEntity::class, TextBoxEntity::class, AudioClipEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
-@TypeConverters(EnumConverters::class, StrokePointsConverter::class)
+@TypeConverters(EnumConverters::class, StrokePointsConverter::class, PageLayersConverter::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun noteDao(): NoteDao
 

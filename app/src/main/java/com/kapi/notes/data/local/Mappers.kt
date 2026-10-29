@@ -52,7 +52,9 @@ fun PageEntity.toDomain(): NotePage = NotePage(
     backgroundImagePath = backgroundImagePath,
     tagColorArgb = tagColorArgb,
     isBookmarked = isBookmarked,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    layers = layers,
+    activeLayerId = activeLayerId
 )
 
 fun NotePage.toEntity(): PageEntity = PageEntity(
@@ -67,7 +69,9 @@ fun NotePage.toEntity(): PageEntity = PageEntity(
     backgroundImagePath = backgroundImagePath,
     tagColorArgb = tagColorArgb,
     isBookmarked = isBookmarked,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    layers = layers,
+    activeLayerId = activeLayerId
 )
 
 fun StrokeEntity.toDomain(): Stroke = Stroke(
@@ -79,6 +83,7 @@ fun StrokeEntity.toDomain(): Stroke = Stroke(
     points = points,
     fillColorArgb = fillColorArgb,
     rotationDegrees = rotationDegrees,
+    layerId = layerId,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
@@ -92,6 +97,7 @@ fun Stroke.toEntity(): StrokeEntity = StrokeEntity(
     points = points,
     fillColorArgb = fillColorArgb,
     rotationDegrees = rotationDegrees,
+    layerId = layerId,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
@@ -104,6 +110,7 @@ fun StickerEntity.toDomain(): EmojiSticker = EmojiSticker(
     y = y,
     sizePx = sizePx,
     rotationDegrees = rotationDegrees,
+    layerId = layerId,
     updatedAt = updatedAt
 )
 
@@ -115,6 +122,7 @@ fun EmojiSticker.toEntity(): StickerEntity = StickerEntity(
     y = y,
     sizePx = sizePx,
     rotationDegrees = rotationDegrees,
+    layerId = layerId,
     updatedAt = updatedAt
 )
 
@@ -124,24 +132,24 @@ fun Tombstone.toEntity(): TombstoneEntity = TombstoneEntity(id = id, kind = kind
 
 fun ImageAttachmentEntity.toDomain(): ImageAttachment = ImageAttachment(
     id = id, pageId = pageId, imagePath = imagePath, x = x, y = y, widthPx = widthPx, heightPx = heightPx,
-    rotationDegrees = rotationDegrees, updatedAt = updatedAt
+    rotationDegrees = rotationDegrees, layerId = layerId, updatedAt = updatedAt
 )
 
 fun ImageAttachment.toEntity(): ImageAttachmentEntity = ImageAttachmentEntity(
     id = id, pageId = pageId, imagePath = imagePath, x = x, y = y, widthPx = widthPx, heightPx = heightPx,
-    rotationDegrees = rotationDegrees, updatedAt = updatedAt
+    rotationDegrees = rotationDegrees, layerId = layerId, updatedAt = updatedAt
 )
 
 fun TextBoxEntity.toDomain(): TextBoxItem = TextBoxItem(
     id = id, pageId = pageId, text = text, x = x, y = y, widthPx = widthPx, heightPx = heightPx,
     fontSizePx = fontSizePx, colorArgb = colorArgb, isBold = isBold, isItalic = isItalic,
-    fontFamily = fontFamily, rotationDegrees = rotationDegrees, updatedAt = updatedAt
+    fontFamily = fontFamily, rotationDegrees = rotationDegrees, layerId = layerId, updatedAt = updatedAt
 )
 
 fun TextBoxItem.toEntity(): TextBoxEntity = TextBoxEntity(
     id = id, pageId = pageId, text = text, x = x, y = y, widthPx = widthPx, heightPx = heightPx,
     fontSizePx = fontSizePx, colorArgb = colorArgb, isBold = isBold, isItalic = isItalic,
-    fontFamily = fontFamily, rotationDegrees = rotationDegrees, updatedAt = updatedAt
+    fontFamily = fontFamily, rotationDegrees = rotationDegrees, layerId = layerId, updatedAt = updatedAt
 )
 
 fun AudioClipEntity.toDomain(): AudioClip = AudioClip(id = id, noteId = noteId, filePath = filePath, durationMs = durationMs, createdAt = createdAt)

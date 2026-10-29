@@ -6,8 +6,11 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import com.kapi.notes.domain.model.DEFAULT_LAYER_ID
+import com.kapi.notes.domain.model.DefaultPageLayers
 import com.kapi.notes.domain.model.NoteSource
 import com.kapi.notes.domain.model.PageFlip
+import com.kapi.notes.domain.model.PageLayer
 import com.kapi.notes.domain.model.PageOrientation
 import com.kapi.notes.domain.model.PaperType
 import com.kapi.notes.domain.model.StrokePoint
@@ -46,6 +49,7 @@ data class NoteEntity(
     ],
     indices = [Index("noteId")]
 )
+@TypeConverters(PageLayersConverter::class)
 data class PageEntity(
     @PrimaryKey val id: String,
     val noteId: String,
@@ -58,7 +62,9 @@ data class PageEntity(
     val backgroundImagePath: String?,
     val tagColorArgb: Long? = null,
     val isBookmarked: Boolean = false,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val layers: List<PageLayer> = DefaultPageLayers,
+    val activeLayerId: String = DEFAULT_LAYER_ID
 )
 
 @Entity(
@@ -83,6 +89,7 @@ data class StrokeEntity(
     val points: List<StrokePoint>,
     val fillColorArgb: Long? = null,
     val rotationDegrees: Float = 0f,
+    val layerId: String = DEFAULT_LAYER_ID,
     val createdAt: Long,
     val updatedAt: Long
 )
@@ -107,6 +114,7 @@ data class StickerEntity(
     val y: Float,
     val sizePx: Float,
     val rotationDegrees: Float = 0f,
+    val layerId: String = DEFAULT_LAYER_ID,
     val updatedAt: Long
 )
 
@@ -131,6 +139,7 @@ data class ImageAttachmentEntity(
     val widthPx: Float,
     val heightPx: Float,
     val rotationDegrees: Float = 0f,
+    val layerId: String = DEFAULT_LAYER_ID,
     val updatedAt: Long
 )
 
@@ -160,6 +169,7 @@ data class TextBoxEntity(
     val isItalic: Boolean = false,
     val fontFamily: TextFontFamily = TextFontFamily.DEFAULT,
     val rotationDegrees: Float = 0f,
+    val layerId: String = DEFAULT_LAYER_ID,
     val updatedAt: Long
 )
 
@@ -196,4 +206,13 @@ class StrokePointsConverter {
 
     @TypeConverter
     fun toPoints(raw: String): List<StrokePoint> = Json.decodeFromString(raw)
+}
+
+class PageLayersConverter {
+    @TypeConverter
+    fun fromLayers(layers: List<PageLayer>): String = Json.encodeToString(layers)
+
+    @TypeConverter
+    fun toLayers(raw: String): List<PageLayer> =
+        runCatching { Json.decodeFromString<List<PageLayer>>(raw) }.getOrDefault(DefaultPageLayers)
 }

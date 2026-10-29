@@ -297,6 +297,12 @@ class NotesRepositoryImpl @Inject constructor(
         dao.upsertTombstone(TombstoneEntity(id = imageId, kind = TombstoneKind.IMAGE, deletedAt = System.currentTimeMillis()))
     }
 
+    override suspend fun replaceImage(imageId: String, imagePath: String, widthPx: Float, heightPx: Float) {
+        val existing = dao.getImage(imageId) ?: return
+        dao.upsertImage(existing.copy(imagePath = imagePath, widthPx = widthPx, heightPx = heightPx, updatedAt = System.currentTimeMillis()))
+        touchNote(noteIdForPage(existing.pageId))
+    }
+
     override fun observeTextBoxes(pageId: String): Flow<List<TextBoxItem>> =
         dao.observeTextBoxes(pageId).map { list -> list.map { it.toDomain() } }
 
@@ -476,6 +482,13 @@ class NotesRepositoryImpl @Inject constructor(
 
     override suspend fun deleteAllData() {
         dao.deleteAll()
+    }
+
+    override suspend fun setPageLayers(pageId: String, layers: List<com.kapi.notes.domain.model.PageLayer>, activeLayerId: String) {
+        val page = dao.getPage(pageId) ?: return
+        if (layers.isEmpty()) return
+        dao.updatePage(page.copy(layers = layers, activeLayerId = activeLayerId, updatedAt = System.currentTimeMillis()))
+        touchNote(page.noteId)
     }
 
     private suspend fun noteIdForPage(pageId: String): String =

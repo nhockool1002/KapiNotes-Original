@@ -9,5 +9,6 @@ data class EmojiSticker(
     val y: Float,
     val sizePx: Float,
     val rotationDegrees: Float = 0f,
+    val layerId: String = DEFAULT_LAYER_ID,
     val updatedAt: Long = System.currentTimeMillis()
 )

@@ -11,8 +11,11 @@ import com.kapi.notes.data.local.StickerEntity
 import com.kapi.notes.data.local.StrokeEntity
 import com.kapi.notes.data.local.TextBoxEntity
 import com.kapi.notes.data.local.TombstoneEntity
+import com.kapi.notes.domain.model.DEFAULT_LAYER_ID
+import com.kapi.notes.domain.model.DefaultPageLayers
 import com.kapi.notes.domain.model.NoteSource
 import com.kapi.notes.domain.model.PageFlip
+import com.kapi.notes.domain.model.PageLayer
 import com.kapi.notes.domain.model.PageOrientation
 import com.kapi.notes.domain.model.PaperType
 import com.kapi.notes.domain.model.StrokePoint
@@ -59,7 +62,9 @@ private data class PageDto(
     val backgroundFile: String?,
     val tagColorArgb: Long? = null,
     val isBookmarked: Boolean = false,
-    val updatedAt: Long = 0L
+    val updatedAt: Long = 0L,
+    val layers: List<PageLayer> = DefaultPageLayers,
+    val activeLayerId: String = DEFAULT_LAYER_ID
 )
 
 @Serializable
@@ -72,6 +77,7 @@ private data class StrokeDto(
     val points: List<StrokePoint>,
     val fillColorArgb: Long? = null,
     val rotationDegrees: Float = 0f,
+    val layerId: String = DEFAULT_LAYER_ID,
     val createdAt: Long,
     val updatedAt: Long = createdAt
 )
@@ -85,6 +91,7 @@ private data class StickerDto(
     val y: Float,
     val sizePx: Float,
     val rotationDegrees: Float = 0f,
+    val layerId: String = DEFAULT_LAYER_ID,
     val updatedAt: Long
 )
 
@@ -98,6 +105,7 @@ private data class ImageDto(
     val widthPx: Float,
     val heightPx: Float,
     val rotationDegrees: Float = 0f,
+    val layerId: String = DEFAULT_LAYER_ID,
     val updatedAt: Long
 )
 
@@ -116,6 +124,7 @@ private data class TextBoxDto(
     val isItalic: Boolean = false,
     val fontFamily: String = "DEFAULT",
     val rotationDegrees: Float = 0f,
+    val layerId: String = DEFAULT_LAYER_ID,
     val updatedAt: Long
 )
 
@@ -208,7 +217,9 @@ class BackupRepository @Inject constructor(
                         backgroundFile = it.backgroundImagePath?.let { path -> File(path).name },
                         tagColorArgb = it.tagColorArgb,
                         isBookmarked = it.isBookmarked,
-                        updatedAt = it.updatedAt
+                        updatedAt = it.updatedAt,
+                        layers = it.layers,
+                        activeLayerId = it.activeLayerId
                     )
                 },
                 strokes = strokes.map {
@@ -221,6 +232,7 @@ class BackupRepository @Inject constructor(
                         points = it.points,
                         fillColorArgb = it.fillColorArgb,
                         rotationDegrees = it.rotationDegrees,
+                        layerId = it.layerId,
                         createdAt = it.createdAt,
                         updatedAt = it.updatedAt
                     )
@@ -234,6 +246,7 @@ class BackupRepository @Inject constructor(
                         y = it.y,
                         sizePx = it.sizePx,
                         rotationDegrees = it.rotationDegrees,
+                        layerId = it.layerId,
                         updatedAt = it.updatedAt
                     )
                 },
@@ -247,6 +260,7 @@ class BackupRepository @Inject constructor(
                         widthPx = it.widthPx,
                         heightPx = it.heightPx,
                         rotationDegrees = it.rotationDegrees,
+                        layerId = it.layerId,
                         updatedAt = it.updatedAt
                     )
                 },
@@ -265,6 +279,7 @@ class BackupRepository @Inject constructor(
                         isItalic = it.isItalic,
                         fontFamily = it.fontFamily.name,
                         rotationDegrees = it.rotationDegrees,
+                        layerId = it.layerId,
                         updatedAt = it.updatedAt
                     )
                 },
@@ -408,7 +423,9 @@ class BackupRepository @Inject constructor(
                     backgroundImagePath = dto.backgroundFile?.let { restoredPaths[it] } ?: local?.backgroundImagePath,
                     tagColorArgb = dto.tagColorArgb,
                     isBookmarked = dto.isBookmarked,
-                    updatedAt = dto.updatedAt
+                    updatedAt = dto.updatedAt,
+                    layers = dto.layers,
+                    activeLayerId = dto.activeLayerId
                 )
             )
         }
@@ -428,6 +445,7 @@ class BackupRepository @Inject constructor(
                     points = dto.points,
                     fillColorArgb = dto.fillColorArgb,
                     rotationDegrees = dto.rotationDegrees,
+                    layerId = dto.layerId,
                     createdAt = dto.createdAt,
                     updatedAt = dto.updatedAt
                 )
@@ -448,6 +466,7 @@ class BackupRepository @Inject constructor(
                     y = dto.y,
                     sizePx = dto.sizePx,
                     rotationDegrees = dto.rotationDegrees,
+                    layerId = dto.layerId,
                     updatedAt = dto.updatedAt
                 )
             )
@@ -463,7 +482,7 @@ class BackupRepository @Inject constructor(
                 ImageAttachmentEntity(
                     id = dto.id, pageId = dto.pageId, imagePath = path,
                     x = dto.x, y = dto.y, widthPx = dto.widthPx, heightPx = dto.heightPx,
-                    rotationDegrees = dto.rotationDegrees, updatedAt = dto.updatedAt
+                    rotationDegrees = dto.rotationDegrees, layerId = dto.layerId, updatedAt = dto.updatedAt
                 )
             )
         }
@@ -477,7 +496,7 @@ class BackupRepository @Inject constructor(
                     widthPx = dto.widthPx, heightPx = dto.heightPx, fontSizePx = dto.fontSizePx, colorArgb = dto.colorArgb,
                     isBold = dto.isBold, isItalic = dto.isItalic,
                     fontFamily = runCatching { com.kapi.notes.domain.model.TextFontFamily.valueOf(dto.fontFamily) }.getOrDefault(com.kapi.notes.domain.model.TextFontFamily.DEFAULT),
-                    rotationDegrees = dto.rotationDegrees, updatedAt = dto.updatedAt
+                    rotationDegrees = dto.rotationDegrees, layerId = dto.layerId, updatedAt = dto.updatedAt
                 )
             )
         }

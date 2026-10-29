@@ -62,6 +62,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Create
+import androidx.compose.material.icons.rounded.Crop
 import androidx.compose.material.icons.rounded.CropFree
 import androidx.compose.material.icons.rounded.CropSquare
 import androidx.compose.material.icons.rounded.BorderColor
@@ -246,6 +247,8 @@ fun EditorScreen(
     var pendingImagePoint by remember { mutableStateOf<Offset?>(null) }
     var isImageSourceDialogOpen by remember { mutableStateOf(false) }
     var pendingCameraFile by remember { mutableStateOf<File?>(null) }
+    var isLayersPanelOpen by remember { mutableStateOf(false) }
+    var croppingImageId by remember { mutableStateOf<String?>(null) }
 
     fun handlePickedBitmap(bitmap: Bitmap?) {
         val point = pendingImagePoint
@@ -354,7 +357,8 @@ fun EditorScreen(
                 onFullscreenToggle = viewModel::toggleFullscreen,
                 isExporting = state.isExporting,
                 onExportPdf = viewModel::exportNote,
-                onExportPng = viewModel::exportCurrentPageAsPng
+                onExportPng = viewModel::exportCurrentPageAsPng,
+                onOpenLayers = { isLayersPanelOpen = true }
             )
 
             SecondaryToolbar(
@@ -380,7 +384,9 @@ fun EditorScreen(
                 isRecognizingHandwriting = state.isRecognizingHandwriting,
                 onRecognizeHandwriting = viewModel::recognizeSelectedHandwriting,
                 recognitionLanguage = state.effectiveRecognitionLanguage,
-                onRecognitionLanguageChange = viewModel::setRecognitionLanguage
+                onRecognitionLanguageChange = viewModel::setRecognitionLanguage,
+                images = state.images,
+                onCropImage = { imageId -> croppingImageId = imageId }
             )
 
             if (state.audioClips.isNotEmpty()) {
@@ -452,12 +458,15 @@ fun EditorScreen(
                     if (backgroundBitmap == null) {
                         PaperBackground(paperType = page.paperType)
                     }
+                    val allLayerIds = remember(page.layers) { page.layers.map { it.id }.toSet() }
+                    val visibleLayerIds = remember(page.layers) { page.layers.filter { it.visible }.map { it.id }.toSet() }
+                    fun isLayerVisible(layerId: String) = layerId !in allLayerIds || layerId in visibleLayerIds
                     DrawingCanvas(
                         page = page,
-                        strokes = state.strokes,
-                        stickers = state.stickers,
-                        images = state.images,
-                        textBoxes = state.textBoxes,
+                        strokes = state.strokes.filter { isLayerVisible(it.layerId) },
+                        stickers = state.stickers.filter { isLayerVisible(it.layerId) },
+                        images = state.images.filter { isLayerVisible(it.layerId) },
+                        textBoxes = state.textBoxes.filter { isLayerVisible(it.layerId) },
                         tool = state.tool,
                         colorArgb = state.colorArgb,
                         strokeWidthDp = state.strokeWidthDp,
@@ -705,6 +714,34 @@ fun EditorScreen(
             }
         )
     }
+
+    if (isLayersPanelOpen) {
+        state.currentPage?.let { page ->
+            LayersPanelDialog(
+                layers = page.layers,
+                activeLayerId = page.activeLayerId,
+                onDismiss = { isLayersPanelOpen = false },
+                onAddLayer = viewModel::addLayer,
+                onRenameLayer = viewModel::renameLayer,
+                onToggleVisible = viewModel::toggleLayerVisible,
+                onDeleteLayer = viewModel::deleteLayer,
+                onSelectActive = viewModel::setActiveLayer
+            )
+        }
+    }
+
+    croppingImageId?.let { imageId ->
+        state.images.firstOrNull { it.id == imageId }?.let { image ->
+            ImageCropDialog(
+                imagePath = image.imagePath,
+                onDismiss = { croppingImageId = null },
+                onCropped = { path, w, h ->
+                    viewModel.cropImage(imageId, path, w, h)
+                    croppingImageId = null
+                }
+            )
+        }
+    }
 }
 
 @Composable
@@ -740,7 +777,8 @@ private fun EditorTopBar(
     onFullscreenToggle: () -> Unit,
     isExporting: Boolean,
     onExportPdf: () -> Unit,
-    onExportPng: () -> Unit
+    onExportPng: () -> Unit,
+    onOpenLayers: () -> Unit = {}
 ) {
     var editingTitle by remember { mutableStateOf(false) }
     var titleDraft by remember(title) { mutableStateOf(title) }
@@ -825,6 +863,11 @@ private fun EditorTopBar(
                 }
                 DropdownMenu(expanded = isMoreMenuOpen, onDismissRequest = { isMoreMenuOpen = false }) {
                     DropdownMenuItem(
+                        text = { Text("Lớp (layers)") },
+                        leadingIcon = { Icon(Icons.Rounded.Layers, contentDescription = null) },
+                        onClick = { isMoreMenuOpen = false; onOpenLayers() }
+                    )
+                    DropdownMenuItem(
                         text = { Text(if (isRecording) "Dừng ghi âm" else "Ghi âm bài giảng") },
                         leadingIcon = { Icon(Icons.Rounded.Mic, contentDescription = null, tint = if (isRecording) Color(0xFFDC2626) else LocalContentColor.current) },
                         onClick = { isMoreMenuOpen = false; onToggleRecording() }
@@ -879,7 +922,10 @@ private fun EditorTopBar(
                         Text("Mẫu giấy", style = MaterialTheme.typography.labelSmall)
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(PaperType.CORNELL, PaperType.CHECKLIST, PaperType.TIMETABLE, PaperType.CHINESE_CHARACTER_GRID).forEach { type ->
+                            listOf(
+                                PaperType.CORNELL, PaperType.CHECKLIST, PaperType.TIMETABLE, PaperType.CHINESE_CHARACTER_GRID,
+                                PaperType.GENKOU_YOUSHI, PaperType.MUSIC_STAFF, PaperType.TABLE, PaperType.ISOMETRIC_DOT, PaperType.HANDWRITING_GUIDE
+                            ).forEach { type ->
                                 PaperSwatchButton(type = type, selected = type == currentPaperType, onClick = { onPaperTypeSelected(type); onPaperMenuToggle(false) })
                             }
                         }
@@ -1350,13 +1396,16 @@ private fun SecondaryToolbar(
     isRecognizingHandwriting: Boolean = false,
     onRecognizeHandwriting: () -> Unit = {},
     recognitionLanguage: com.kapi.notes.ocr.RecognitionLanguage = com.kapi.notes.ocr.RecognitionLanguage.ENGLISH,
-    onRecognitionLanguageChange: (com.kapi.notes.ocr.RecognitionLanguage) -> Unit = {}
+    onRecognitionLanguageChange: (com.kapi.notes.ocr.RecognitionLanguage) -> Unit = {},
+    images: List<com.kapi.notes.domain.model.ImageAttachment> = emptyList(),
+    onCropImage: (String) -> Unit = {}
 ) {
     val fillableShapes = setOf(EditorTool.RECTANGLE, EditorTool.CIRCLE, EditorTool.TRIANGLE)
     val showInkOptions = tool in InkTools || tool in ShapeTools
     val showLassoOptions = tool == EditorTool.LASSO
     val showEraserOptions = tool == EditorTool.ERASER
-    if (!showInkOptions && !showLassoOptions && !showEraserOptions) return
+    val showImageOptions = tool == EditorTool.IMAGE && images.isNotEmpty()
+    if (!showInkOptions && !showLassoOptions && !showEraserOptions && !showImageOptions) return
 
     var isCustomColorDialogOpen by remember { mutableStateOf(false) }
 
@@ -1377,6 +1426,15 @@ private fun SecondaryToolbar(
             LassoModeChip(label = "Xóa theo nét", icon = Icons.Rounded.Layers, selected = eraseMode == EraseMode.STROKE, onClick = { onEraseModeChange(EraseMode.STROKE) })
             Spacer(Modifier.width(6.dp))
             LassoModeChip(label = "Xóa phẳng", icon = Icons.Rounded.Remove, selected = eraseMode == EraseMode.FLAT, onClick = { onEraseModeChange(EraseMode.FLAT) })
+        }
+
+        if (showImageOptions) {
+            Text("Cắt ảnh:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(8.dp))
+            images.forEachIndexed { index, image ->
+                LassoModeChip(label = "Ảnh ${index + 1}", icon = Icons.Rounded.Crop, selected = false, onClick = { onCropImage(image.id) })
+                Spacer(Modifier.width(6.dp))
+            }
         }
 
         if (tool in InkTools) {

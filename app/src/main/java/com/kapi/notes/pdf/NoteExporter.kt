@@ -248,6 +248,74 @@ class NoteExporter @Inject constructor(
                     y += cell
                 }
             }
+            PaperType.GENKOU_YOUSHI -> {
+                val cell = 80f
+                val borderPaint = Paint().apply { color = Color.argb(140, 100, 116, 139); strokeWidth = 2f; style = Paint.Style.STROKE }
+                var y = 0f
+                while (y < h) {
+                    var x = 0f
+                    while (x < w) {
+                        canvas.drawRect(x, y, x + cell, y + cell, borderPaint)
+                        x += cell
+                    }
+                    y += cell
+                }
+            }
+            PaperType.MUSIC_STAFF -> {
+                val lineGap = 20f
+                val staffGap = 100f
+                var staffTop = 60f
+                while (staffTop + lineGap * 4 < h) {
+                    repeat(5) { i ->
+                        val y = staffTop + lineGap * i
+                        canvas.drawLine(40f, y, w - 40f, y, boldPaint)
+                    }
+                    staffTop += lineGap * 4 + staffGap
+                }
+            }
+            PaperType.TABLE -> {
+                val cols = 4
+                val rowH = 120f
+                val colW = w / cols
+                var y = 0f
+                while (y <= h) {
+                    canvas.drawLine(0f, y, w, y, boldPaint)
+                    y += rowH
+                }
+                for (c in 0..cols) {
+                    val x = colW * c
+                    canvas.drawLine(x, 0f, x, h, boldPaint)
+                }
+            }
+            PaperType.ISOMETRIC_DOT -> {
+                val dotPaint = Paint().apply { color = Color.argb(120, 148, 163, 184) }
+                val spacing = 48f
+                val rowH = spacing * 0.866f
+                var row = 0
+                var y = 0f
+                while (y < h) {
+                    val offset = if (row % 2 == 1) spacing / 2f else 0f
+                    var x = offset
+                    while (x < w) {
+                        canvas.drawCircle(x, y, 3f, dotPaint)
+                        x += spacing
+                    }
+                    y += rowH
+                    row++
+                }
+            }
+            PaperType.HANDWRITING_GUIDE -> {
+                val dashPaint = Paint().apply { color = Color.argb(60, 148, 163, 184); strokeWidth = 2f; pathEffect = android.graphics.DashPathEffect(floatArrayOf(12f, 12f), 0f) }
+                val groupH = 140f
+                var top = 60f
+                while (top + groupH < h) {
+                    canvas.drawLine(0f, top, w, top, linePaint)
+                    canvas.drawLine(0f, top + groupH * 0.4f, w, top + groupH * 0.4f, dashPaint)
+                    canvas.drawLine(0f, top + groupH * 0.75f, w, top + groupH * 0.75f, boldPaint)
+                    canvas.drawLine(0f, top + groupH, w, top + groupH, linePaint)
+                    top += groupH + 40f
+                }
+            }
         }
     }
 

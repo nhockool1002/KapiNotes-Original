@@ -252,6 +252,7 @@ class EditorViewModel @Inject constructor(
             widthDp = _state.value.strokeWidthDp,
             points = points,
             fillColorArgb = if (_state.value.isShapeFillEnabled && inkTool in fillableShapes) _state.value.colorArgb else null,
+            layerId = page.activeLayerId,
             createdAt = now,
             updatedAt = now
         )
@@ -546,6 +547,7 @@ class EditorViewModel @Inject constructor(
                 heightPx = 40f,
                 fontSizePx = 32f,
                 colorArgb = s.colorArgb,
+                layerId = page.activeLayerId,
                 updatedAt = now
             )
             _state.update { it.copy(textBoxes = it.textBoxes + textBox, selectedStrokeIds = emptySet()) }
@@ -630,7 +632,8 @@ class EditorViewModel @Inject constructor(
             emoji = emoji,
             x = point.x,
             y = point.y,
-            sizePx = 96f
+            sizePx = 96f,
+            layerId = page.activeLayerId
         )
         _state.update { it.copy(stickers = it.stickers + sticker, isEmojiPickerOpen = false, pendingEmojiPlacement = null) }
         undoRedo.push(EditorAction.StickerAdded(sticker))
@@ -679,6 +682,7 @@ class EditorViewModel @Inject constructor(
             y = point.y,
             widthPx = widthPx,
             heightPx = heightPx,
+            layerId = page.activeLayerId,
             updatedAt = now
         )
         _state.update { it.copy(images = it.images + image) }
@@ -786,6 +790,7 @@ class EditorViewModel @Inject constructor(
                     isBold = s.textDialogBold,
                     isItalic = s.textDialogItalic,
                     fontFamily = s.textDialogFontFamily,
+                    layerId = page.activeLayerId,
                     updatedAt = now
                 )
                 _state.update { it.copy(textBoxes = it.textBoxes + textBox) }
@@ -947,6 +952,72 @@ class EditorViewModel @Inject constructor(
     /** LASER tool: a non-persisted glowing pointer for presenting - null hides it. */
     fun setLaserPoint(point: Offset?) {
         _state.update { it.copy(laserPoint = point) }
+    }
+
+    /** "Tách lớp" panel: adds a new, initially-visible layer on top and makes it active. */
+    fun addLayer() {
+        val page = _state.value.currentPage ?: return
+        val name = "Lớp ${page.layers.size + 1}"
+        val newLayer = com.kapi.notes.domain.model.PageLayer(id = UUID.randomUUID().toString(), name = name)
+        val layers = page.layers + newLayer
+        viewModelScope.launch {
+            notesRepository.setPageLayers(page.id, layers, newLayer.id)
+            updateCurrentPageLocal { it.copy(layers = layers, activeLayerId = newLayer.id) }
+        }
+    }
+
+    fun renameLayer(layerId: String, name: String) {
+        val page = _state.value.currentPage ?: return
+        if (name.isBlank()) return
+        val layers = page.layers.map { if (it.id == layerId) it.copy(name = name) else it }
+        viewModelScope.launch {
+            notesRepository.setPageLayers(page.id, layers, page.activeLayerId)
+            updateCurrentPageLocal { it.copy(layers = layers) }
+        }
+    }
+
+    fun toggleLayerVisible(layerId: String) {
+        val page = _state.value.currentPage ?: return
+        val layers = page.layers.map { if (it.id == layerId) it.copy(visible = !it.visible) else it }
+        viewModelScope.launch {
+            notesRepository.setPageLayers(page.id, layers, page.activeLayerId)
+            updateCurrentPageLocal { it.copy(layers = layers) }
+        }
+    }
+
+    /** Removes a layer's definition (its content stays in place, always rendered, since content
+     * pointing at an unknown layer id falls back to visible) - refuses to remove a page's last
+     * remaining layer. */
+    fun deleteLayer(layerId: String) {
+        val page = _state.value.currentPage ?: return
+        if (page.layers.size <= 1) return
+        val layers = page.layers.filterNot { it.id == layerId }
+        val activeLayerId = if (page.activeLayerId == layerId) layers.first().id else page.activeLayerId
+        viewModelScope.launch {
+            notesRepository.setPageLayers(page.id, layers, activeLayerId)
+            updateCurrentPageLocal { it.copy(layers = layers, activeLayerId = activeLayerId) }
+        }
+    }
+
+    fun setActiveLayer(layerId: String) {
+        val page = _state.value.currentPage ?: return
+        viewModelScope.launch {
+            notesRepository.setPageLayers(page.id, page.layers, layerId)
+            updateCurrentPageLocal { it.copy(activeLayerId = layerId) }
+        }
+    }
+
+    /** "Cắt ảnh": replaces an image attachment's file with a cropped copy, adjusting its on-page
+     * box to the crop's new aspect ratio (keeping the on-page width) so it doesn't look stretched. */
+    fun cropImage(imageId: String, croppedPath: String, croppedPxWidth: Int, croppedPxHeight: Int) {
+        val image = _state.value.images.firstOrNull { it.id == imageId } ?: return
+        val newHeightPx = image.widthPx * (croppedPxHeight.toFloat() / croppedPxWidth.toFloat())
+        viewModelScope.launch {
+            notesRepository.replaceImage(imageId, croppedPath, image.widthPx, newHeightPx)
+            _state.update {
+                it.copy(images = it.images.map { img -> if (img.id == imageId) img.copy(imagePath = croppedPath, heightPx = newHeightPx) else img })
+            }
+        }
     }
 
     fun changePaperType(paperType: PaperType) {

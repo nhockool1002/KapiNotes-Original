@@ -49,6 +49,7 @@ data class Stroke(
      * axis-aligned box instead of a rotated one. Ink/line/arrow strokes rotate by mutating
      * [points] directly instead (see the Lasso tool's rotate handle), so this stays 0 for them. */
     val rotationDegrees: Float = 0f,
+    val layerId: String = DEFAULT_LAYER_ID,
     val createdAt: Long,
     val updatedAt: Long = createdAt
 )
