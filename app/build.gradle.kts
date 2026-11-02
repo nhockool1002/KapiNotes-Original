@@ -16,8 +16,8 @@ android {
         // MotionEvent APIs (TOOL_TYPE_STYLUS, pressure, tilt) we rely on everywhere else too.
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.4.1"
+        versionCode = 7
+        versionName = "1.4.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

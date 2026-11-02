@@ -138,6 +138,15 @@ fun DrawingCanvas(
     var imageLiveHeight by remember(page.id) { mutableStateOf(0f) }
     var imageLiveRotation by remember(page.id) { mutableStateOf(0f) }
 
+    // DrawScope.drawImageAttachment used to call BitmapFactory.decodeFile on every single draw
+    // call - i.e. every recomposition/redraw frame, including every frame of a pinch-zoom or pan
+    // gesture - which re-reads and re-decodes the full-resolution file from disk dozens of times a
+    // second. On a real device with a few inserted photos/page backgrounds this is enough GC/native
+    // memory churn during a zoom gesture to cause jank or an OOM crash (seen as the app dying and
+    // dropping back to the home screen). Caching the decoded Bitmap per path means the file is only
+    // ever decoded once per page visit.
+    val imageBitmapCache = remember(page.id) { mutableMapOf<String, android.graphics.Bitmap>() }
+
     var draggingTextBoxId by remember(page.id) { mutableStateOf<String?>(null) }
     var textBoxDragDelta by remember(page.id) { mutableStateOf(Offset.Zero) }
     var textBoxTransformMode by remember(page.id) { mutableStateOf(TransformMode.MOVE) }
@@ -179,9 +188,20 @@ fun DrawingCanvas(
                     y.coerceIn(0f, size.height.toFloat())
                 )
                 awaitPointerEventScope {
+                    // Once a gesture has been handed off to the ancestor's pinch-zoom/pan handler
+                    // (two fingers down), fingers almost never lift at the exact same instant - the
+                    // first one up drops the count back to 1, which used to look just like a brand
+                    // new single-finger draw starting, producing a tiny stray stroke/dot right as
+                    // the zoom gesture ended. Once set, this suppresses starting anything new until
+                    // every pointer has actually lifted off the glass.
+                    var suppressUntilAllFingersLifted = false
                     while (true) {
                         val firstEvent = awaitPointerEvent(PointerEventPass.Main)
                         val firstPressed = effectivePressed(firstEvent.changes, palmRejectionEnabled)
+                        if (suppressUntilAllFingersLifted) {
+                            if (firstPressed.isEmpty()) suppressUntilAllFingersLifted = false
+                            continue
+                        }
                         // A second finger landing while the first is already down means the user is
                         // starting a pinch-zoom/pan gesture (handled by an ancestor Modifier) - never
                         // start a fresh draw/erase/etc gesture from that first finger's own down event.
@@ -316,6 +336,7 @@ fun DrawingCanvas(
                             // trigger this early finish.)
                             val lifted = !change.pressed
                             val handoffToZoom = change.pressed && effectivePressed(event.changes, palmRejectionEnabled).size > 1
+                            if (handoffToZoom) suppressUntilAllFingersLifted = true
                             if (lifted || handoffToZoom) {
                                 when (tool) {
                                     EditorTool.ERASER -> onEraseFinished()
@@ -608,7 +629,7 @@ fun DrawingCanvas(
         val draggingImage = draggingImageId != null
         images.forEach { image ->
             if (draggingImage && image.id == draggingImageId) return@forEach
-            drawImageAttachment(image)
+            drawImageAttachment(image, imageBitmapCache)
         }
         if (draggingImage) {
             images.firstOrNull { it.id == draggingImageId }?.let { image ->
@@ -617,7 +638,7 @@ fun DrawingCanvas(
                     TransformMode.RESIZE -> image.copy(widthPx = imageLiveWidth, heightPx = imageLiveHeight)
                     TransformMode.ROTATE -> image.copy(rotationDegrees = imageLiveRotation)
                 }
-                drawImageAttachment(shown)
+                drawImageAttachment(shown, imageBitmapCache)
                 drawTransformHandles(shown.x, shown.y, shown.widthPx, shown.heightPx, shown.rotationDegrees)
             }
         }
@@ -729,8 +750,10 @@ private fun DrawScope.drawSticker(sticker: EmojiSticker) {
     }
 }
 
-private fun DrawScope.drawImageAttachment(image: ImageAttachment) {
-    val bmp = BitmapFactory.decodeFile(image.imagePath) ?: return
+private fun DrawScope.drawImageAttachment(image: ImageAttachment, bitmapCache: MutableMap<String, android.graphics.Bitmap>) {
+    val bmp = bitmapCache[image.imagePath]
+        ?: BitmapFactory.decodeFile(image.imagePath)?.also { bitmapCache[image.imagePath] = it }
+        ?: return
     drawContext.canvas.nativeCanvas.apply {
         save()
         if (image.rotationDegrees != 0f) rotate(image.rotationDegrees, image.x, image.y)

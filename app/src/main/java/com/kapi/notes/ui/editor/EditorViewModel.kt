@@ -133,6 +133,23 @@ class EditorViewModel @Inject constructor(
                 audioClips.collect { clips -> _state.update { it.copy(audioClips = clips) } }
             }
         }
+        // Restores whichever pen/tool, color and stroke width the user had selected last time
+        // they were in any Editor, so reopening a note (or opening a different one) doesn't reset
+        // the toolbar back to the pen/black/2dp defaults every time.
+        viewModelScope.launch {
+            val savedTool = appSettingsStore.lastToolName()?.let { name ->
+                runCatching { EditorTool.valueOf(name) }.getOrNull()
+            }
+            val savedColor = appSettingsStore.lastColorArgb()
+            val savedWidth = appSettingsStore.lastStrokeWidthDp()
+            _state.update {
+                it.copy(
+                    tool = savedTool ?: it.tool,
+                    colorArgb = savedColor ?: it.colorArgb,
+                    strokeWidthDp = savedWidth ?: it.strokeWidthDp
+                )
+            }
+        }
         // Same small version badge as the Dashboard (not the mandatory blocking dialog here -
         // the Editor just shows the badge for awareness, opened on tap).
         viewModelScope.launch {
@@ -179,6 +196,7 @@ class EditorViewModel @Inject constructor(
                 selectedStrokeIds = if (tool == EditorTool.LASSO) it.selectedStrokeIds else emptySet()
             )
         }
+        viewModelScope.launch { appSettingsStore.setLastTool(tool.name) }
     }
 
     fun toggleLassoRectMode() {
@@ -198,10 +216,12 @@ class EditorViewModel @Inject constructor(
 
     fun selectColor(colorArgb: Long) {
         _state.update { it.copy(colorArgb = colorArgb, tool = if (it.tool == EditorTool.ERASER) EditorTool.PEN else it.tool) }
+        viewModelScope.launch { appSettingsStore.setLastColorArgb(colorArgb) }
     }
 
     fun setStrokeWidth(widthDp: Float) {
         _state.update { it.copy(strokeWidthDp = widthDp) }
+        viewModelScope.launch { appSettingsStore.setLastStrokeWidthDp(widthDp) }
     }
 
     fun togglePaperMenu(open: Boolean) {

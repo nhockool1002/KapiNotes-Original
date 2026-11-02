@@ -417,16 +417,37 @@ fun EditorScreen(
         // The zoom panel starts docked/hidden at the screen edge so it doesn't sit over the page
         // by default - only its small tab handle shows until the user explicitly asks for it.
         var isZoomPanelExpanded by remember { mutableStateOf(false) }
-        androidx.compose.runtime.LaunchedEffect(state.currentPageIndex) {
-            zoom = 1f
-            pan = Offset.Zero
-        }
 
         // Outer, unpadded wrapper: the inner Box below keeps the 24dp inset + clip that stops the
         // zoomed page from bleeding into the toolbars, but the floating zoom handle needs to sit
         // flush against the TRUE screen edge, outside that inset - so it lives in this outer Box
         // instead, as a sibling of the (padded/clipped) page box rather than a child of it.
-        Box(Modifier.weight(1f).fillMaxWidth()) {
+        // BoxWithConstraints (not a plain Box) so the fit-to-screen effect below knows exactly how
+        // much space the page actually has to work with.
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+            val viewportWidthDp = maxWidth
+            val viewportHeightDp = maxHeight
+            val currentPageForFit = state.currentPage
+            // A portrait page (tall/narrow) is very often taller than a landscape tablet's actual
+            // editable area once the toolbars are subtracted - always opening at a flat 100% zoom
+            // meant a portrait page's bottom got silently clipped off by this Box's clipToBounds()
+            // below, leaving only its (wide-ish) top portion visible, which looked just like - and
+            // was indistinguishable from - a landscape page. Landscape pages mostly already fit, so
+            // the bug only ever showed up as "every page looks landscape". Fit the WHOLE page (both
+            // dimensions) inside the viewport instead, every time the page or the available space
+            // changes, and only let the user zoom in past that by pinching themselves.
+            androidx.compose.runtime.LaunchedEffect(state.currentPageIndex, currentPageForFit?.widthPx, currentPageForFit?.heightPx, viewportWidthDp, viewportHeightDp, state.isFullscreen) {
+                val insidePadding = (if (state.isFullscreen) 4.dp else 24.dp) * 2
+                val fitZoom = if (currentPageForFit != null) {
+                    val availableWidthDp = (viewportWidthDp - insidePadding).coerceAtLeast(1.dp)
+                    val availableHeightDp = (viewportHeightDp - insidePadding).coerceAtLeast(1.dp)
+                    val pageWidthDp = (currentPageForFit.widthPx / 2).dp
+                    val pageHeightDp = (currentPageForFit.heightPx / 2).dp
+                    minOf(availableWidthDp / pageWidthDp, availableHeightDp / pageHeightDp, 1f)
+                } else 1f
+                zoom = fitZoom.coerceIn(MIN_ZOOM, MAX_ZOOM)
+                pan = Offset.Zero
+            }
         Box(
             Modifier
                 .fillMaxSize()
