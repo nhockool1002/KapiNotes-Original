@@ -58,6 +58,7 @@ fun SettingsScreen(
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
 
     val signInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        viewModel.logSignInEvent("Kết quả màn hình chọn tài khoản: resultCode=${result.resultCode} (OK=${Activity.RESULT_OK}, CANCELED=${Activity.RESULT_CANCELED})")
         // The Drive-scope consent step is often still finishing up (silently, at the Play
         // services level) at the exact moment this callback fires: getSignedInAccountFromIntent()
         // can report a failure, or the activity itself can return a non-OK result, even though
@@ -67,14 +68,21 @@ fun SettingsScreen(
         // catches that and completes login in one tap instead of needing a retry.
         val signInResult = if (result.resultCode == Activity.RESULT_OK) {
             runCatching { GoogleSignIn.getSignedInAccountFromIntent(result.data).result }
+                .onFailure { viewModel.logSignInEvent("getSignedInAccountFromIntent lỗi: ${it::class.java.simpleName} - ${it.message}") }
+                .onSuccess { viewModel.logSignInEvent("getSignedInAccountFromIntent OK: ${it.email}") }
         } else {
+            viewModel.logSignInEvent("Không phải RESULT_OK - người dùng có thể đã huỷ, hoặc Play Services trả về lỗi trước khi mở được màn hình chọn tài khoản")
             Result.failure(IllegalStateException("non-OK activity result"))
         }
-        val account = signInResult.getOrNull() ?: viewModel.driveAuthManager.lastSignedInAccount()
+        val fallbackAccount = if (signInResult.isFailure) viewModel.driveAuthManager.lastSignedInAccount() else null
+        if (fallbackAccount != null) viewModel.logSignInEvent("Fallback lastSignedInAccount() tìm thấy: ${fallbackAccount.email}")
+        val account = signInResult.getOrNull() ?: fallbackAccount
         if (account != null) {
+            viewModel.logSignInEvent("Đăng nhập thành công, đang lưu phiên + đồng bộ lần đầu")
             viewModel.onGoogleSignInResult(account)
         } else {
-            val code = (signInResult.exceptionOrNull() as? ApiException)?.statusCode
+            val exception = signInResult.exceptionOrNull()
+            val code = (exception as? ApiException)?.statusCode
             val message = when {
                 // DEVELOPER_ERROR almost always means no OAuth Android client in Google Cloud
                 // Console matches THIS exact (package name, signing SHA-1) pair - most commonly
@@ -85,8 +93,13 @@ fun SettingsScreen(
                 code == CommonStatusCodes.DEVELOPER_ERROR ->
                     "Lỗi cấu hình OAuth (DEVELOPER_ERROR): chưa có OAuth Client ID (loại Android) khớp với package \"${context.packageName}\" trong Google Cloud Console - xem README.md mục 4"
                 code != null -> "Đăng nhập thất bại (mã $code)"
+                // No ApiException and not RESULT_OK usually just means the user backed out of the
+                // picker - showing a scary error for a plain cancel would be wrong, but it's still
+                // logged above so "I tapped sign-in and nothing happened" can be told apart from
+                // "I cancelled" by reading the shared log.
                 else -> null
             }
+            viewModel.logSignInEvent("Đăng nhập KHÔNG thành công. code=$code, exception=${exception?.let { "${it::class.java.simpleName}: ${it.message}" } ?: "không có"}, thông báo hiển thị cho người dùng=${message ?: "(không hiển thị gì - có thể do người dùng huỷ)"}")
             viewModel.onGoogleSignInResult(null, message)
         }
     }
@@ -148,7 +161,11 @@ fun SettingsScreen(
         Column(Modifier.fillMaxWidth().padding(padding).padding(20.dp)) {
             AccountSection(
                 state = state,
-                onSignIn = { signInLauncher.launch(viewModel.driveAuthManager.signInIntent()) },
+                onSignIn = {
+                    viewModel.logSignInEvent("Bấm 'Đăng nhập bằng Google'")
+                    runCatching { signInLauncher.launch(viewModel.driveAuthManager.signInIntent()) }
+                        .onFailure { viewModel.logSignInEvent("Không mở được màn hình chọn tài khoản: ${it::class.java.simpleName} - ${it.message}") }
+                },
                 onLogout = viewModel::logout,
                 onSync = viewModel::triggerSync,
                 onShareLog = viewModel::shareSyncLog
@@ -260,6 +277,14 @@ private fun AccountSection(
                 }
                 Button(onClick = onSignIn, enabled = !state.isLoggingIn, modifier = Modifier.fillMaxWidth()) {
                     if (state.isLoggingIn) CircularProgressIndicator(modifier = Modifier.height(16.dp)) else Text("Đăng nhập bằng Google")
+                }
+                Spacer(Modifier.height(8.dp))
+                // Every step of a sign-in attempt (tap, activity result, exception if any) is now
+                // logged into the same file as sync - reachable here even before ever signing in
+                // successfully, since that's exactly when this is needed most: "I tapped sign-in
+                // and nothing visibly happened" has no other way to investigate otherwise.
+                TextButton(onClick = onShareLog, modifier = Modifier.fillMaxWidth()) {
+                    Text("Chia sẻ log đăng nhập (để điều tra lỗi)")
                 }
             } else {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

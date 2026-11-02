@@ -12,10 +12,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
@@ -157,6 +161,12 @@ import java.util.UUID
  * 100% (e.g. to see a whole wide page at once) while still capping how far in they can go. */
 private const val MIN_ZOOM = 0.5f
 private const val MAX_ZOOM = 4f
+
+/** Opens a page at a readable, writing-friendly zoom rather than always shrinking it down to fit
+ * the whole page on screen - a tall portrait page on a wide tablet is expected to need panning to
+ * see every part of it, the same way KiloNotes and other note apps behave; see MIN_ZOOM above for
+ * zooming back out to see the whole page at once. */
+private const val DEFAULT_ZOOM = 1.5f
 
 /** Only tracks pan/zoom once a SECOND finger goes down, leaving every single-finger gesture
  * (drawing, moving objects...) untouched for the DrawingCanvas beneath to handle. Keyed on
@@ -425,36 +435,15 @@ fun EditorScreen(
         // by default - only its small tab handle shows until the user explicitly asks for it.
         var isZoomPanelExpanded by remember { mutableStateOf(false) }
 
-        // Outer, unpadded wrapper: the inner Box below keeps the 24dp inset + clip that stops the
+        // Outer, unpadded wrapper: the inner Box below keeps the inset + clip that stops the
         // zoomed page from bleeding into the toolbars, but the floating zoom handle needs to sit
         // flush against the TRUE screen edge, outside that inset - so it lives in this outer Box
         // instead, as a sibling of the (padded/clipped) page box rather than a child of it.
-        // BoxWithConstraints (not a plain Box) so the fit-to-screen effect below knows exactly how
-        // much space the page actually has to work with.
-        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-            val viewportWidthDp = maxWidth
-            val viewportHeightDp = maxHeight
-            val currentPageForFit = state.currentPage
-            // A portrait page (tall/narrow) is very often taller than a landscape tablet's actual
-            // editable area once the toolbars are subtracted - always opening at a flat 100% zoom
-            // meant a portrait page's bottom got silently clipped off by this Box's clipToBounds()
-            // below, leaving only its (wide-ish) top portion visible, which looked just like - and
-            // was indistinguishable from - a landscape page. Landscape pages mostly already fit, so
-            // the bug only ever showed up as "every page looks landscape". Fit the WHOLE page (both
-            // dimensions) inside the viewport instead, every time the page or the available space
-            // changes, and only let the user zoom in past that by pinching themselves.
-            androidx.compose.runtime.LaunchedEffect(state.currentPageIndex, currentPageForFit?.widthPx, currentPageForFit?.heightPx, viewportWidthDp, viewportHeightDp, state.isFullscreen) {
-                val insidePadding = (if (state.isFullscreen) 4.dp else 12.dp) * 2
-                val fitZoom = if (currentPageForFit != null) {
-                    val availableWidthDp = (viewportWidthDp - insidePadding).coerceAtLeast(1.dp)
-                    val availableHeightDp = (viewportHeightDp - insidePadding).coerceAtLeast(1.dp)
-                    val pageWidthDp = (currentPageForFit.widthPx / 2).dp
-                    val pageHeightDp = (currentPageForFit.heightPx / 2).dp
-                    minOf(availableWidthDp / pageWidthDp, availableHeightDp / pageHeightDp, 1f)
-                } else 1f
-                zoom = fitZoom.coerceIn(MIN_ZOOM, MAX_ZOOM)
-                pan = Offset.Zero
-            }
+        androidx.compose.runtime.LaunchedEffect(state.currentPageIndex) {
+            zoom = DEFAULT_ZOOM
+            pan = Offset.Zero
+        }
+        Box(Modifier.weight(1f).fillMaxWidth()) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -853,12 +842,26 @@ private fun EditorTopBar(
         Row(verticalAlignment = Alignment.CenterVertically) {
             TooltipIconButton(icon = Icons.AutoMirrored.Rounded.ArrowBack, tooltip = "Quay lại", onClick = onBack, size = 44.dp)
             if (editingTitle) {
+                // EditorTopBar's Row is hardcoded to a white background regardless of the app's
+                // overall (dark) MaterialTheme, but OutlinedTextField's default text/cursor/border
+                // colors come from that same MaterialTheme's color scheme - under a dark scheme
+                // that resolves to near-white text, invisible against this white field. Pin every
+                // relevant color explicitly instead of inheriting the theme's.
                 OutlinedTextField(
                     value = titleDraft,
                     onValueChange = { titleDraft = it },
                     singleLine = true,
                     modifier = Modifier.widthIn(max = 180.dp),
-                    textStyle = TextStyle(fontWeight = FontWeight.SemiBold)
+                    textStyle = TextStyle(fontWeight = FontWeight.SemiBold, color = Color(0xFF111827)),
+                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color(0xFF111827),
+                        unfocusedTextColor = Color(0xFF111827),
+                        cursorColor = Color(0xFF111827),
+                        focusedBorderColor = Color(0xFF14B8A6),
+                        unfocusedBorderColor = Color(0xFFD1D5DB),
+                        focusedPlaceholderColor = Color(0xFF9CA3AF),
+                        unfocusedPlaceholderColor = Color(0xFF9CA3AF)
+                    )
                 )
                 TooltipIconButton(icon = Icons.Rounded.Check, tooltip = "Xác nhận đổi tên", onClick = { editingTitle = false; onRenameConfirmed(titleDraft) })
             } else {
@@ -988,13 +991,22 @@ private fun EditorTopBar(
                         Spacer(Modifier.height(8.dp))
                         Text("Mẫu giấy", style = MaterialTheme.typography.labelSmall)
                         Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(
-                                PaperType.CORNELL, PaperType.CHECKLIST, PaperType.TIMETABLE, PaperType.CHINESE_CHARACTER_GRID,
-                                PaperType.GENKOU_YOUSHI, PaperType.MUSIC_STAFF, PaperType.TABLE, PaperType.ISOMETRIC_DOT, PaperType.HANDWRITING_GUIDE
-                            ).forEach { type ->
-                                PaperSwatchButton(type = type, selected = type == currentPaperType, onClick = { onPaperTypeSelected(type); onPaperMenuToggle(false) })
+                        // All 9 at 40dp each + 8dp spacing (424dp) badly overflow this 260dp-wide
+                        // dropdown in one Row - Row doesn't wrap or scroll on its own, so every
+                        // child past the available width just gets squeezed down to whatever sliver
+                        // of space is left, instead of staying 40dp like the others. Wrap into rows
+                        // of 4 instead (same fix already applied to the Dashboard's create-note
+                        // dialog).
+                        listOf(
+                            PaperType.CORNELL, PaperType.CHECKLIST, PaperType.TIMETABLE, PaperType.CHINESE_CHARACTER_GRID,
+                            PaperType.GENKOU_YOUSHI, PaperType.MUSIC_STAFF, PaperType.TABLE, PaperType.ISOMETRIC_DOT, PaperType.HANDWRITING_GUIDE
+                        ).chunked(4).forEach { rowTypes ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                rowTypes.forEach { type ->
+                                    PaperSwatchButton(type = type, selected = type == currentPaperType, onClick = { onPaperTypeSelected(type); onPaperMenuToggle(false) })
+                                }
                             }
+                            Spacer(Modifier.height(8.dp))
                         }
                         Spacer(Modifier.height(12.dp))
                         Text("Định dạng", style = MaterialTheme.typography.labelSmall)
@@ -1320,8 +1332,12 @@ private fun ZoomControl(
 
 /** A vertical slider drawn by hand (track + thumb on a Canvas) instead of a rotated Material3
  * Slider - top of [modifier]'s bounds is [MAX_ZOOM], bottom is [MIN_ZOOM], matching the ＋/－
- * buttons placed above/below it. Both an initial tap and every subsequent drag position map
- * straight to a Y fraction of the track, so there is no gesture-recognition ambiguity. */
+ * buttons placed above/below it. A tap jumps straight to that Y fraction of the track; dragging
+ * uses Compose's [draggable] (relative per-frame delta, not an absolute finger position pinned to
+ * this Canvas's own small bounds) specifically because the previous hand-rolled absolute-position
+ * version could get stuck unable to leave MIN_ZOOM once the finger had drifted past the bottom
+ * edge of this (quite small) 30x84dp track - entirely normal on a real touch screen - since every
+ * further move was still being read as an out-of-bounds Y rather than a delta. */
 @Composable
 private fun VerticalZoomSlider(
     zoom: Float,
@@ -1331,36 +1347,23 @@ private fun VerticalZoomSlider(
     val trackColor = MaterialTheme.colorScheme.outline
     val activeColor = MaterialTheme.colorScheme.primary
     var heightPx by remember { mutableStateOf(1f) }
+    val range = MAX_ZOOM - MIN_ZOOM
 
-    fun updateFromY(y: Float) {
-        val fraction = (1f - (y / heightPx)).coerceIn(0f, 1f)
-        onZoomChange(MIN_ZOOM + fraction * (MAX_ZOOM - MIN_ZOOM))
+    val draggableState = rememberDraggableState { deltaY ->
+        // Dragging UP (negative deltaY, screen Y grows downward) increases zoom.
+        onZoomChange((zoom - deltaY / heightPx * range).coerceIn(MIN_ZOOM, MAX_ZOOM))
     }
 
     Canvas(
         modifier
             .onSizeChanged { heightPx = it.height.toFloat().coerceAtLeast(1f) }
-            // detectDragGestures + detectTapGestures as two separate pointerInput blocks on the
-            // same node turned out to interfere with each other once the value reached an edge
-            // (MIN/MAX) - dragging back off the edge stopped registering, even though a plain tap
-            // and the +/- buttons still worked. A single hand-rolled gesture loop (down, then every
-            // move until up, all in one place) removes the ambiguity between two competing
-            // detectors entirely.
             .pointerInput(Unit) {
-                awaitEachGesture {
-                    val down = awaitFirstDown()
-                    updateFromY(down.position.y)
-                    var pointerId = down.id
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        val change = event.changes.firstOrNull { it.id == pointerId } ?: break
-                        if (!change.pressed) break
-                        change.consume()
-                        updateFromY(change.position.y)
-                        pointerId = change.id
-                    }
+                detectTapGestures { offset ->
+                    val fraction = (1f - (offset.y / heightPx)).coerceIn(0f, 1f)
+                    onZoomChange(MIN_ZOOM + fraction * range)
                 }
             }
+            .draggable(state = draggableState, orientation = Orientation.Vertical)
     ) {
         val trackX = size.width / 2f
         drawLine(

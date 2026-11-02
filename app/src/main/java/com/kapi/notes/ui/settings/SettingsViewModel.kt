@@ -173,6 +173,14 @@ class SettingsViewModel @Inject constructor(
         lastSharedLogFile.value = null
     }
 
+    /** Lets the Settings screen record each step of the sign-in attempt itself (button tap,
+     * activity result, account found/not found, exception details) into the same log file as
+     * sync - previously only sync steps were logged, so a sign-in that failed silently (no
+     * DEVELOPER_ERROR, no visible message at all) left no trace anywhere to investigate. */
+    fun logSignInEvent(message: String) {
+        syncLogger.log(message)
+    }
+
     fun setPalmRejectionEnabled(enabled: Boolean) {
         viewModelScope.launch { appSettingsStore.setPalmRejectionEnabled(enabled) }
     }
