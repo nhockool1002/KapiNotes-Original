@@ -77,8 +77,8 @@ và đăng nhập tài khoản để đồng bộ ghi chú (mục 5). Cần đă
    `.../auth/drive.file` → mục **Test users**, thêm (các) tài khoản Gmail sẽ dùng để test (bắt
    buộc khi app còn ở trạng thái "Testing").
 3. **Credentials** → **Create Credentials** → **OAuth client ID** → loại **Android**:
-   - Package name: `com.kapi.notes` (release) hoặc `com.kapi.notes.debug` (debug build, có hậu
-     tố `.debug` do `applicationIdSuffix` trong `app/build.gradle.kts`)
+   - Package name: `com.kapi.notes` (debug và release build dùng chung package name này - xem
+     ghi chú ở `debug {}` trong `app/build.gradle.kts`)
    - SHA-1: lấy bằng `gradle :app:signingReport` (xem dòng `Variant: debug`)
 4. Không cần file `google-services.json` (app không dùng Firebase) và **không cần nhúng Client
    ID vào code/app** - loại client "Android" được Play Services tự nhận qua package name + SHA-1
@@ -86,8 +86,9 @@ và đăng nhập tài khoản để đồng bộ ghi chú (mục 5). Cần đă
 5. Chờ vài phút đến vài giờ để cấu hình lan truyền, rồi mở app → Dashboard → "Google Drive" hoặc
    Cài đặt → "Đăng nhập bằng Google".
 
-Build debug mới (keystore khác) hoặc build release cần tạo thêm OAuth Client ID tương ứng với
-SHA-1 của keystore đó.
+Build với keystore khác (không phải debug.keystore mặc định) cần tạo thêm OAuth Client ID tương
+ứng với SHA-1 của keystore đó - package name vẫn là `com.kapi.notes` vì debug/release không còn
+tách applicationId nữa.
 
 ## 5. Đăng nhập & đồng bộ - không có backend riêng
 

@@ -29,7 +29,15 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug {
-            applicationIdSuffix = ".debug"
+            // No applicationIdSuffix (was ".debug"): both build types are signed with the same
+            // debug keystore in this project's workflow, but a DIFFERENT package name meant a
+            // debug build needed its OWN separate OAuth Android client registered in Google Cloud
+            // Console - one that was simply never created, so Google Sign-In silently failed
+            // (instant cancel, no visible error) on every debug build since the OAuth client was
+            // only ever registered for "com.kapi.notes". Sharing the same applicationId as release
+            // means every build covered by that one registration - at the cost of a debug install
+            // overwriting a release install (and vice versa) rather than living side by side,
+            // which this single-device testing workflow never relied on anyway.
         }
     }
 

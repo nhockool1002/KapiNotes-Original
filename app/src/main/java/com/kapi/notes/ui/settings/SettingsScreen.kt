@@ -85,10 +85,7 @@ fun SettingsScreen(
             val code = (exception as? ApiException)?.statusCode
             val message = when {
                 // DEVELOPER_ERROR almost always means no OAuth Android client in Google Cloud
-                // Console matches THIS exact (package name, signing SHA-1) pair - most commonly
-                // hit the first time someone installs a release build after only ever testing the
-                // debug one (different applicationId, ".debug" suffix), since each needs its own
-                // registered client even when both share the same keystore/SHA-1. Naming the
+                // Console matches THIS exact (package name, signing SHA-1) pair. Naming the
                 // actual package here saves a guessing round-trip into Cloud Console.
                 code == CommonStatusCodes.DEVELOPER_ERROR ->
                     "Lỗi cấu hình OAuth (DEVELOPER_ERROR): chưa có OAuth Client ID (loại Android) khớp với package \"${context.packageName}\" trong Google Cloud Console - xem README.md mục 4"
