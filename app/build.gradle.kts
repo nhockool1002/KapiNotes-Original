@@ -16,8 +16,8 @@ android {
         // MotionEvent APIs (TOOL_TYPE_STYLUS, pressure, tilt) we rely on everywhere else too.
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.4.5"
+        versionCode = 11
+        versionName = "1.4.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -29,15 +29,15 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug {
-            // No applicationIdSuffix (was ".debug"): both build types are signed with the same
-            // debug keystore in this project's workflow, but a DIFFERENT package name meant a
-            // debug build needed its OWN separate OAuth Android client registered in Google Cloud
-            // Console - one that was simply never created, so Google Sign-In silently failed
-            // (instant cancel, no visible error) on every debug build since the OAuth client was
-            // only ever registered for "com.kapi.notes". Sharing the same applicationId as release
-            // means every build covered by that one registration - at the cost of a debug install
-            // overwriting a release install (and vice versa) rather than living side by side,
-            // which this single-device testing workflow never relied on anyway.
+            // Restored (was briefly dropped in 1.4.5, which broke sign-in worse): the ONE OAuth
+            // Android client that actually exists in Google Cloud Console is registered for
+            // "com.kapi.notes.debug", not "com.kapi.notes" - confirmed directly in the console.
+            // Every debug APK is what's actually been tested with Google Sign-In working, so the
+            // debug applicationId has to keep matching that registration. The plain "com.kapi.notes"
+            // release package (what GitHub releases ship) has never had its own registered client,
+            // so Drive sign-in in a release build still needs a SECOND OAuth Android client created
+            // for "com.kapi.notes" with the same SHA-1 - see README.md section 4.
+            applicationIdSuffix = ".debug"
         }
     }
 
