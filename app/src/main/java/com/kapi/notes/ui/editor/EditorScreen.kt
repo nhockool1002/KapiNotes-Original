@@ -2,6 +2,8 @@
 
 package com.kapi.notes.ui.editor
 
+import com.kapi.notes.ui.icons.KapiIcons
+
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -330,19 +332,16 @@ fun EditorScreen(
         }
     }
 
-    // The Editor's chrome (top bar, toolbars, page dock) is hardcoded to light/white
-    // backgrounds everywhere - it's meant to look like paper regardless of the rest of the app's
-    // theme - but individual Text/Icon colors throughout it were left to inherit from
-    // MaterialTheme, which under the system's dark theme resolves to near-white and becomes
-    // invisible against those same white backgrounds (reported: the note title and rename field
-    // both unreadable). Forcing the light color scheme for this whole screen, instead of pinning
-    // every single Text's color by hand, fixes every current instance of that mismatch and any
-    // future one too.
-    com.kapi.notes.ui.theme.KapiNotesTheme(useDarkTheme = false) {
+    // The Editor's chrome used to hardcode light/white backgrounds everywhere regardless of the
+    // rest of the app's theme, with individual Text/Icon colors left to inherit from
+    // MaterialTheme - under the system's dark theme that mismatched into invisible white-on-white
+    // text. Every background and text/icon color below now reads from MaterialTheme.colorScheme
+    // instead of a hardcoded constant, so the whole Editor properly follows system light/dark
+    // like the rest of the app (Dashboard included) rather than always looking light.
     Column(
         Modifier
             .fillMaxSize()
-            .background(Color(0xFFE5E7EB))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .windowInsetsPadding(WindowInsets.systemBars)
     ) {
         if (!state.isFullscreen) {
@@ -543,9 +542,10 @@ fun EditorScreen(
                     )
 
                     state.laserPoint?.let { point ->
+                        val laserColor = MaterialTheme.colorScheme.error
                         androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-                            drawCircle(color = Color(0xFFEF4444).copy(alpha = 0.35f), radius = 36f, center = point)
-                            drawCircle(color = Color(0xFFEF4444), radius = 14f, center = point)
+                            drawCircle(color = laserColor.copy(alpha = 0.35f), radius = 36f, center = point)
+                            drawCircle(color = laserColor, radius = 14f, center = point)
                         }
                     }
                 }
@@ -560,7 +560,7 @@ fun EditorScreen(
 
                 if (state.isFullscreen) {
                     Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.TopEnd) {
-                        TooltipIconButton(icon = Icons.Rounded.FullscreenExit, tooltip = "Thoát toàn màn hình", onClick = viewModel::toggleFullscreen)
+                        TooltipIconButton(icon = KapiIcons.FullscreenExit, tooltip = "Thoát toàn màn hình", onClick = viewModel::toggleFullscreen)
                     }
                 }
             }
@@ -717,7 +717,7 @@ fun EditorScreen(
             dismissButton = {
                 Row {
                     if (editingTextBox != null) {
-                        TextButton(onClick = viewModel::removeEditingTextBox) { Text("Xóa", color = Color(0xFFDC2626)) }
+                        TextButton(onClick = viewModel::removeEditingTextBox) { Text("Xóa", color = MaterialTheme.colorScheme.error) }
                     }
                     TextButton(onClick = viewModel::dismissTextBoxDialog) { Text("Hủy") }
                 }
@@ -742,7 +742,7 @@ fun EditorScreen(
                 Column {
                     Text("Bất kỳ ai có link này đều xem được ghi chú (không chỉnh sửa được):", style = MaterialTheme.typography.bodySmall)
                     Spacer(Modifier.height(8.dp))
-                    Text(link, style = MaterialTheme.typography.bodySmall, color = Color(0xFF0D9488))
+                    Text(link, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 }
             },
             confirmButton = {
@@ -791,7 +791,6 @@ fun EditorScreen(
                 }
             )
         }
-    }
     }
 }
 
@@ -843,14 +842,14 @@ private fun EditorTopBar(
         Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .background(Color.White)
-            .border(BorderStroke(1.dp, Color(0xFFD1D5DB)))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant))
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TooltipIconButton(icon = Icons.AutoMirrored.Rounded.ArrowBack, tooltip = "Quay lại", onClick = onBack, size = 44.dp)
+            TooltipIconButton(icon = KapiIcons.ArrowBack, tooltip = "Quay lại", onClick = onBack, size = 44.dp)
             if (editingTitle) {
                 // EditorTopBar's Row is hardcoded to a white background regardless of the app's
                 // overall (dark) MaterialTheme, but OutlinedTextField's default text/cursor/border
@@ -862,59 +861,59 @@ private fun EditorTopBar(
                     onValueChange = { titleDraft = it },
                     singleLine = true,
                     modifier = Modifier.widthIn(max = 180.dp),
-                    textStyle = TextStyle(fontWeight = FontWeight.SemiBold, color = Color(0xFF111827)),
+                    textStyle = TextStyle(fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface),
                     colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color(0xFF111827),
-                        unfocusedTextColor = Color(0xFF111827),
-                        cursorColor = Color(0xFF111827),
-                        focusedBorderColor = Color(0xFF14B8A6),
-                        unfocusedBorderColor = Color(0xFFD1D5DB),
-                        focusedPlaceholderColor = Color(0xFF9CA3AF),
-                        unfocusedPlaceholderColor = Color(0xFF9CA3AF)
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.onSurface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
-                TooltipIconButton(icon = Icons.Rounded.Check, tooltip = "Xác nhận đổi tên", onClick = { editingTitle = false; onRenameConfirmed(titleDraft) })
+                TooltipIconButton(icon = KapiIcons.Check, tooltip = "Xác nhận đổi tên", onClick = { editingTitle = false; onRenameConfirmed(titleDraft) })
             } else {
                 Text(
                     title,
-                    color = Color(0xFF111827),
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     modifier = Modifier.widthIn(max = 84.dp).padding(horizontal = 8.dp)
                 )
-                TooltipIconButton(icon = Icons.Rounded.Edit, tooltip = "Đổi tên ghi chú", onClick = { editingTitle = true }, size = 44.dp)
+                TooltipIconButton(icon = KapiIcons.Edit, tooltip = "Đổi tên ghi chú", onClick = { editingTitle = true }, size = 44.dp)
             }
         }
 
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TooltipIconButton(icon = Icons.AutoMirrored.Rounded.Undo, tooltip = "Hoàn tác", onClick = onUndo, enabled = canUndo, size = 44.dp)
-            TooltipIconButton(icon = Icons.AutoMirrored.Rounded.Redo, tooltip = "Làm lại", onClick = onRedo, enabled = canRedo, size = 44.dp)
+            TooltipIconButton(icon = KapiIcons.Undo, tooltip = "Hoàn tác", onClick = onUndo, enabled = canUndo, size = 44.dp)
+            TooltipIconButton(icon = KapiIcons.Redo, tooltip = "Làm lại", onClick = onRedo, enabled = canRedo, size = 44.dp)
 
             // "Chỉ cho phép bút": right here in the Editor's own top bar (not buried in Settings)
             // so it's as quick to flip mid-session as it is in KiloNotes - icon itself flips to
             // show the current state at a glance. Zoom bằng 2 ngón is untouched either way (see
             // DrawingCanvas's stylusOnlyEnabled check, which only ever gates a LONE finger).
             TooltipIconButton(
-                icon = if (stylusOnlyEnabled) Icons.Rounded.DoNotTouch else Icons.Rounded.TouchApp,
+                icon = if (stylusOnlyEnabled) KapiIcons.DoNotTouch else KapiIcons.TouchApp,
                 tooltip = if (stylusOnlyEnabled) "Chỉ cho phép bút (đang bật) - chạm để tắt" else "Chỉ cho phép bút (đang tắt) - chạm để bật",
                 onClick = onToggleStylusOnly,
-                tint = if (stylusOnlyEnabled) MaterialTheme.colorScheme.primary else Color(0xFF334155),
+                tint = if (stylusOnlyEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 size = 44.dp
             )
 
             TooltipIconButton(
-                icon = if (isCurrentPageBookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
+                icon = if (isCurrentPageBookmarked) KapiIcons.Bookmark else KapiIcons.BookmarkBorder,
                 tooltip = if (isCurrentPageBookmarked) "Bỏ đánh dấu trang" else "Đánh dấu trang (để nhảy nhanh)",
                 onClick = onToggleBookmark,
-                tint = if (isCurrentPageBookmarked) Color(0xFFF59E0B) else Color(0xFF334155),
+                tint = if (isCurrentPageBookmarked) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
                 size = 44.dp
             )
 
             Box {
-                TooltipIconButton(icon = Icons.Rounded.Bookmarks, tooltip = "Trang đã đánh dấu", onClick = { isBookmarksMenuOpen = true }, enabled = bookmarkedPages.isNotEmpty(), size = 44.dp)
+                TooltipIconButton(icon = KapiIcons.Bookmarks, tooltip = "Trang đã đánh dấu", onClick = { isBookmarksMenuOpen = true }, enabled = bookmarkedPages.isNotEmpty(), size = 44.dp)
                 DropdownMenu(expanded = isBookmarksMenuOpen, onDismissRequest = { isBookmarksMenuOpen = false }) {
                     if (bookmarkedPages.isEmpty()) {
                         DropdownMenuItem(text = { Text("Chưa có trang nào được đánh dấu") }, onClick = {}, enabled = false)
@@ -922,7 +921,7 @@ private fun EditorTopBar(
                         bookmarkedPages.forEach { pageIndex ->
                             DropdownMenuItem(
                                 text = { Text("Trang ${pageIndex + 1}") },
-                                leadingIcon = { Icon(Icons.Rounded.Bookmark, contentDescription = null, tint = Color(0xFFF59E0B)) },
+                                leadingIcon = { Icon(KapiIcons.Bookmark, contentDescription = null, tint = Color(0xFFF59E0B)) },
                                 onClick = { isBookmarksMenuOpen = false; onJumpToPage(pageIndex) }
                             )
                         }
@@ -931,38 +930,38 @@ private fun EditorTopBar(
             }
 
             Box {
-                TooltipIconButton(icon = Icons.Rounded.MoreVert, tooltip = "Thêm", onClick = { isMoreMenuOpen = true }, size = 44.dp)
+                TooltipIconButton(icon = KapiIcons.MoreVert, tooltip = "Thêm", onClick = { isMoreMenuOpen = true }, size = 44.dp)
                 if (isRecording) {
                     Box(
                         Modifier
                             .padding(top = 6.dp, end = 6.dp)
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFDC2626))
+                            .background(MaterialTheme.colorScheme.error)
                             .align(Alignment.TopEnd)
                     )
                 }
                 DropdownMenu(expanded = isMoreMenuOpen, onDismissRequest = { isMoreMenuOpen = false }) {
                     DropdownMenuItem(
                         text = { Text("Lớp (layers)") },
-                        leadingIcon = { Icon(Icons.Rounded.Layers, contentDescription = null) },
+                        leadingIcon = { Icon(KapiIcons.Layers, contentDescription = null) },
                         onClick = { isMoreMenuOpen = false; onOpenLayers() }
                     )
                     DropdownMenuItem(
                         text = { Text(if (isRecording) "Dừng ghi âm" else "Ghi âm bài giảng") },
-                        leadingIcon = { Icon(Icons.Rounded.Mic, contentDescription = null, tint = if (isRecording) Color(0xFFDC2626) else LocalContentColor.current) },
+                        leadingIcon = { Icon(KapiIcons.Mic, contentDescription = null, tint = if (isRecording) MaterialTheme.colorScheme.error else LocalContentColor.current) },
                         onClick = { isMoreMenuOpen = false; onToggleRecording() }
                     )
                     DropdownMenuItem(
                         text = { Text("Toàn màn hình") },
-                        leadingIcon = { Icon(Icons.Rounded.Fullscreen, contentDescription = null) },
+                        leadingIcon = { Icon(KapiIcons.Fullscreen, contentDescription = null) },
                         onClick = { isMoreMenuOpen = false; onFullscreenToggle() }
                     )
                     DropdownMenuItem(
                         text = { Text("Xuất ghi chú ra PDF") },
                         leadingIcon = {
                             if (isExporting) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            else Icon(Icons.Rounded.Share, contentDescription = null)
+                            else Icon(KapiIcons.Share, contentDescription = null)
                         },
                         enabled = !isExporting,
                         onClick = { isMoreMenuOpen = false; onExportPdf() }
@@ -971,7 +970,7 @@ private fun EditorTopBar(
                         text = { Text("Xuất ảnh PNG (trang hiện tại)") },
                         leadingIcon = {
                             if (isExporting) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            else Icon(Icons.Rounded.Image, contentDescription = null)
+                            else Icon(KapiIcons.Image, contentDescription = null)
                         },
                         enabled = !isExporting,
                         onClick = { isMoreMenuOpen = false; onExportPng() }
@@ -980,7 +979,7 @@ private fun EditorTopBar(
                         text = { Text("Chia sẻ link xem-only (Drive)") },
                         leadingIcon = {
                             if (isSharingLink) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            else Icon(Icons.Rounded.Link, contentDescription = null)
+                            else Icon(KapiIcons.Link, contentDescription = null)
                         },
                         enabled = !isSharingLink,
                         onClick = { isMoreMenuOpen = false; onShareViewOnlyLink() }
@@ -989,7 +988,7 @@ private fun EditorTopBar(
             }
 
             Box {
-                TooltipIconButton(icon = Icons.Rounded.Description, tooltip = "Cài đặt giấy: loại giấy, xoay, lật", onClick = { onPaperMenuToggle(true) }, size = 44.dp)
+                TooltipIconButton(icon = KapiIcons.Description, tooltip = "Cài đặt giấy: loại giấy, xoay, lật", onClick = { onPaperMenuToggle(true) }, size = 44.dp)
                 DropdownMenu(expanded = isPaperMenuOpen, onDismissRequest = { onPaperMenuToggle(false) }) {
                     Column(Modifier.padding(12.dp).width(260.dp)) {
                         Text("Loại giấy", style = MaterialTheme.typography.labelSmall)
@@ -1024,12 +1023,12 @@ private fun EditorTopBar(
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(enabled = canChangeOrientation, onClick = { onRotate(); onPaperMenuToggle(false) }) {
-                                Icon(Icons.Rounded.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Icon(KapiIcons.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Xoay")
                             }
                             OutlinedButton(enabled = canChangeOrientation, onClick = { onFlip(); onPaperMenuToggle(false) }) {
-                                Icon(Icons.Rounded.Flip, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Icon(KapiIcons.Flip, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Lật")
                             }
@@ -1050,17 +1049,17 @@ private fun EditorTopBar(
                                 Modifier
                                     .size(22.dp)
                                     .clip(CircleShape)
-                                    .border(1.dp, Color(0xFFCBD5E1), CircleShape)
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
                                     .clickable { onPageTagColorSelected(null) },
                                 contentAlignment = Alignment.Center
-                            ) { if (currentPageTagColor == null) Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(12.dp)) }
+                            ) { if (currentPageTagColor == null) Icon(KapiIcons.Check, contentDescription = null, modifier = Modifier.size(12.dp)) }
                             listOf(0xFFEF4444L, 0xFFF59E0BL, 0xFF22C55EL, 0xFF14B8A6L, 0xFFA855F7L).forEach { c ->
                                 Box(
                                     Modifier
                                         .size(22.dp)
                                         .clip(CircleShape)
                                         .background(Color(0xFF000000 or c))
-                                        .border(if (currentPageTagColor == (0xFF000000L or c)) 2.dp else 0.dp, Color.Black, CircleShape)
+                                        .border(if (currentPageTagColor == (0xFF000000L or c)) 2.dp else 0.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
                                         .clickable { onPageTagColorSelected(0xFF000000L or c) }
                                 )
                             }
@@ -1070,13 +1069,13 @@ private fun EditorTopBar(
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(onClick = { onInsertBackgroundImage(); onPaperMenuToggle(false) }, enabled = !isImportingBackground) {
-                                Icon(Icons.Rounded.Image, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Icon(KapiIcons.Image, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Ảnh nền")
                             }
                             OutlinedButton(onClick = { onInsertBackgroundPdf(); onPaperMenuToggle(false) }, enabled = !isImportingBackground) {
                                 if (isImportingBackground) CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                                else Icon(Icons.Rounded.Description, contentDescription = null, modifier = Modifier.size(16.dp))
+                                else Icon(KapiIcons.Description, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("PDF làm nền")
                             }
@@ -1084,7 +1083,7 @@ private fun EditorTopBar(
                         if (hasPageBackground) {
                             Spacer(Modifier.height(6.dp))
                             TextButton(onClick = { onClearPageBackground(); onPaperMenuToggle(false) }) {
-                                Text("Xóa nền trang này", color = Color(0xFFDC2626))
+                                Text("Xóa nền trang này", color = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -1109,8 +1108,8 @@ private fun BottomToolDock(
         Modifier
             .fillMaxWidth()
             .height(72.dp)
-            .background(Color.White)
-            .border(BorderStroke(1.dp, Color(0xFFE5E7EB))),
+            .background(MaterialTheme.colorScheme.surface)
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1119,48 +1118,48 @@ private fun BottomToolDock(
         // in the secondary toolbar above the page whenever an ink tool is active.
         DockToolButton(icon = inkToolIcon(tool), label = "Bút", selected = tool in InkTools, onClick = { onToolSelected(EditorTool.PEN) })
 
-        DockToolButton(icon = Icons.Rounded.Backspace, label = "Tẩy", selected = tool == EditorTool.ERASER, onClick = { onToolSelected(EditorTool.ERASER) })
+        DockToolButton(icon = KapiIcons.Backspace, label = "Tẩy", selected = tool == EditorTool.ERASER, onClick = { onToolSelected(EditorTool.ERASER) })
 
         Box {
             DockToolButton(icon = shapeToolIcon(tool), label = "Hình", selected = tool in ShapeTools, onClick = { onShapeMenuToggle(true) })
             DropdownMenu(expanded = isShapeMenuOpen, onDismissRequest = { onShapeMenuToggle(false) }) {
                 DropdownMenuItem(
                     text = { Text("Đường thẳng") },
-                    leadingIcon = { Icon(Icons.Rounded.Remove, contentDescription = null) },
+                    leadingIcon = { Icon(KapiIcons.Remove, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.LINE); onShapeMenuToggle(false) }
                 )
                 DropdownMenuItem(
                     text = { Text("Hình chữ nhật") },
-                    leadingIcon = { Icon(Icons.Rounded.CropSquare, contentDescription = null) },
+                    leadingIcon = { Icon(KapiIcons.CropSquare, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.RECTANGLE); onShapeMenuToggle(false) }
                 )
                 DropdownMenuItem(
                     text = { Text("Hình tròn") },
-                    leadingIcon = { Icon(Icons.Rounded.RadioButtonUnchecked, contentDescription = null) },
+                    leadingIcon = { Icon(KapiIcons.RadioButtonUnchecked, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.CIRCLE); onShapeMenuToggle(false) }
                 )
                 DropdownMenuItem(
                     text = { Text("Mũi tên") },
-                    leadingIcon = { Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null) },
+                    leadingIcon = { Icon(KapiIcons.ArrowForward, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.ARROW); onShapeMenuToggle(false) }
                 )
                 DropdownMenuItem(
                     text = { Text("Tam giác") },
-                    leadingIcon = { Icon(Icons.Rounded.ChangeHistory, contentDescription = null) },
+                    leadingIcon = { Icon(KapiIcons.ChangeHistory, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.TRIANGLE); onShapeMenuToggle(false) }
                 )
             }
         }
 
-        DockToolButton(icon = Icons.Rounded.CropFree, label = "Chọn", selected = tool == EditorTool.LASSO, onClick = { onToolSelected(EditorTool.LASSO) })
+        DockToolButton(icon = KapiIcons.CropFree, label = "Chọn", selected = tool == EditorTool.LASSO, onClick = { onToolSelected(EditorTool.LASSO) })
 
         Box {
             DockToolButton(
                 icon = when (tool) {
-                    EditorTool.IMAGE -> Icons.Rounded.Image
-                    EditorTool.TEXT -> Icons.Rounded.TextFields
-                    EditorTool.EMOJI -> Icons.Rounded.EmojiEmotions
-                    else -> Icons.Rounded.Add
+                    EditorTool.IMAGE -> KapiIcons.Image
+                    EditorTool.TEXT -> KapiIcons.TextFields
+                    EditorTool.EMOJI -> KapiIcons.EmojiEmotions
+                    else -> KapiIcons.Add
                 },
                 label = "Chèn",
                 selected = tool in insertTools,
@@ -1169,28 +1168,28 @@ private fun BottomToolDock(
             DropdownMenu(expanded = isInsertMenuOpen, onDismissRequest = { isInsertMenuOpen = false }) {
                 DropdownMenuItem(
                     text = { Text("Ảnh") },
-                    leadingIcon = { Icon(Icons.Rounded.Image, contentDescription = null) },
+                    leadingIcon = { Icon(KapiIcons.Image, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.IMAGE); isInsertMenuOpen = false }
                 )
                 DropdownMenuItem(
                     text = { Text("Văn bản") },
-                    leadingIcon = { Icon(Icons.Rounded.TextFields, contentDescription = null) },
+                    leadingIcon = { Icon(KapiIcons.TextFields, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.TEXT); isInsertMenuOpen = false }
                 )
                 DropdownMenuItem(
                     text = { Text("Emoji") },
-                    leadingIcon = { Icon(Icons.Rounded.EmojiEmotions, contentDescription = null) },
+                    leadingIcon = { Icon(KapiIcons.EmojiEmotions, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.EMOJI); isInsertMenuOpen = false }
                 )
             }
         }
 
         Box {
-            DockToolButton(icon = Icons.Rounded.MoreHoriz, label = "Thêm", selected = tool == EditorTool.LASER, onClick = { isMoreMenuOpen = true })
+            DockToolButton(icon = KapiIcons.MoreHoriz, label = "Thêm", selected = tool == EditorTool.LASER, onClick = { isMoreMenuOpen = true })
             DropdownMenu(expanded = isMoreMenuOpen, onDismissRequest = { isMoreMenuOpen = false }) {
                 DropdownMenuItem(
                     text = { Text(if (tool == EditorTool.LASER) "Tắt con trỏ laser" else "Con trỏ laser (trình chiếu)") },
-                    leadingIcon = { Icon(Icons.Rounded.Adjust, contentDescription = null, tint = Color(0xFFEF4444)) },
+                    leadingIcon = { Icon(KapiIcons.Adjust, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                     onClick = {
                         onToolSelected(if (tool == EditorTool.LASER) EditorTool.PEN else EditorTool.LASER)
                         isMoreMenuOpen = false
@@ -1206,7 +1205,7 @@ private fun DockToolButton(icon: ImageVector, label: String, selected: Boolean, 
     Column(
         Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (selected) Color(0xFFF0FDFA) else Color.Transparent)
+            .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp, horizontal = 10.dp)
             .widthIn(min = 52.dp),
@@ -1215,35 +1214,37 @@ private fun DockToolButton(icon: ImageVector, label: String, selected: Boolean, 
         Icon(
             icon,
             contentDescription = label,
-            tint = if (selected) Color(0xFF0D9488) else Color(0xFF475569),
+            tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(24.dp)
         )
         Spacer(Modifier.height(3.dp))
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
-            color = if (selected) Color(0xFF0D9488) else Color(0xFF475569),
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1
         )
     }
 }
 
+@Composable
 private fun shapeToolIcon(tool: EditorTool): ImageVector = when (tool) {
-    EditorTool.RECTANGLE -> Icons.Rounded.CropSquare
-    EditorTool.CIRCLE -> Icons.Rounded.RadioButtonUnchecked
-    EditorTool.ARROW -> Icons.AutoMirrored.Rounded.ArrowForward
-    EditorTool.TRIANGLE -> Icons.Rounded.ChangeHistory
-    else -> Icons.Rounded.Remove
+    EditorTool.RECTANGLE -> KapiIcons.CropSquare
+    EditorTool.CIRCLE -> KapiIcons.RadioButtonUnchecked
+    EditorTool.ARROW -> KapiIcons.ArrowForward
+    EditorTool.TRIANGLE -> KapiIcons.ChangeHistory
+    else -> KapiIcons.Remove
 }
 
+@Composable
 private fun inkToolIcon(tool: EditorTool): ImageVector = when (tool) {
     // Create/Edit (pen/pencil) render as near-identical pencil glyphs in Material - Draw's
     // dip-pen-and-ink-line shape is visually distinct from Edit's classic pencil at a glance.
-    EditorTool.PEN -> Icons.Rounded.Draw
-    EditorTool.PENCIL -> Icons.Rounded.Edit
-    EditorTool.BRUSH -> Icons.Rounded.Brush
-    EditorTool.HIGHLIGHTER -> Icons.Rounded.BorderColor
-    else -> Icons.Rounded.Draw
+    EditorTool.PEN -> KapiIcons.Draw
+    EditorTool.PENCIL -> KapiIcons.Edit
+    EditorTool.BRUSH -> KapiIcons.Brush
+    EditorTool.HIGHLIGHTER -> KapiIcons.BorderColor
+    else -> KapiIcons.Draw
 }
 
 private fun inkToolLabel(tool: EditorTool): String = when (tool) {
@@ -1291,7 +1292,7 @@ private fun ZoomControl(
                         enabled = zoom < MAX_ZOOM,
                         modifier = Modifier.size(26.dp)
                     ) {
-                        Icon(Icons.Rounded.Add, contentDescription = "Phóng to", modifier = Modifier.size(15.dp))
+                        Icon(KapiIcons.Add, contentDescription = "Phóng to", modifier = Modifier.size(15.dp))
                     }
                     Spacer(Modifier.height(2.dp))
                     // Rotating a real Material3 Slider (via Modifier.rotate(), and even via the
@@ -1312,7 +1313,7 @@ private fun ZoomControl(
                         enabled = zoom > MIN_ZOOM,
                         modifier = Modifier.size(26.dp)
                     ) {
-                        Icon(Icons.Rounded.Remove, contentDescription = "Thu nhỏ", modifier = Modifier.size(15.dp))
+                        Icon(KapiIcons.Remove, contentDescription = "Thu nhỏ", modifier = Modifier.size(15.dp))
                     }
                     Text(
                         "${(zoom * 100).toInt()}%",
@@ -1331,7 +1332,7 @@ private fun ZoomControl(
             }
             IconButton(onClick = onToggleExpanded, modifier = Modifier.size(44.dp)) {
                 Icon(
-                    Icons.Rounded.Search,
+                    KapiIcons.Search,
                     contentDescription = if (expanded) "Thu gọn thanh zoom" else "Mở thanh zoom",
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1357,6 +1358,7 @@ private fun VerticalZoomSlider(
 ) {
     val trackColor = MaterialTheme.colorScheme.outline
     val activeColor = MaterialTheme.colorScheme.primary
+    val thumbCenterColor = MaterialTheme.colorScheme.surface
     var heightPx by remember { mutableStateOf(1f) }
     val range = MAX_ZOOM - MIN_ZOOM
 
@@ -1394,7 +1396,7 @@ private fun VerticalZoomSlider(
             cap = StrokeCap.Round
         )
         drawCircle(color = activeColor, radius = 9.dp.toPx(), center = Offset(trackX, thumbY))
-        drawCircle(color = Color.White, radius = 4.dp.toPx(), center = Offset(trackX, thumbY))
+        drawCircle(color = thumbCenterColor, radius = 4.dp.toPx(), center = Offset(trackX, thumbY))
     }
 }
 
@@ -1440,7 +1442,7 @@ private fun PullToAddPageIndicator(widthDp: Dp, onAddPage: () -> Unit) {
             )
             Spacer(Modifier.height(8.dp))
             Icon(
-                Icons.Rounded.KeyboardArrowUp,
+                KapiIcons.KeyboardArrowUp,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
@@ -1461,7 +1463,7 @@ private fun PullToAddPageIndicator(widthDp: Dp, onAddPage: () -> Unit) {
                     )
             ) {
                 Icon(
-                    Icons.Rounded.Add,
+                    KapiIcons.Add,
                     contentDescription = "Thêm trang",
                     tint = if (dragProgress >= 1f) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1476,7 +1478,7 @@ private fun TooltipIconButton(
     tooltip: String,
     onClick: () -> Unit,
     enabled: Boolean = true,
-    tint: Color = Color(0xFF334155),
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     size: androidx.compose.ui.unit.Dp? = null
 ) {
     TooltipBox(
@@ -1508,12 +1510,12 @@ private fun InlineToolIconButton(icon: ImageVector, selected: Boolean, contentDe
                 .padding(horizontal = 2.dp)
                 .size(34.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(if (selected) Color(0xFFF0FDFA) else Color.Transparent)
-                .then(if (selected) Modifier.border(1.dp, Color(0xFF99F6E4), RoundedCornerShape(10.dp)) else Modifier),
+                .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                .then(if (selected) Modifier.border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(10.dp)) else Modifier),
             contentAlignment = Alignment.Center
         ) {
             IconButton(onClick = onClick) {
-                Icon(icon, contentDescription = null, tint = if (selected) Color(0xFF0D9488) else Color(0xFF475569), modifier = Modifier.size(18.dp))
+                Icon(icon, contentDescription = null, tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
             }
         }
     }
@@ -1525,8 +1527,8 @@ private fun PaperSwatchButton(type: PaperType, selected: Boolean, onClick: () ->
         Modifier
             .size(40.dp)
             .clip(RoundedCornerShape(6.dp))
-            .border(if (selected) 2.dp else 1.dp, if (selected) Color(0xFF14B8A6) else Color(0xFFE2E8F0), RoundedCornerShape(6.dp))
-            .background(Color.White)
+            .border(if (selected) 2.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(6.dp))
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         PaperBackground(paperType = type, modifier = Modifier.clip(RoundedCornerShape(6.dp)))
         IconButton(onClick = onClick, modifier = Modifier.fillMaxSize()) {}
@@ -1574,8 +1576,8 @@ private fun SecondaryToolbar(
         Modifier
             .fillMaxWidth()
             .height(44.dp)
-            .background(Color.White)
-            .border(BorderStroke(1.dp, Color(0xFFE5E7EB)))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant))
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1584,16 +1586,16 @@ private fun SecondaryToolbar(
         if (showEraserOptions) {
             Text("Chế độ tẩy:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(8.dp))
-            LassoModeChip(label = "Xóa theo nét", icon = Icons.Rounded.Layers, selected = eraseMode == EraseMode.STROKE, onClick = { onEraseModeChange(EraseMode.STROKE) })
+            LassoModeChip(label = "Xóa theo nét", icon = KapiIcons.Layers, selected = eraseMode == EraseMode.STROKE, onClick = { onEraseModeChange(EraseMode.STROKE) })
             Spacer(Modifier.width(6.dp))
-            LassoModeChip(label = "Xóa phẳng", icon = Icons.Rounded.Remove, selected = eraseMode == EraseMode.FLAT, onClick = { onEraseModeChange(EraseMode.FLAT) })
+            LassoModeChip(label = "Xóa phẳng", icon = KapiIcons.Remove, selected = eraseMode == EraseMode.FLAT, onClick = { onEraseModeChange(EraseMode.FLAT) })
         }
 
         if (showImageOptions) {
             Text("Cắt ảnh:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(8.dp))
             images.forEachIndexed { index, image ->
-                LassoModeChip(label = "Ảnh ${index + 1}", icon = Icons.Rounded.Crop, selected = false, onClick = { onCropImage(image.id) })
+                LassoModeChip(label = "Ảnh ${index + 1}", icon = KapiIcons.Crop, selected = false, onClick = { onCropImage(image.id) })
                 Spacer(Modifier.width(6.dp))
             }
         }
@@ -1606,9 +1608,9 @@ private fun SecondaryToolbar(
             // "Thước"/"Compa": constrain the next stroke to a perfectly straight line or a true
             // center+radius circle, while keeping the currently selected pen's own look (unlike
             // just switching to the generic Line/Circle shape tools).
-            LassoModeChip(label = "Thước", icon = Icons.Rounded.Remove, selected = rulerMode, onClick = onToggleRulerMode)
+            LassoModeChip(label = "Thước", icon = KapiIcons.Remove, selected = rulerMode, onClick = onToggleRulerMode)
             Spacer(Modifier.width(6.dp))
-            LassoModeChip(label = "Compa", icon = Icons.Rounded.RadioButtonUnchecked, selected = compassMode, onClick = onToggleCompassMode)
+            LassoModeChip(label = "Compa", icon = KapiIcons.RadioButtonUnchecked, selected = compassMode, onClick = onToggleCompassMode)
             Spacer(Modifier.width(10.dp))
         }
 
@@ -1620,7 +1622,7 @@ private fun SecondaryToolbar(
                         .size(22.dp)
                         .clip(CircleShape)
                         .background(Color(swatch))
-                        .border(if (colorArgb == swatch) 2.dp else 0.dp, Color(0xFF14B8A6), CircleShape)
+                        .border(if (colorArgb == swatch) 2.dp else 0.dp, MaterialTheme.colorScheme.primary, CircleShape)
                 ) {
                     IconButton(onClick = { onColorSelected(swatch) }, modifier = Modifier.fillMaxSize()) {}
                 }
@@ -1630,11 +1632,11 @@ private fun SecondaryToolbar(
                     .padding(horizontal = 4.dp)
                     .size(22.dp)
                     .clip(CircleShape)
-                    .border(1.dp, Color(0xFF94A3B8), CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
                     .clickable { isCustomColorDialogOpen = true },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Rounded.Add, contentDescription = "Thêm màu tùy chỉnh", modifier = Modifier.size(14.dp))
+                Icon(KapiIcons.Add, contentDescription = "Thêm màu tùy chỉnh", modifier = Modifier.size(14.dp))
             }
             Spacer(Modifier.width(16.dp))
             Box(Modifier.width(140.dp)) {
@@ -1642,22 +1644,22 @@ private fun SecondaryToolbar(
             }
             if (tool in fillableShapes) {
                 Spacer(Modifier.width(12.dp))
-                LassoModeChip(label = "Tô màu", icon = Icons.Rounded.FormatColorFill, selected = isShapeFillEnabled, onClick = onToggleShapeFill)
+                LassoModeChip(label = "Tô màu", icon = KapiIcons.FormatColorFill, selected = isShapeFillEnabled, onClick = onToggleShapeFill)
             }
         }
 
         if (showLassoOptions) {
             Text("Kiểu chọn vùng:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(8.dp))
-            LassoModeChip(label = "Tự do", icon = Icons.Rounded.Gesture, selected = !lassoRectMode, onClick = { if (lassoRectMode) onToggleLassoRectMode() })
+            LassoModeChip(label = "Tự do", icon = KapiIcons.Gesture, selected = !lassoRectMode, onClick = { if (lassoRectMode) onToggleLassoRectMode() })
             Spacer(Modifier.width(6.dp))
-            LassoModeChip(label = "Hình chữ nhật", icon = Icons.Rounded.CropSquare, selected = lassoRectMode, onClick = { if (!lassoRectMode) onToggleLassoRectMode() })
+            LassoModeChip(label = "Hình chữ nhật", icon = KapiIcons.CropSquare, selected = lassoRectMode, onClick = { if (!lassoRectMode) onToggleLassoRectMode() })
             if (hasSelection) {
                 Spacer(Modifier.width(12.dp))
                 com.kapi.notes.ocr.RecognitionLanguage.entries.forEach { lang ->
                     LassoModeChip(
                         label = lang.labelVi,
-                        icon = Icons.Rounded.Translate,
+                        icon = KapiIcons.Translate,
                         selected = recognitionLanguage == lang,
                         onClick = { onRecognitionLanguageChange(lang) }
                     )
@@ -1666,7 +1668,7 @@ private fun SecondaryToolbar(
                 if (isRecognizingHandwriting) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp))
                 } else {
-                    LassoModeChip(label = "Nhận dạng chữ", icon = Icons.Rounded.AutoAwesome, selected = false, onClick = onRecognizeHandwriting)
+                    LassoModeChip(label = "Nhận dạng chữ", icon = KapiIcons.AutoAwesome, selected = false, onClick = onRecognizeHandwriting)
                 }
             }
         }
@@ -1701,15 +1703,15 @@ private fun LassoModeChip(label: String, icon: ImageVector, selected: Boolean, o
     Row(
         Modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(if (selected) Color(0xFFF0FDFA) else Color(0xFFF1F5F9))
-            .border(1.dp, if (selected) Color(0xFF14B8A6) else Color.Transparent, RoundedCornerShape(16.dp))
+            .background(if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+            .border(1.dp, if (selected) MaterialTheme.colorScheme.primary else Color.Transparent, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (selected) Color(0xFF14B8A6) else Color(0xFF475569))
+        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = if (selected) Color(0xFF14B8A6) else Color(0xFF475569))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -1718,11 +1720,11 @@ private fun StyleToggleChip(label: String, active: Boolean, onClick: () -> Unit)
     Box(
         Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(if (active) Color(0xFF14B8A6) else Color(0xFFF1F5F9))
+            .background(if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = if (active) Color.White else Color(0xFF475569))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -1737,8 +1739,8 @@ private fun AudioClipsBar(
         Modifier
             .fillMaxWidth()
             .height(44.dp)
-            .background(Color(0xFFF8FAFC))
-            .border(BorderStroke(1.dp, Color(0xFFE5E7EB)))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant))
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1748,16 +1750,16 @@ private fun AudioClipsBar(
                 Row(
                     Modifier
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (isPlaying) Color(0xFFF0FDFA) else Color(0xFFF1F5F9))
+                        .background(if (isPlaying) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = { onTogglePlay(clip.id) }, modifier = Modifier.size(24.dp)) {
-                        Icon(if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(if (isPlaying) KapiIcons.Pause else KapiIcons.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                     }
                     Text("${clip.durationMs / 1000}s", style = MaterialTheme.typography.labelSmall)
                     IconButton(onClick = { onRemove(clip.id) }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Rounded.Close, contentDescription = "Xóa", modifier = Modifier.size(14.dp))
+                        Icon(KapiIcons.Close, contentDescription = "Xóa", modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -1795,14 +1797,14 @@ private fun PageSwitcher(
         Modifier
             .fillMaxWidth()
             .height(48.dp)
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TooltipIconButton(icon = Icons.AutoMirrored.Rounded.ArrowBack, tooltip = "Chuyển trang này lên trước", onClick = { onMovePage(-1) }, enabled = currentIndex > 0)
-            TooltipIconButton(icon = Icons.AutoMirrored.Rounded.ArrowForward, tooltip = "Chuyển trang này ra sau", onClick = { onMovePage(1) }, enabled = currentIndex < pageCount - 1)
+            TooltipIconButton(icon = KapiIcons.ArrowBack, tooltip = "Chuyển trang này lên trước", onClick = { onMovePage(-1) }, enabled = currentIndex > 0)
+            TooltipIconButton(icon = KapiIcons.ArrowForward, tooltip = "Chuyển trang này ra sau", onClick = { onMovePage(1) }, enabled = currentIndex < pageCount - 1)
         }
 
         Row(
@@ -1854,10 +1856,10 @@ private fun PageSwitcher(
                             .padding(horizontal = 4.dp)
                             .size(28.dp)
                             .clip(CircleShape)
-                            .background(if (i == currentIndex) Color(0xFF14B8A6) else Color(0xFFE2E8F0))
+                            .background(if (i == currentIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         IconButton(onClick = { onPageSelected(i) }, modifier = Modifier.fillMaxSize()) {
-                            Text("${i + 1}", color = if (i == currentIndex) Color.White else Color.Black)
+                            Text("${i + 1}", color = if (i == currentIndex) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     tagColors.getOrNull(i)?.let { tag ->
@@ -1868,9 +1870,9 @@ private fun PageSwitcher(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TooltipIconButton(icon = Icons.Rounded.Add, tooltip = "Thêm trang mới", onClick = onAddPage)
-            TooltipIconButton(icon = Icons.Rounded.ContentCopy, tooltip = "Nhân đôi trang này", onClick = onDuplicatePage)
-            TooltipIconButton(icon = Icons.Rounded.Delete, tooltip = "Xóa trang này", onClick = onDeletePage, enabled = pageCount > 1)
+            TooltipIconButton(icon = KapiIcons.Add, tooltip = "Thêm trang mới", onClick = onAddPage)
+            TooltipIconButton(icon = KapiIcons.ContentCopy, tooltip = "Nhân đôi trang này", onClick = onDuplicatePage)
+            TooltipIconButton(icon = KapiIcons.Delete, tooltip = "Xóa trang này", onClick = onDeletePage, enabled = pageCount > 1)
         }
     }
 }

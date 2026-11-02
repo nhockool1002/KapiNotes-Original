@@ -2,6 +2,8 @@
 
 package com.kapi.notes.ui.about
 
+import com.kapi.notes.ui.icons.KapiIcons
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,14 +45,18 @@ import androidx.compose.ui.unit.dp
 
 private data class AboutFeature(val icon: ImageVector, val title: String, val description: String)
 
-private val features = listOf(
-    AboutFeature(Icons.Rounded.Draw, "Viết tay tự nhiên", "Bút, cọ, dạ quang với độ nhạy lực nhấn, tẩy và công cụ lasso chọn/di chuyển."),
-    AboutFeature(Icons.Rounded.Straighten, "Thước & Compa ảo", "Vẽ đường thẳng, hình tròn chuẩn xác dù tay không chạm đều."),
-    AboutFeature(Icons.Rounded.CloudSync, "Đồng bộ Google Drive", "Dữ liệu lưu trên Drive của chính bạn, không qua máy chủ trung gian."),
-    AboutFeature(Icons.Rounded.Link, "Chia sẻ link xem-only", "Gửi ghi chú cho bạn bè/giáo viên chỉ bằng một đường link."),
-    AboutFeature(Icons.Rounded.TextFields, "Nhận dạng chữ viết tay", "Chuyển nét vẽ tay thành văn bản ngay trên máy, không cần mạng."),
-    AboutFeature(Icons.Rounded.AutoAwesome, "Chèn ảnh/PDF làm nền", "Annotate trực tiếp lên giáo trình hoặc tài liệu PDF/ảnh.")
-)
+// KapiIcons entries read a vector drawable resource, which needs composable context - so this
+// list (previously a plain top-level val) is now a composable getter instead, built fresh each
+// time AboutScreen reads it.
+private val features: List<AboutFeature>
+    @Composable get() = listOf(
+        AboutFeature(KapiIcons.Draw, "Viết tay tự nhiên", "Bút, cọ, dạ quang với độ nhạy lực nhấn, tẩy và công cụ lasso chọn/di chuyển."),
+        AboutFeature(KapiIcons.Straighten, "Thước & Compa ảo", "Vẽ đường thẳng, hình tròn chuẩn xác dù tay không chạm đều."),
+        AboutFeature(KapiIcons.CloudSync, "Đồng bộ Google Drive", "Dữ liệu lưu trên Drive của chính bạn, không qua máy chủ trung gian."),
+        AboutFeature(KapiIcons.Link, "Chia sẻ link xem-only", "Gửi ghi chú cho bạn bè/giáo viên chỉ bằng một đường link."),
+        AboutFeature(KapiIcons.TextFields, "Nhận dạng chữ viết tay", "Chuyển nét vẽ tay thành văn bản ngay trên máy, không cần mạng."),
+        AboutFeature(KapiIcons.AutoAwesome, "Chèn ảnh/PDF làm nền", "Annotate trực tiếp lên giáo trình hoặc tài liệu PDF/ảnh.")
+    )
 
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
@@ -60,7 +66,7 @@ fun AboutScreen(onBack: () -> Unit) {
                 title = { Text("Giới thiệu") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Quay lại")
+                        Icon(KapiIcons.ArrowBack, contentDescription = "Quay lại")
                     }
                 }
             )

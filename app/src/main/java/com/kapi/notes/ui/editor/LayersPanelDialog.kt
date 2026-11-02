@@ -1,5 +1,7 @@
 package com.kapi.notes.ui.editor
 
+import com.kapi.notes.ui.icons.KapiIcons
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -73,13 +75,13 @@ fun LayersPanelDialog(
                         ) {
                             IconButton(onClick = { onToggleVisible(layer.id) }) {
                                 Icon(
-                                    if (layer.visible) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
+                                    if (layer.visible) KapiIcons.Visibility else KapiIcons.VisibilityOff,
                                     contentDescription = if (layer.visible) "Ẩn lớp" else "Hiện lớp"
                                 )
                             }
                             IconButton(onClick = { onSelectActive(layer.id) }) {
                                 Icon(
-                                    if (layer.id == activeLayerId) Icons.Rounded.RadioButtonChecked else Icons.Rounded.RadioButtonUnchecked,
+                                    if (layer.id == activeLayerId) KapiIcons.RadioButtonChecked else KapiIcons.RadioButtonUnchecked,
                                     contentDescription = "Chọn làm lớp đang vẽ",
                                     tint = if (layer.id == activeLayerId) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -90,10 +92,10 @@ fun LayersPanelDialog(
                                 modifier = Modifier.weight(1f)
                             )
                             IconButton(onClick = { renamingLayerId = layer.id }) {
-                                Icon(Icons.Rounded.Edit, contentDescription = "Đổi tên lớp", modifier = Modifier.width(18.dp))
+                                Icon(KapiIcons.Edit, contentDescription = "Đổi tên lớp", modifier = Modifier.width(18.dp))
                             }
                             IconButton(onClick = { onDeleteLayer(layer.id) }, enabled = layers.size > 1) {
-                                Icon(Icons.Rounded.Delete, contentDescription = "Xóa lớp", tint = MaterialTheme.colorScheme.error)
+                                Icon(KapiIcons.Delete, contentDescription = "Xóa lớp", tint = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -105,7 +107,7 @@ fun LayersPanelDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = onAddLayer) {
-                        Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.width(18.dp))
+                        Icon(KapiIcons.Add, contentDescription = null, modifier = Modifier.width(18.dp))
                         Spacer(Modifier.width(4.dp))
                         Text("Thêm lớp")
                     }

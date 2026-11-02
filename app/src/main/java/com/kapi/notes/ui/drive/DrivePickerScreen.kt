@@ -2,6 +2,8 @@
 
 package com.kapi.notes.ui.drive
 
+import com.kapi.notes.ui.icons.KapiIcons
+
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -102,7 +104,7 @@ fun DrivePickerScreen(
             TopAppBar(
                 title = { Text("Google Drive") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Quay lại") }
+                    IconButton(onClick = onBack) { Icon(KapiIcons.ArrowBack, contentDescription = "Quay lại") }
                 }
             )
         }
@@ -154,7 +156,7 @@ private fun ConnectDriveState(onConnect: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(Icons.Rounded.PictureAsPdf, contentDescription = null, modifier = Modifier.size(56.dp))
+        Icon(KapiIcons.PictureAsPdf, contentDescription = null, modifier = Modifier.size(56.dp))
         Spacer(Modifier.height(16.dp))
         Text("Kết nối Google Drive của bạn để chọn tài liệu cần ghi chú", style = MaterialTheme.typography.bodyLarge)
         Spacer(Modifier.height(20.dp))
@@ -180,10 +182,10 @@ private fun DriveFileRow(file: DriveFile, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         val icon = when (file.kind) {
-            DriveFileKind.FOLDER -> Icons.Rounded.Folder
-            DriveFileKind.PDF -> Icons.Rounded.PictureAsPdf
-            DriveFileKind.IMAGE -> Icons.Rounded.Image
-            DriveFileKind.OTHER -> Icons.Rounded.PictureAsPdf
+            DriveFileKind.FOLDER -> KapiIcons.Folder
+            DriveFileKind.PDF -> KapiIcons.PictureAsPdf
+            DriveFileKind.IMAGE -> KapiIcons.Image
+            DriveFileKind.OTHER -> KapiIcons.PictureAsPdf
         }
         Icon(icon, contentDescription = null)
         Text(file.name, modifier = Modifier.fillMaxWidth())

@@ -2,6 +2,8 @@
 
 package com.kapi.notes.ui.settings
 
+import com.kapi.notes.ui.icons.KapiIcons
+
 import android.app.Activity
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -151,7 +153,7 @@ fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Cài đặt") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Quay lại") } }
+                navigationIcon = { IconButton(onClick = onBack) { Icon(KapiIcons.ArrowBack, contentDescription = "Quay lại") } }
             )
         }
     ) { padding ->

@@ -2,6 +2,8 @@
 
 package com.kapi.notes.ui.common
 
+import com.kapi.notes.ui.icons.KapiIcons
+
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -78,7 +80,7 @@ fun UpdateDialog(
             dismissOnBackPress = !mandatory,
             dismissOnClickOutside = !mandatory
         ),
-        icon = { Icon(Icons.Rounded.CloudDownload, contentDescription = null) },
+        icon = { Icon(KapiIcons.CloudDownload, contentDescription = null) },
         title = { Text(if (status.isUpToDate) "Bạn đang dùng bản mới nhất" else "Đã có bản cập nhật mới") },
         text = {
             Column {

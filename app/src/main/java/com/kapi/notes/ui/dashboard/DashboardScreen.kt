@@ -2,6 +2,8 @@
 
 package com.kapi.notes.ui.dashboard
 
+import com.kapi.notes.ui.icons.KapiIcons
+
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -209,13 +211,13 @@ fun DashboardScreen(
                             if (state.isImportingLocalFile) {
                                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                             } else {
-                                Icon(Icons.Rounded.UploadFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(KapiIcons.UploadFile, contentDescription = null, modifier = Modifier.size(18.dp))
                             }
                             Spacer(Modifier.width(6.dp))
                             Text("Tải ảnh/PDF từ máy")
                         }
                         OutlinedButton(onClick = onOpenDrivePicker, shape = MaterialTheme.shapes.medium) {
-                            Icon(Icons.Rounded.InsertDriveFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(KapiIcons.InsertDriveFile, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Nhập từ Drive")
                         }
@@ -224,7 +226,7 @@ fun DashboardScreen(
                             shape = MaterialTheme.shapes.medium,
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(KapiIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Tạo ghi chú")
                         }
@@ -274,6 +276,7 @@ fun DashboardScreen(
                     labelDialogNote?.let { note ->
                         LabelDialog(
                             note = note,
+                            existingLabels = state.availableLabels,
                             onDismiss = { labelDialogNote = null },
                             onSave = { text, color ->
                                 viewModel.setNoteLabel(note, text, color)
@@ -392,34 +395,34 @@ private fun DashboardSidebar(
                 }
                 if (onClose != null) {
                     IconButton(onClick = onClose) {
-                        Icon(Icons.Rounded.Close, contentDescription = "Đóng")
+                        Icon(KapiIcons.Close, contentDescription = "Đóng")
                     }
                 }
             }
 
             Column(Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 SidebarItem(
-                    icon = Icons.Rounded.Book,
+                    icon = KapiIcons.Book,
                     label = DashboardSection.MY_NOTES.labelVi,
                     selected = section == DashboardSection.MY_NOTES,
                     onClick = { onSectionSelected(DashboardSection.MY_NOTES) }
                 )
                 SidebarItem(
-                    icon = Icons.Rounded.InsertDriveFile,
+                    icon = KapiIcons.InsertDriveFile,
                     label = "Google Drive",
                     selected = false,
                     onClick = onOpenDrive,
                     tint = Color(0xFF22C55E)
                 )
                 SidebarItem(
-                    icon = Icons.Rounded.Star,
+                    icon = KapiIcons.Star,
                     label = DashboardSection.FAVORITES.labelVi,
                     selected = section == DashboardSection.FAVORITES,
                     onClick = { onSectionSelected(DashboardSection.FAVORITES) },
                     tint = Color(0xFFFACC15)
                 )
                 SidebarItem(
-                    icon = Icons.Rounded.Delete,
+                    icon = KapiIcons.Delete,
                     label = DashboardSection.TRASH.labelVi,
                     selected = section == DashboardSection.TRASH,
                     onClick = { onSectionSelected(DashboardSection.TRASH) }
@@ -429,8 +432,8 @@ private fun DashboardSidebar(
             Spacer(Modifier.weight(1f))
 
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                SidebarItem(icon = Icons.Rounded.Info, label = "Giới thiệu", selected = false, onClick = onOpenAbout)
-                SidebarItem(icon = Icons.Rounded.Settings, label = "Cài đặt", selected = false, onClick = onOpenSettings)
+                SidebarItem(icon = KapiIcons.Info, label = "Giới thiệu", selected = false, onClick = onOpenAbout)
+                SidebarItem(icon = KapiIcons.Settings, label = "Cài đặt", selected = false, onClick = onOpenSettings)
             }
         }
     }
@@ -486,14 +489,14 @@ private fun DashboardHeader(
         ) {
             Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onMenuClick) {
-                    Icon(Icons.Rounded.Menu, contentDescription = "Mở menu")
+                    Icon(KapiIcons.Menu, contentDescription = "Mở menu")
                 }
                 Spacer(Modifier.width(4.dp))
                 TextField(
                     value = query,
                     onValueChange = onQueryChange,
                     placeholder = { Text("Tìm kiếm tài liệu...", maxLines = 1) },
-                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                    leadingIcon = { Icon(KapiIcons.Search, contentDescription = null) },
                     singleLine = true,
                     shape = RoundedCornerShape(50),
                     colors = TextFieldDefaults.colors(
@@ -528,7 +531,7 @@ private fun DashboardHeader(
                             if (syncStatus == com.kapi.notes.domain.model.SyncStatus.SYNCING) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                             } else {
-                                Icon(Icons.Rounded.Sync, contentDescription = "Đồng bộ ngay")
+                                Icon(KapiIcons.Sync, contentDescription = "Đồng bộ ngay")
                             }
                         }
                     }
@@ -592,7 +595,7 @@ private fun NoteCard(
                 } else if (note.source == NoteSource.DRIVE_IMPORT) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Icon(
-                            Icons.Rounded.PictureAsPdf,
+                            KapiIcons.PictureAsPdf,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
                             tint = Color(0xFFF87171)
@@ -604,7 +607,7 @@ private fun NoteCard(
 
                 Box(Modifier.align(Alignment.TopEnd).padding(4.dp)) {
                     IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Rounded.MoreVert, contentDescription = "Tùy chọn", modifier = Modifier.size(18.dp))
+                        Icon(KapiIcons.MoreVert, contentDescription = "Tùy chọn", modifier = Modifier.size(18.dp))
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         if (inTrash) {
@@ -614,22 +617,22 @@ private fun NoteCard(
                             DropdownMenuItem(
                                 text = { Text(if (note.isFavorite) "Bỏ yêu thích" else "Yêu thích") },
                                 onClick = { menuOpen = false; onToggleFavorite() },
-                                leadingIcon = { Icon(Icons.Rounded.Star, contentDescription = null) }
+                                leadingIcon = { Icon(KapiIcons.Star, contentDescription = null) }
                             )
                             DropdownMenuItem(
                                 text = { Text("Nhân đôi ghi chú") },
                                 onClick = { menuOpen = false; onDuplicate() },
-                                leadingIcon = { Icon(Icons.Rounded.ContentCopy, contentDescription = null) }
+                                leadingIcon = { Icon(KapiIcons.ContentCopy, contentDescription = null) }
                             )
                             DropdownMenuItem(
                                 text = { Text(if (note.labelText != null) "Sửa nhãn" else "Gắn nhãn") },
                                 onClick = { menuOpen = false; onEditLabel() },
-                                leadingIcon = { Icon(Icons.Rounded.Label, contentDescription = null) }
+                                leadingIcon = { Icon(KapiIcons.Label, contentDescription = null) }
                             )
                             DropdownMenuItem(
                                 text = { Text("Chuyển vào thùng rác") },
                                 onClick = { menuOpen = false; onTrash() },
-                                leadingIcon = { Icon(Icons.Rounded.Delete, contentDescription = null) }
+                                leadingIcon = { Icon(KapiIcons.Delete, contentDescription = null) }
                             )
                         }
                     }
@@ -789,7 +792,7 @@ private fun PaperChoiceSwatch(type: PaperType, selected: Boolean, onClick: () ->
             if (selected) {
                 Box(Modifier.align(Alignment.TopEnd).padding(3.dp)) {
                     Icon(
-                        Icons.Rounded.CheckCircle,
+                        KapiIcons.CheckCircle,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
@@ -824,7 +827,7 @@ private fun LabelFilterChip(label: NoteLabelFilter, selected: Boolean, onClick: 
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        if (selected) Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+        if (selected) Icon(KapiIcons.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
         Text(label.text, color = Color.White, style = MaterialTheme.typography.labelSmall)
     }
 }
@@ -840,6 +843,7 @@ private val LabelColorSwatches: List<Long> = listOf(
 @Composable
 private fun LabelDialog(
     note: Note,
+    existingLabels: List<NoteLabelFilter>,
     onDismiss: () -> Unit,
     onSave: (String, Long) -> Unit
 ) {
@@ -852,6 +856,37 @@ private fun LabelDialog(
         title = { Text("Nhãn ghi chú") },
         text = {
             Column {
+                // Previously this dialog only ever let you TYPE a brand new label - picking one
+                // that already exists on another note meant retyping its exact name and re-picking
+                // its color by eye, with nothing stopping a typo from silently creating a second,
+                // separate label. Tapping a chip here fills in both fields with that label's exact
+                // text+color instead.
+                if (existingLabels.isNotEmpty()) {
+                    Text("Nhãn đã có", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        existingLabels.forEach { existing ->
+                            val isSelected = text == existing.text && color == existing.colorArgb
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(MaterialTheme.shapes.extraLarge)
+                                    .background(Color(existing.colorArgb))
+                                    .border(
+                                        BorderStroke(if (isSelected) 2.dp else 0.dp, MaterialTheme.colorScheme.onSurface),
+                                        MaterialTheme.shapes.extraLarge
+                                    )
+                                    .combinedClickable(onClick = { text = existing.text; color = existing.colorArgb })
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(existing.text, color = Color.White, style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Text("Hoặc tạo nhãn mới", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                }
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
