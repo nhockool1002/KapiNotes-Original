@@ -96,6 +96,7 @@ fun DrawingCanvas(
     rulerMode: Boolean = false,
     compassMode: Boolean = false,
     palmRejectionEnabled: Boolean = true,
+    stylusOnlyEnabled: Boolean = false,
     backgroundBitmap: ImageBitmap?,
     onStrokeFinished: (List<StrokePoint>) -> Unit,
     onEraseAt: (Offset) -> Unit,
@@ -179,7 +180,7 @@ fun DrawingCanvas(
         modifier = modifier
             .fillMaxSize()
             .graphicsLayer(scaleX = scaleX)
-            .pointerInput(page.id, tool, colorArgb, strokeWidthDp, selectedStrokeIds, lassoRectMode, rulerMode, compassMode, palmRejectionEnabled, stickers, images, textBoxes) {
+            .pointerInput(page.id, tool, colorArgb, strokeWidthDp, selectedStrokeIds, lassoRectMode, rulerMode, compassMode, palmRejectionEnabled, stylusOnlyEnabled, stickers, images, textBoxes) {
                 // Ink/shape/eraser input never records a point outside the page itself, so a drag
                 // that runs off the edge (or a stray coordinate from a zoom-gesture handoff) can't
                 // leave marks - or stray strokes - beyond the paper bounds.
@@ -209,6 +210,12 @@ fun DrawingCanvas(
                         // it does NOT count as that second finger - see effectivePressed above.)
                         if (firstPressed.size > 1) continue
                         val down = firstPressed.firstOrNull() ?: continue
+                        // Stylus-only mode: a single finger is never allowed to start anything on
+                        // its own (draw, erase, drag a sticker...) - only the stylus can. This is
+                        // unconditional (unlike palm rejection, which only matters once a stylus is
+                        // actually down), but two-finger pinch-zoom is untouched since the ancestor
+                        // Modifier already claims that gesture before a lone finger ever gets here.
+                        if (stylusOnlyEnabled && down.type != PointerType.Stylus) continue
                         var lastPos = down.position.clampToPage()
                         val downPos = lastPos
                         var totalMoved = 0f

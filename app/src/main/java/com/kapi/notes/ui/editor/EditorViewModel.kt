@@ -83,7 +83,8 @@ data class EditorUiState(
     val error: String? = null,
     val versionStatus: VersionStatus? = null,
     val isManualUpdateDialogOpen: Boolean = false,
-    val palmRejectionEnabled: Boolean = true
+    val palmRejectionEnabled: Boolean = true,
+    val stylusOnlyEnabled: Boolean = false
 ) {
     val currentPage: NotePage? get() = pages.getOrNull(currentPageIndex)
     val editingTextBox: TextBoxItem? get() = editingTextBoxId?.let { id -> textBoxes.firstOrNull { it.id == id } }
@@ -162,10 +163,24 @@ class EditorViewModel @Inject constructor(
                 _state.update { it.copy(palmRejectionEnabled = enabled) }
             }
         }
+        viewModelScope.launch {
+            appSettingsStore.stylusOnlyEnabled.collect { enabled ->
+                _state.update { it.copy(stylusOnlyEnabled = enabled) }
+            }
+        }
     }
 
     fun toggleManualUpdateDialog(open: Boolean) {
         _state.update { it.copy(isManualUpdateDialogOpen = open) }
+    }
+
+    /** Flips "Chỉ cho phép bút" right from the Editor's top bar (not just Settings) - same
+     * DataStore-backed flag either way, so toggling it here or in Settings stays in sync and
+     * sticks across app restarts. */
+    fun toggleStylusOnly() {
+        val newValue = !_state.value.stylusOnlyEnabled
+        _state.update { it.copy(stylusOnlyEnabled = newValue) }
+        viewModelScope.launch { appSettingsStore.setStylusOnlyEnabled(newValue) }
     }
 
     private suspend fun loadPageContent() {

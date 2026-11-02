@@ -15,6 +15,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
@@ -49,6 +50,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.Redo
 import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Adjust
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -56,6 +58,8 @@ import androidx.compose.material.icons.rounded.Backspace
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.Bookmarks
+import androidx.compose.material.icons.rounded.DoNotTouch
+import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Brush
 import androidx.compose.material.icons.rounded.ChangeHistory
@@ -134,6 +138,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlin.math.roundToInt
@@ -364,7 +369,9 @@ fun EditorScreen(
                 isExporting = state.isExporting,
                 onExportPdf = viewModel::exportNote,
                 onExportPng = viewModel::exportCurrentPageAsPng,
-                onOpenLayers = { isLayersPanelOpen = true }
+                onOpenLayers = { isLayersPanelOpen = true },
+                stylusOnlyEnabled = state.stylusOnlyEnabled,
+                onToggleStylusOnly = viewModel::toggleStylusOnly
             )
 
             SecondaryToolbar(
@@ -437,7 +444,7 @@ fun EditorScreen(
             // dimensions) inside the viewport instead, every time the page or the available space
             // changes, and only let the user zoom in past that by pinching themselves.
             androidx.compose.runtime.LaunchedEffect(state.currentPageIndex, currentPageForFit?.widthPx, currentPageForFit?.heightPx, viewportWidthDp, viewportHeightDp, state.isFullscreen) {
-                val insidePadding = (if (state.isFullscreen) 4.dp else 24.dp) * 2
+                val insidePadding = (if (state.isFullscreen) 4.dp else 12.dp) * 2
                 val fitZoom = if (currentPageForFit != null) {
                     val availableWidthDp = (viewportWidthDp - insidePadding).coerceAtLeast(1.dp)
                     val availableHeightDp = (viewportHeightDp - insidePadding).coerceAtLeast(1.dp)
@@ -451,7 +458,7 @@ fun EditorScreen(
         Box(
             Modifier
                 .fillMaxSize()
-                .padding(if (state.isFullscreen) 4.dp else 24.dp)
+                .padding(if (state.isFullscreen) 4.dp else 12.dp)
                 // Clips the zoomed/panned page content to this box's own bounds, which sit strictly
                 // below the top bars and above the bottom dock/page switcher - without it, Compose's
                 // graphicsLayer scale draws past its layout bounds and a pinch-zoomed page visibly
@@ -475,11 +482,19 @@ fun EditorScreen(
                     page.backgroundImagePath?.let { path -> BitmapFactory.decodeFile(path)?.asImageBitmap() }
                 }
 
+                // The graphicsLayer transform now lives on this Column (not the page Box itself)
+                // so the "pull to add page" affordance below sits right under the page and pans/
+                // zooms together with it, exactly like the KiloNotes reference - instead of being
+                // a separate, statically-positioned element that would drift out of alignment with
+                // the page the moment the user zooms or pans.
+                Column(
+                    Modifier.graphicsLayer(scaleX = zoom, scaleY = zoom, translationX = pan.x, translationY = pan.y),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                 Box(
                     Modifier
                         .width(widthDp)
                         .height(heightDp)
-                        .graphicsLayer(scaleX = zoom, scaleY = zoom, translationX = pan.x, translationY = pan.y)
                         .background(Color.White)
                 ) {
                     if (backgroundBitmap == null) {
@@ -503,6 +518,7 @@ fun EditorScreen(
                         rulerMode = state.rulerMode,
                         compassMode = state.compassMode,
                         palmRejectionEnabled = state.palmRejectionEnabled,
+                        stylusOnlyEnabled = state.stylusOnlyEnabled,
                         backgroundBitmap = backgroundBitmap,
                         onStrokeFinished = viewModel::commitStroke,
                         onEraseAt = { point -> viewModel.eraseAt(point, radiusDp = 10f) },
@@ -534,6 +550,14 @@ fun EditorScreen(
                             drawCircle(color = Color(0xFFEF4444), radius = 14f, center = point)
                         }
                     }
+                }
+
+                // "Pull to add page" - only ever shown right after the LAST page of the note (not
+                // between pages), same as the KiloNotes reference: drag it upward past a small
+                // threshold, or just tap it, to create a new blank page and jump straight to it.
+                if (state.currentPageIndex == state.pages.lastIndex) {
+                    PullToAddPageIndicator(widthDp = widthDp, onAddPage = viewModel::addPage)
+                }
                 }
 
                 if (state.isFullscreen) {
@@ -807,7 +831,9 @@ private fun EditorTopBar(
     isExporting: Boolean,
     onExportPdf: () -> Unit,
     onExportPng: () -> Unit,
-    onOpenLayers: () -> Unit = {}
+    onOpenLayers: () -> Unit = {},
+    stylusOnlyEnabled: Boolean = false,
+    onToggleStylusOnly: () -> Unit = {}
 ) {
     var editingTitle by remember { mutableStateOf(false) }
     var titleDraft by remember(title) { mutableStateOf(title) }
@@ -852,6 +878,18 @@ private fun EditorTopBar(
         ) {
             TooltipIconButton(icon = Icons.AutoMirrored.Rounded.Undo, tooltip = "Hoàn tác", onClick = onUndo, enabled = canUndo, size = 44.dp)
             TooltipIconButton(icon = Icons.AutoMirrored.Rounded.Redo, tooltip = "Làm lại", onClick = onRedo, enabled = canRedo, size = 44.dp)
+
+            // "Chỉ cho phép bút": right here in the Editor's own top bar (not buried in Settings)
+            // so it's as quick to flip mid-session as it is in KiloNotes - icon itself flips to
+            // show the current state at a glance. Zoom bằng 2 ngón is untouched either way (see
+            // DrawingCanvas's stylusOnlyEnabled check, which only ever gates a LONE finger).
+            TooltipIconButton(
+                icon = if (stylusOnlyEnabled) Icons.Rounded.DoNotTouch else Icons.Rounded.TouchApp,
+                tooltip = if (stylusOnlyEnabled) "Chỉ cho phép bút (đang bật) - chạm để tắt" else "Chỉ cho phép bút (đang tắt) - chạm để bật",
+                onClick = onToggleStylusOnly,
+                tint = if (stylusOnlyEnabled) MaterialTheme.colorScheme.primary else Color(0xFF334155),
+                size = 44.dp
+            )
 
             TooltipIconButton(
                 icon = if (isCurrentPageBookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
@@ -1343,6 +1381,78 @@ private fun VerticalZoomSlider(
         )
         drawCircle(color = activeColor, radius = 9.dp.toPx(), center = Offset(trackX, thumbY))
         drawCircle(color = Color.White, radius = 4.dp.toPx(), center = Offset(trackX, thumbY))
+    }
+}
+
+/** "Pull to add page" (KiloNotes reference): sits right below the last page, inside the same
+ * pan/zoom-transformed layer as the page itself. Dragging it upward past [PULL_THRESHOLD_DP] and
+ * releasing - or just tapping it - adds a new page and jumps straight to it. [dragProgress] drives
+ * a little lift/fade so the icon visibly follows the finger as the user pulls, the same feedback
+ * the reference app gives before the pull "commits". */
+private const val PULL_THRESHOLD_DP = 56f
+
+@Composable
+private fun PullToAddPageIndicator(widthDp: Dp, onAddPage: () -> Unit) {
+    val density = LocalDensity.current
+    var dragProgress by remember { mutableStateOf(0f) }
+    Box(
+        Modifier
+            .width(widthDp)
+            .padding(top = 20.dp, bottom = 32.dp)
+            .pointerInput(onAddPage) {
+                detectVerticalDragGestures(
+                    onDragStart = { dragProgress = 0f },
+                    onDragEnd = {
+                        if (dragProgress >= 1f) onAddPage()
+                        dragProgress = 0f
+                    },
+                    onDragCancel = { dragProgress = 0f },
+                    onVerticalDrag = { change, dragAmount ->
+                        change.consume()
+                        // Only an upward drag ("pulling" the next page up into view) counts.
+                        val pulledPx = (-dragAmount).coerceAtLeast(0f)
+                        val thresholdPx = with(density) { PULL_THRESHOLD_DP.dp.toPx() }
+                        dragProgress = (dragProgress + pulledPx / thresholdPx).coerceIn(0f, 1f)
+                    }
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                "Kéo lên để thêm trang",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+            Icon(
+                Icons.Rounded.KeyboardArrowUp,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .graphicsLayer(translationY = with(density) { (-dragProgress * 10.dp.toPx()) })
+            )
+            Spacer(Modifier.height(4.dp))
+            IconButton(
+                onClick = onAddPage,
+                modifier = Modifier
+                    .size(44.dp)
+                    .graphicsLayer(
+                        scaleX = 1f + dragProgress * 0.15f,
+                        scaleY = 1f + dragProgress * 0.15f
+                    )
+                    .background(
+                        if (dragProgress >= 1f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                        CircleShape
+                    )
+            ) {
+                Icon(
+                    Icons.Rounded.Add,
+                    contentDescription = "Thêm trang",
+                    tint = if (dragProgress >= 1f) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 

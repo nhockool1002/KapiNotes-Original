@@ -76,8 +76,14 @@ fun SettingsScreen(
         } else {
             val code = (signInResult.exceptionOrNull() as? ApiException)?.statusCode
             val message = when {
+                // DEVELOPER_ERROR almost always means no OAuth Android client in Google Cloud
+                // Console matches THIS exact (package name, signing SHA-1) pair - most commonly
+                // hit the first time someone installs a release build after only ever testing the
+                // debug one (different applicationId, ".debug" suffix), since each needs its own
+                // registered client even when both share the same keystore/SHA-1. Naming the
+                // actual package here saves a guessing round-trip into Cloud Console.
                 code == CommonStatusCodes.DEVELOPER_ERROR ->
-                    "Lỗi cấu hình OAuth (DEVELOPER_ERROR) - xem README.md mục 3"
+                    "Lỗi cấu hình OAuth (DEVELOPER_ERROR): chưa có OAuth Client ID (loại Android) khớp với package \"${context.packageName}\" trong Google Cloud Console - xem README.md mục 4"
                 code != null -> "Đăng nhập thất bại (mã $code)"
                 else -> null
             }
@@ -165,6 +171,23 @@ fun SettingsScreen(
                         )
                     }
                     Switch(checked = state.palmRejectionEnabled, onCheckedChange = viewModel::setPalmRejectionEnabled)
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Card(Modifier.fillMaxWidth()) {
+                Row(
+                    Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Chỉ cho phép bút (vô hiệu hoá chạm tay)", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Khi bật, chỉ bút cảm ứng mới vẽ/xoá/kéo được - chạm bằng ngón tay sẽ không có tác dụng. Zoom bằng 2 ngón vẫn hoạt động bình thường.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(checked = state.stylusOnlyEnabled, onCheckedChange = viewModel::setStylusOnlyEnabled)
                 }
             }
 

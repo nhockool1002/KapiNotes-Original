@@ -24,6 +24,7 @@ class AppSettingsStore @Inject constructor(@ApplicationContext private val conte
 
     private object Keys {
         val PALM_REJECTION_ENABLED = booleanPreferencesKey("palm_rejection_enabled")
+        val STYLUS_ONLY_ENABLED = booleanPreferencesKey("stylus_only_enabled")
         val LAST_TOOL = stringPreferencesKey("last_tool")
         val LAST_COLOR_ARGB = longPreferencesKey("last_color_argb")
         val LAST_STROKE_WIDTH_DP = floatPreferencesKey("last_stroke_width_dp")
@@ -40,6 +41,21 @@ class AppSettingsStore @Inject constructor(@ApplicationContext private val conte
 
     suspend fun setPalmRejectionEnabled(enabled: Boolean) {
         context.appSettingsDataStore.edit { prefs -> prefs[Keys.PALM_REJECTION_ENABLED] = enabled }
+    }
+
+    /** "Chỉ cho phép bút" (stylus-only mode): when on, a single finger touching the page never
+     * draws/erases/drags anything - only the stylus does - regardless of whether a stylus is
+     * currently down (unlike palm rejection above, which only ever kicks in relative to an
+     * actually-pressed stylus pointer). Two-finger pinch-zoom/pan with fingers keeps working
+     * either way, since that gesture is handled by the ancestor Modifier before a single touch
+     * ever reaches the canvas's own draw logic. Defaults to off so a finger-only user isn't
+     * surprised on first install. */
+    val stylusOnlyEnabled: Flow<Boolean> = context.appSettingsDataStore.data.map { prefs ->
+        prefs[Keys.STYLUS_ONLY_ENABLED] ?: false
+    }
+
+    suspend fun setStylusOnlyEnabled(enabled: Boolean) {
+        context.appSettingsDataStore.edit { prefs -> prefs[Keys.STYLUS_ONLY_ENABLED] = enabled }
     }
 
     /** The last tool/color/stroke-width the user had selected in the Editor (stored as

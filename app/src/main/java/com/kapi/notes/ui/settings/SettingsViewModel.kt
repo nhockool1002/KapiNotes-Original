@@ -33,7 +33,8 @@ data class SettingsUiState(
     val lastExportedFile: File? = null,
     val showDeleteConfirm: Boolean = false,
     val lastSharedLogFile: File? = null,
-    val palmRejectionEnabled: Boolean = true
+    val palmRejectionEnabled: Boolean = true,
+    val stylusOnlyEnabled: Boolean = false
 )
 
 @HiltViewModel
@@ -64,7 +65,9 @@ class SettingsViewModel @Inject constructor(
         BackupPart(working, message, file, confirm, logFile)
     }
 
-    val uiState: StateFlow<SettingsUiState> = combine(accountPart, backupPart, appSettingsStore.palmRejectionEnabled) { account, backup, palmRejection ->
+    val uiState: StateFlow<SettingsUiState> = combine(
+        accountPart, backupPart, appSettingsStore.palmRejectionEnabled, appSettingsStore.stylusOnlyEnabled
+    ) { account, backup, palmRejection, stylusOnly ->
         SettingsUiState(
             session = account.session,
             syncStatus = account.syncStatus,
@@ -75,7 +78,8 @@ class SettingsViewModel @Inject constructor(
             lastExportedFile = backup.lastExportedFile,
             showDeleteConfirm = backup.showDeleteConfirm,
             lastSharedLogFile = backup.lastSharedLogFile,
-            palmRejectionEnabled = palmRejection
+            palmRejectionEnabled = palmRejection,
+            stylusOnlyEnabled = stylusOnly
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
@@ -171,5 +175,9 @@ class SettingsViewModel @Inject constructor(
 
     fun setPalmRejectionEnabled(enabled: Boolean) {
         viewModelScope.launch { appSettingsStore.setPalmRejectionEnabled(enabled) }
+    }
+
+    fun setStylusOnlyEnabled(enabled: Boolean) {
+        viewModelScope.launch { appSettingsStore.setStylusOnlyEnabled(enabled) }
     }
 }
