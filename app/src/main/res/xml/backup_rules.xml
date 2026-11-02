@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and below ("legacy" full backup). Excludes the signed-in account's own session
+     (email/display name/Drive file id) from Android's automatic cloud backup - that identity
+     data belongs to the user's Google account, not to a backup of this device's local data, and
+     re-appearing on a fresh device install with a stale session would be confusing/wrong since
+     Google Sign-In itself is not restored by this mechanism anyway. -->
+<full-backup-content>
+    <!-- androidx DataStore Preferences files live under files/datastore/, not shared_prefs/. -->
+    <exclude domain="file" path="datastore/session.preferences_pb" />
+</full-backup-content>

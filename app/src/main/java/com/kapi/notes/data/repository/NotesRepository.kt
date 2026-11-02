@@ -134,6 +134,10 @@ interface NotesRepository {
     /** Swaps a page with its neighbour in the given direction. */
     suspend fun movePage(pageId: String, direction: Int)
 
+    /** Persists a full new page order (every page id of the note, in its new position) - used by
+     * the page switcher's drag-to-reorder, which can move a page to any position in one go. */
+    suspend fun reorderPages(noteId: String, orderedPageIds: List<String>)
+
     suspend fun touchNote(noteId: String)
 
     /** Points the dashboard card's thumbnail at a freshly rendered snapshot of the note's first

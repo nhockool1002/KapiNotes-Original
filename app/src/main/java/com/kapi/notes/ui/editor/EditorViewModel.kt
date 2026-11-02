@@ -26,6 +26,7 @@ import com.kapi.notes.ui.theme.PenColorSwatches
 import com.kapi.notes.update.UpdateChecker
 import com.kapi.notes.update.VersionStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -880,6 +881,30 @@ class EditorViewModel @Inject constructor(
         }
     }
 
+    private var reorderPersistJob: Job? = null
+
+    /** Page switcher's drag-to-reorder: moves the page at [fromIndex] to [toIndex] to an
+     * arbitrary position (not just swapping with a neighbour, unlike [movePageBy]). Updates
+     * local state immediately so dragging feels instant - each intermediate position while
+     * dragging calls this, so persisting cancels any still-in-flight write for a superseded
+     * order first, instead of letting an older write race a newer one to the database. Tracks
+     * the open page by id rather than index so it stays open even if it wasn't the one dragged. */
+    fun reorderPage(fromIndex: Int, toIndex: Int) {
+        val state = _state.value
+        val pages = state.pages
+        if (fromIndex == toIndex || fromIndex !in pages.indices || toIndex !in pages.indices) return
+        val activePageId = state.currentPage?.id
+        val reordered = pages.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
+        val newCurrentIndex = reordered.indexOfFirst { it.id == activePageId }.takeIf { it >= 0 } ?: state.currentPageIndex
+        _state.update { it.copy(pages = reordered, currentPageIndex = newCurrentIndex) }
+
+        val note = state.note ?: return
+        reorderPersistJob?.cancel()
+        reorderPersistJob = viewModelScope.launch {
+            notesRepository.reorderPages(note.id, reordered.map { it.id })
+        }
+    }
+
     fun startRecording() {
         if (_state.value.isRecording) return
         runCatching { audioRecorder.startRecording() }.onSuccess {
@@ -1028,8 +1053,18 @@ class EditorViewModel @Inject constructor(
         }
     }
 
+    /** Orientation/flip are a page's fixed "frame", chosen once per page (each page in a note
+     * can still have its own) - once a page has ink on it, changing either would make existing
+     * strokes sit in the wrong place relative to the (now different-shaped or mirrored) page, so
+     * both are locked as soon as [EditorUiState.strokes] is non-empty. The UI already disables
+     * the buttons for this; the check here is the authoritative guard. */
     fun rotatePage() {
-        val page = _state.value.currentPage ?: return
+        val state = _state.value
+        val page = state.currentPage ?: return
+        if (state.strokes.isNotEmpty()) {
+            _state.update { it.copy(error = "Trang đã có nét vẽ nên không thể đổi khổ giấy nữa") }
+            return
+        }
         val newOrientation = if (page.orientation == PageOrientation.PORTRAIT) PageOrientation.LANDSCAPE else PageOrientation.PORTRAIT
         viewModelScope.launch {
             notesRepository.updatePageLayout(page.id, orientation = newOrientation)
@@ -1038,7 +1073,12 @@ class EditorViewModel @Inject constructor(
     }
 
     fun flipPage() {
-        val page = _state.value.currentPage ?: return
+        val state = _state.value
+        val page = state.currentPage ?: return
+        if (state.strokes.isNotEmpty()) {
+            _state.update { it.copy(error = "Trang đã có nét vẽ nên không thể lật trang nữa") }
+            return
+        }
         val newFlip = if (page.flip == PageFlip.NONE) PageFlip.HORIZONTAL else PageFlip.NONE
         viewModelScope.launch {
             notesRepository.updatePageLayout(page.id, flip = newFlip)

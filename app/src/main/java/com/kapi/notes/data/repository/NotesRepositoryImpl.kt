@@ -269,6 +269,17 @@ class NotesRepositoryImpl @Inject constructor(
         touchNote(page.noteId)
     }
 
+    override suspend fun reorderPages(noteId: String, orderedPageIds: List<String>) {
+        val pagesById = dao.getPages(noteId).associateBy { it.id }
+        orderedPageIds.forEachIndexed { index, pageId ->
+            val page = pagesById[pageId] ?: return@forEachIndexed
+            if (page.pageIndex != index) {
+                dao.updatePage(page.copy(pageIndex = index, updatedAt = System.currentTimeMillis()))
+            }
+        }
+        touchNote(noteId)
+    }
+
     override fun observeImages(pageId: String): Flow<List<ImageAttachment>> =
         dao.observeImages(pageId).map { list -> list.map { it.toDomain() } }
 

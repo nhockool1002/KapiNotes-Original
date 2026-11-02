@@ -192,6 +192,14 @@ fun DrawingCanvas(
                         var lastPos = down.position.clampToPage()
                         val downPos = lastPos
                         var totalMoved = 0f
+                        // A palm/finger resting on screen *before* the stylus comes down (the
+                        // common real-world writing posture) starts out indistinguishable from a
+                        // deliberate finger-draw - effectivePressed only filters Touch pointers
+                        // once a Stylus pointer is actually pressed. The moment one shows up mid-
+                        // gesture while we're tracking a non-stylus pointer, that confirms the
+                        // tracked pointer was the palm all along: abort it (discard, never commit)
+                        // instead of continuing to draw with it.
+                        val palmConfirmed = palmRejectionEnabled && down.type != PointerType.Stylus
 
                         when (tool) {
                             EditorTool.ERASER -> onEraseAt(lastPos)
@@ -289,12 +297,26 @@ fun DrawingCanvas(
                         while (true) {
                             val event = awaitPointerEvent(PointerEventPass.Main)
                             val change = event.changes.firstOrNull { it.id == pointerId } ?: break
+                            if (palmConfirmed && event.changes.any { it.type == PointerType.Stylus && it.pressed }) {
+                                when (tool) {
+                                    EditorTool.ERASER -> onEraseFinished()
+                                    EditorTool.LASSO -> { isMovingSelection = false; isRotatingSelection = false; lassoPoints = emptyList() }
+                                    EditorTool.EMOJI -> { draggingStickerId = null; stickerDragDelta = Offset.Zero; stickerTransformMode = TransformMode.MOVE }
+                                    EditorTool.IMAGE -> { draggingImageId = null; imageDragDelta = Offset.Zero; imageTransformMode = TransformMode.MOVE }
+                                    EditorTool.TEXT -> { draggingTextBoxId = null; textBoxDragDelta = Offset.Zero; textBoxTransformMode = TransformMode.MOVE }
+                                    EditorTool.LASER -> onLaserPoint(null)
+                                    else -> inProgressPoints = emptyList()
+                                }
+                                break
+                            }
                             // A second finger touching down mid-gesture hands off to the ancestor's
                             // pinch-zoom/pan handler - finish this gesture now instead of continuing to
                             // feed it coordinates that are about to be thrown off by the zoom transform.
                             // (Same palm-aware count as above: a palm beside an active stylus doesn't
                             // trigger this early finish.)
-                            if (!change.pressed || effectivePressed(event.changes, palmRejectionEnabled).size > 1) {
+                            val lifted = !change.pressed
+                            val handoffToZoom = change.pressed && effectivePressed(event.changes, palmRejectionEnabled).size > 1
+                            if (lifted || handoffToZoom) {
                                 when (tool) {
                                     EditorTool.ERASER -> onEraseFinished()
                                     EditorTool.LASSO -> {
@@ -370,7 +392,12 @@ fun DrawingCanvas(
                                     }
                                     EditorTool.LASER -> onLaserPoint(null)
                                     else -> {
-                                        onStrokeFinished(inProgressPoints)
+                                        // A second finger landing mid-draw means this was never a
+                                        // real stroke to begin with - just the instant between the
+                                        // first finger touching down and the pinch-zoom's second
+                                        // finger joining it. Discard it instead of committing a
+                                        // stray dot/sliver of ink.
+                                        if (!handoffToZoom) onStrokeFinished(inProgressPoints)
                                         inProgressPoints = emptyList()
                                     }
                                 }

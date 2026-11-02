@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ (API 31+) backup/transfer rules - the modern replacement for full-backup-content.
+     Same reasoning as backup_rules.xml: the signed-in session is excluded from both cloud backup
+     and device-to-device transfer, everything else (notes, strokes, settings) is included. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="datastore/session.preferences_pb" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="datastore/session.preferences_pb" />
+    </device-transfer>
+</data-extraction-rules>

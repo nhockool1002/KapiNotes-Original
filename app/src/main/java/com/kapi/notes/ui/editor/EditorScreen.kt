@@ -14,6 +14,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
@@ -111,6 +112,7 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -118,6 +120,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.onSizeChanged
@@ -132,6 +135,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import kotlin.math.roundToInt
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -331,6 +336,7 @@ fun EditorScreen(
                 onPaperTypeSelected = viewModel::changePaperType,
                 onRotate = viewModel::rotatePage,
                 onFlip = viewModel::flipPage,
+                canChangeOrientation = state.strokes.isEmpty(),
                 currentPageTagColor = state.currentPage?.tagColorArgb,
                 onPageTagColorSelected = viewModel::setPageTagColor,
                 hasPageBackground = state.currentPage?.backgroundImagePath != null,
@@ -563,7 +569,8 @@ fun EditorScreen(
                 onAddPage = viewModel::addPage,
                 onDuplicatePage = viewModel::duplicateCurrentPage,
                 onDeletePage = viewModel::deleteCurrentPage,
-                onMovePage = viewModel::movePageBy
+                onMovePage = viewModel::movePageBy,
+                onReorderPages = viewModel::reorderPage
             )
         }
     }
@@ -759,6 +766,7 @@ private fun EditorTopBar(
     onPaperTypeSelected: (PaperType) -> Unit,
     onRotate: () -> Unit,
     onFlip: () -> Unit,
+    canChangeOrientation: Boolean = true,
     currentPageTagColor: Long?,
     onPageTagColorSelected: (Long?) -> Unit,
     hasPageBackground: Boolean = false,
@@ -933,16 +941,24 @@ private fun EditorTopBar(
                         Text("Định dạng", style = MaterialTheme.typography.labelSmall)
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(onClick = { onRotate(); onPaperMenuToggle(false) }) {
+                            OutlinedButton(enabled = canChangeOrientation, onClick = { onRotate(); onPaperMenuToggle(false) }) {
                                 Icon(Icons.Rounded.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Xoay")
                             }
-                            OutlinedButton(onClick = { onFlip(); onPaperMenuToggle(false) }) {
+                            OutlinedButton(enabled = canChangeOrientation, onClick = { onFlip(); onPaperMenuToggle(false) }) {
                                 Icon(Icons.Rounded.Flip, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Lật")
                             }
+                        }
+                        if (!canChangeOrientation) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Trang đã có nét vẽ nên không thể đổi khổ/lật nữa",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                         Spacer(Modifier.height(12.dp))
                         Text("Nhãn màu trang", style = MaterialTheme.typography.labelSmall)
@@ -1604,6 +1620,11 @@ private fun AudioClipsBar(
     }
 }
 
+// Fixed slot width for every page chip (28dp circle + 4dp padding each side) - knowing this in
+// advance lets the drag handler turn a raw pixel offset directly into "how many slots over" with
+// simple division, instead of measuring every chip's live position on screen.
+private val PageChipSlotWidth = 36.dp
+
 @Composable
 private fun PageSwitcher(
     tagColors: List<Long?>,
@@ -1612,9 +1633,19 @@ private fun PageSwitcher(
     onAddPage: () -> Unit,
     onDuplicatePage: () -> Unit,
     onDeletePage: () -> Unit,
-    onMovePage: (Int) -> Unit
+    onMovePage: (Int) -> Unit,
+    onReorderPages: (from: Int, to: Int) -> Unit
 ) {
     val pageCount = tagColors.size
+    val density = LocalDensity.current
+    val slotWidthPx = with(density) { PageChipSlotWidth.toPx() }
+
+    // While a chip is being long-press-dragged: which slot it currently occupies, and how far
+    // (in px) it has been dragged past that slot - reset to 0 each time it crosses into a new
+    // slot so the chip's own visual offset never jumps.
+    var draggingIndex by remember { mutableStateOf<Int?>(null) }
+    var dragOffsetX by remember { mutableFloatStateOf(0f) }
+
     Row(
         Modifier
             .fillMaxWidth()
@@ -1635,7 +1666,44 @@ private fun PageSwitcher(
             verticalAlignment = Alignment.CenterVertically
         ) {
             for (i in 0 until pageCount) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                val isDragging = draggingIndex == i
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .zIndex(if (isDragging) 1f else 0f)
+                        .graphicsLayer {
+                            if (isDragging) {
+                                translationX = dragOffsetX
+                                scaleX = 1.18f
+                                scaleY = 1.18f
+                                shadowElevation = 12f
+                            }
+                        }
+                        .pointerInput(pageCount) {
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = {
+                                    draggingIndex = i
+                                    dragOffsetX = 0f
+                                },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    val from = draggingIndex ?: return@detectDragGesturesAfterLongPress
+                                    dragOffsetX += dragAmount.x
+                                    val shift = (dragOffsetX / slotWidthPx).roundToInt()
+                                    if (shift != 0) {
+                                        val to = (from + shift).coerceIn(0, pageCount - 1)
+                                        if (to != from) {
+                                            onReorderPages(from, to)
+                                            draggingIndex = to
+                                            dragOffsetX -= shift * slotWidthPx
+                                        }
+                                    }
+                                },
+                                onDragEnd = { draggingIndex = null; dragOffsetX = 0f },
+                                onDragCancel = { draggingIndex = null; dragOffsetX = 0f }
+                            )
+                        }
+                ) {
                     Box(
                         Modifier
                             .padding(horizontal = 4.dp)

@@ -12,6 +12,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.UUID
@@ -21,7 +23,12 @@ import javax.inject.Singleton
 
 private const val SYNC_FILE_NAME = "kapinotes_sync.kapibackup"
 private const val SYNC_MIME_TYPE = "application/zip"
-private const val SYNC_TIMEOUT_MS = 45_000L
+// Backups carry every imported PDF/photo page as a full-size PNG, so a heavily-used note set can
+// run to 100+ MB - 45s was timing out a normal download+import+export+upload round trip for any
+// account with a non-trivial amount of content (not just a slow connection), as seen in sync
+// logs where the upload alone hadn't finished by the 45s mark. 4 minutes gives a large backup on
+// a modest connection enough room while still guaranteeing the UI's spinner resolves eventually.
+private const val SYNC_TIMEOUT_MS = 240_000L
 
 /**
  * "Login" is just Google Sign-In (the same account/scopes already used to browse Drive in
@@ -44,6 +51,14 @@ class DriveSyncAuthRepository @Inject constructor(
 
     private val _syncStatus = MutableStateFlow(SyncStatus.IDLE)
     override val syncStatus: Flow<SyncStatus> = _syncStatus.asStateFlow()
+
+    // Several places can call syncNow() close together (app-start auto-sync, the dashboard's own
+    // auto-sync, and the user tapping "Đồng bộ ngay") - without this, two overlapping runs each
+    // download/import/export/upload the same local data at once, doubling the work and the
+    // upload size mid-flight (exactly what the sync logs showed: a second "Bắt đầu đồng bộ"
+    // firing while the first was still mid-upload, both then racing the timeout). A later caller
+    // now just waits for the in-flight sync's result instead of starting a second one.
+    private val syncMutex = Mutex()
 
     override suspend fun completeGoogleSignIn(account: GoogleSignInAccount): Result<UserSession> {
         val session = UserSession(
@@ -77,6 +92,18 @@ class DriveSyncAuthRepository @Inject constructor(
             return Result.failure(IllegalStateException("Chưa đăng nhập Google"))
         }
 
+        if (!syncMutex.tryLock()) {
+            syncLogger.log("Bỏ qua: đã có một lượt đồng bộ khác đang chạy")
+            return Result.success(Unit)
+        }
+        try {
+            return syncLocked(account)
+        } finally {
+            syncMutex.unlock()
+        }
+    }
+
+    private suspend fun syncLocked(account: GoogleSignInAccount): Result<Unit> {
         syncLogger.log("Bắt đầu đồng bộ (tài khoản: ${account.email})")
         _syncStatus.value = SyncStatus.SYNCING
         val startedAt = System.currentTimeMillis()
