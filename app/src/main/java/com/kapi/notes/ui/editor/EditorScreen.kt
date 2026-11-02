@@ -330,6 +330,15 @@ fun EditorScreen(
         }
     }
 
+    // The Editor's chrome (top bar, toolbars, page dock) is hardcoded to light/white
+    // backgrounds everywhere - it's meant to look like paper regardless of the rest of the app's
+    // theme - but individual Text/Icon colors throughout it were left to inherit from
+    // MaterialTheme, which under the system's dark theme resolves to near-white and becomes
+    // invisible against those same white backgrounds (reported: the note title and rename field
+    // both unreadable). Forcing the light color scheme for this whole screen, instead of pinning
+    // every single Text's color by hand, fixes every current instance of that mismatch and any
+    // future one too.
+    com.kapi.notes.ui.theme.KapiNotesTheme(useDarkTheme = false) {
     Column(
         Modifier
             .fillMaxSize()
@@ -783,6 +792,7 @@ fun EditorScreen(
             )
         }
     }
+    }
 }
 
 @Composable
@@ -867,6 +877,7 @@ private fun EditorTopBar(
             } else {
                 Text(
                     title,
+                    color = Color(0xFF111827),
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,

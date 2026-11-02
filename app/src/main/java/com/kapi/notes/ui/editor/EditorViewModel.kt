@@ -1267,7 +1267,18 @@ class EditorViewModel @Inject constructor(
     /** Renders the note's first page to a thumbnail file and points the note's thumbnailPath at
      * it, then runs [onBack] - called from both the back button and the hardware/gesture back,
      * so the dashboard card always reflects actual content instead of a stale/blank placeholder. */
+    // Re-entrancy guard: saveThumbnailSnapshot() is async (thumbnail rendering takes a moment),
+    // so a second back-press - hardware/gesture back and the top bar's arrow both call this same
+    // function, and a quick double-tap/double-press easily lands before the first call's onBack()
+    // has run - used to launch a SECOND concurrent coroutine. Its onBack() would fire after the
+    // first one had already popped Editor -> Dashboard, popping Dashboard off too and leaving the
+    // nav back stack empty (Splash was already removed from it on the way in), which rendered
+    // nothing at all - the black screen this was reported as.
+    private var isNavigatingBack = false
+
     fun saveThumbnailThenBack(onBack: () -> Unit) {
+        if (isNavigatingBack) return
+        isNavigatingBack = true
         viewModelScope.launch {
             runCatching { saveThumbnailSnapshot() }
             onBack()

@@ -12,6 +12,16 @@ import com.kapi.notes.ui.editor.EditorScreen
 import com.kapi.notes.ui.settings.SettingsScreen
 import com.kapi.notes.ui.splash.SplashScreen
 
+/** Plain popBackStack() happily pops the very last entry too, leaving the back stack empty with
+ * nothing for the NavHost to show (a blank/black screen) - Dashboard is the effective root here
+ * (Splash removes itself via popUpTo(inclusive=true) right after launch), so there should never
+ * be anything below it to pop into. Guarding every pop site against that, rather than trusting
+ * each caller to only ever be invoked once, protects against a caller firing twice in a race (e.g.
+ * a quick double back-press queuing two pops before the first one's navigation settles). */
+private fun NavHostController.safePopBackStack() {
+    if (previousBackStackEntry != null) popBackStack()
+}
+
 @Composable
 fun KapiNotesNavGraph(
     navController: NavHostController = rememberNavController(),
@@ -40,21 +50,21 @@ fun KapiNotesNavGraph(
         }
         composable(Routes.DRIVE_PICKER) {
             DrivePickerScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { navController.safePopBackStack() },
                 onNoteImported = { noteId ->
-                    navController.popBackStack()
+                    navController.safePopBackStack()
                     navController.navigate(Routes.editor(noteId))
                 }
             )
         }
         composable(Routes.EDITOR) {
-            EditorScreen(onBack = { navController.popBackStack() })
+            EditorScreen(onBack = { navController.safePopBackStack() })
         }
         composable(Routes.SETTINGS) {
-            SettingsScreen(onBack = { navController.popBackStack() })
+            SettingsScreen(onBack = { navController.safePopBackStack() })
         }
         composable(Routes.ABOUT) {
-            AboutScreen(onBack = { navController.popBackStack() })
+            AboutScreen(onBack = { navController.safePopBackStack() })
         }
     }
 }
