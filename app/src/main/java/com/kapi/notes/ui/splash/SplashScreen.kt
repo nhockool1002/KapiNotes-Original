@@ -22,6 +22,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import com.kapi.notes.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -108,7 +110,7 @@ fun SplashScreen(onFinished: () -> Unit) {
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Ghi chú tinh gọn. Tư duy mở rộng.",
+                    stringResource(R.string.splash_tagline),
                     color = Kapi100,
                     style = MaterialTheme.typography.bodyMedium
                 )

@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kapi Notes</string>
+    <string name="widget_quick_note">Tạo ghi chú</string>
+
+    <!-- Formatting.kt -->
+    <string name="date_today">Hôm nay, %1$s</string>
+    <string name="date_yesterday">Hôm qua, %1$s</string>
+
+    <!-- PaperBackground.kt -->
+    <string name="cornell_keywords">Từ khóa</string>
+    <string name="cornell_notes">Ghi chú</string>
+    <string name="cornell_summary">Tóm tắt</string>
+    <string-array name="timetable_days">
+        <item>T2</item>
+        <item>T3</item>
+        <item>T4</item>
+        <item>T5</item>
+        <item>T6</item>
+        <item>T7</item>
+        <item>CN</item>
+    </string-array>
+
+    <!-- VersionUi.kt -->
+    <string name="update_up_to_date_title">Bạn đang dùng bản mới nhất</string>
+    <string name="update_available_title">Đã có bản cập nhật mới</string>
+    <string name="update_up_to_date_body">Phiên bản %1$s là phiên bản mới nhất hiện có trên GitHub.</string>
+    <string name="update_available_body">Phiên bản %1$s đã sẵn sàng trên GitHub.</string>
+    <string name="update_mandatory_suffix">Vui lòng cập nhật để tiếp tục sử dụng KapiNotes.</string>
+    <string name="update_download_button">Tải bản cập nhật</string>
+    <string name="action_close">Đóng</string>
+
+    <!-- DashboardViewModel.kt -->
+    <string name="dashboard_section_my_notes">Ghi chú của tôi</string>
+    <string name="dashboard_section_favorites">Mục yêu thích</string>
+    <string name="dashboard_section_trash">Thùng rác</string>
+    <string name="dashboard_default_note_title">Ghi chú mới</string>
+    <string name="dashboard_import_unsupported_format">Chỉ hỗ trợ ghi chú trên PDF hoặc ảnh. Các định dạng khác (Word, Excel...) chưa hỗ trợ.</string>
+    <string name="dashboard_import_read_failed">Không đọc được tệp đã chọn</string>
+    <string name="dashboard_import_generic_failed">Nhập tệp thất bại</string>
+
+    <!-- DrivePickerViewModel.kt -->
+    <string name="drive_signin_failed">Đăng nhập Google Drive thất bại</string>
+    <string name="drive_list_files_failed">Không tải được danh sách tệp</string>
+    <string name="drive_import_failed">Nhập tài liệu thất bại</string>
+
+    <!-- SplashScreen.kt -->
+    <string name="splash_tagline">Ghi chú tinh gọn. Tư duy mở rộng.</string>
+
+    <!-- ImageCropDialog.kt -->
+    <string name="crop_image_title">Cắt ảnh</string>
+    <string name="crop_image_load_error">Không đọc được ảnh này.</string>
+    <string name="crop_image_hint">Kéo các góc để chọn vùng cần giữ lại.</string>
+    <string name="action_apply">Áp dụng</string>
+    <string name="action_cancel">Hủy</string>
+    <string name="action_done">Xong</string>
+    <string name="action_save">Lưu</string>
+
+    <!-- LayersPanelDialog.kt -->
+    <string name="layers_dialog_title">Lớp (layers)</string>
+    <string name="layers_dialog_hint">Ẩn/hiện lớp khi chỉnh sửa, chọn lớp đang vẽ. Khi xuất PDF/ảnh, mọi lớp đều được in ra bất kể đang ẩn hay hiện.</string>
+    <string name="layers_hide">Ẩn lớp</string>
+    <string name="layers_show">Hiện lớp</string>
+    <string name="layers_select_active">Chọn làm lớp đang vẽ</string>
+    <string name="layers_rename">Đổi tên lớp</string>
+    <string name="layers_delete">Xóa lớp</string>
+    <string name="layers_add">Thêm lớp</string>
+    <string name="layers_rename_title">Đổi tên lớp</string>
+
+    <!-- SettingsViewModel.kt -->
+    <string name="settings_sync_failed">Đồng bộ thất bại: %1$s</string>
+    <string name="settings_export_success">Đã xuất dữ liệu ra %1$s</string>
+    <string name="settings_export_failed">Xuất dữ liệu thất bại: %1$s</string>
+    <string name="settings_import_success">Đã nhập dữ liệu thành công</string>
+    <string name="settings_import_failed">Nhập dữ liệu thất bại: %1$s</string>
+    <string name="settings_delete_all_success">Đã xóa toàn bộ dữ liệu trên máy</string>
+    <string name="action_got_it">Đã hiểu</string>
+    <string name="action_create">Tạo</string>
+
+    <!-- DashboardScreen.kt -->
+    <string name="dashboard_default_doc_name">Tài liệu</string>
+    <string name="dashboard_heading_my_notes">Tài liệu gần đây</string>
+    <string name="dashboard_upload_local_file">Tải ảnh/PDF từ máy</string>
+    <string name="dashboard_import_from_drive">Nhập từ Drive</string>
+    <string name="dashboard_import_error_title">Không nhập được tệp</string>
+    <string name="dashboard_about">Giới thiệu</string>
+    <string name="dashboard_sidebar_settings">Cài đặt</string>
+    <string name="dashboard_open_menu">Mở menu</string>
+    <string name="dashboard_search_placeholder">Tìm kiếm tài liệu...</string>
+    <string name="dashboard_syncing">Đang đồng bộ...</string>
+    <string name="dashboard_sync_tooltip">Đồng bộ ghi chú với Google Drive</string>
+    <string name="dashboard_sync_now">Đồng bộ ngay</string>
+    <string name="dashboard_note_options">Tùy chọn</string>
+    <string name="dashboard_restore">Khôi phục</string>
+    <string name="dashboard_delete_forever">Xóa vĩnh viễn</string>
+    <string name="dashboard_unfavorite">Bỏ yêu thích</string>
+    <string name="dashboard_favorite">Yêu thích</string>
+    <string name="dashboard_duplicate_note">Nhân đôi ghi chú</string>
+    <string name="dashboard_edit_label">Sửa nhãn</string>
+    <string name="dashboard_add_label">Gắn nhãn</string>
+    <string name="dashboard_move_to_trash">Chuyển vào thùng rác</string>
+    <string name="dashboard_empty_my_notes">Chưa có ghi chú nào. Nhấn \"Tạo ghi chú\" để bắt đầu.</string>
+    <string name="dashboard_empty_favorites">Chưa có mục yêu thích.</string>
+    <string name="dashboard_empty_trash">Thùng rác trống.</string>
+    <string name="dashboard_create_note_dialog_title">Tạo ghi chú mới</string>
+    <string name="dashboard_note_name_label">Tên ghi chú</string>
+    <string name="dashboard_paper_type_label">Loại giấy</string>
+
+    <!-- Paper type names (shared: Dashboard create-note dialog + Editor paper menu) -->
+    <string name="paper_type_blank">Trơn</string>
+    <string name="paper_type_lined">Kẻ dòng</string>
+    <string name="paper_type_grid">Ô vuông</string>
+    <string name="paper_type_dot">Chấm bi</string>
+    <string name="paper_type_cornell">Cornell</string>
+    <string name="paper_type_checklist">Việc cần làm</string>
+    <string name="paper_type_timetable">TKB</string>
+    <string name="paper_type_chinese_grid">Ô chữ Hán</string>
+    <string name="paper_type_genkou_youshi">Ô chữ Nhật</string>
+    <string name="paper_type_music_staff">Khuông nhạc</string>
+    <string name="paper_type_table">Bảng kẻ</string>
+    <string name="paper_type_isometric_dot">Chấm đẳng cự</string>
+    <string name="paper_type_handwriting_guide">Tập viết</string>
+
+    <!-- Label dialog -->
+    <string name="label_dialog_title">Nhãn ghi chú</string>
+    <string name="label_existing">Nhãn đã có</string>
+    <string name="label_or_create_new">Hoặc tạo nhãn mới</string>
+    <string name="label_name_placeholder">Tên nhãn (vd: Công việc, Ôn thi)</string>
+    <string name="label_color">Màu nhãn</string>
+    <string name="label_delete">Xóa nhãn</string>
+    <string name="action_back">Quay lại</string>
+
+    <!-- AboutScreen.kt -->
+    <string name="about_feature_write_title">Viết tay tự nhiên</string>
+    <string name="about_feature_write_desc">Bút, cọ, dạ quang với độ nhạy lực nhấn, tẩy và công cụ lasso chọn/di chuyển.</string>
+    <string name="about_feature_ruler_title">Thước &amp; Compa ảo</string>
+    <string name="about_feature_ruler_desc">Vẽ đường thẳng, hình tròn chuẩn xác dù tay không chạm đều.</string>
+    <string name="about_feature_sync_title">Đồng bộ Google Drive</string>
+    <string name="about_feature_sync_desc">Dữ liệu lưu trên Drive của chính bạn, không qua máy chủ trung gian.</string>
+    <string name="about_feature_share_title">Chia sẻ link xem-only</string>
+    <string name="about_feature_share_desc">Gửi ghi chú cho bạn bè/giáo viên chỉ bằng một đường link.</string>
+    <string name="about_feature_ocr_title">Nhận dạng chữ viết tay</string>
+    <string name="about_feature_ocr_desc">Chuyển nét vẽ tay thành văn bản ngay trên máy, không cần mạng.</string>
+    <string name="about_feature_import_title">Chèn ảnh/PDF làm nền</string>
+    <string name="about_feature_import_desc">Annotate trực tiếp lên giáo trình hoặc tài liệu PDF/ảnh.</string>
+    <string name="about_version">Phiên bản %1$s</string>
+    <string name="about_description">KapiNotes là ứng dụng ghi chú viết tay dành cho Android, tối ưu cho máy tính bảng có bút cảm ứng (stylus). Hỗ trợ nhiều loại giấy, chèn ảnh/PDF làm nền để chú thích, đồng bộ và sao lưu qua Google Drive của chính bạn.</string>
+    <string name="about_highlights_heading">Tính năng nổi bật</string>
+    <string name="about_footer">© 2026 KapiNotes. Dữ liệu ghi chú luôn thuộc về Google Drive của bạn - không có máy chủ trung gian nào khác.</string>
+    <string name="action_retry">Thử lại</string>
+
+    <!-- DrivePickerScreen.kt -->
+    <string name="drive_oauth_config_error">Lỗi cấu hình (DEVELOPER_ERROR): OAuth Client ID cho app này chưa được đăng ký đúng trong Google Cloud Console (package name + SHA-1 chưa khớp). Việc máy đã đăng nhập Google Drive sẵn không đủ - xem README.md mục 3 để tạo OAuth Client ID Android.</string>
+    <string name="drive_network_error">Không có kết nối mạng, thử lại sau.</string>
+    <string name="drive_error_code">mã lỗi %1$d</string>
+    <string name="drive_signin_cancelled">Đã hủy đăng nhập</string>
+    <string name="drive_title">Google Drive</string>
+    <string name="drive_importing_document">Đang nhập tài liệu...</string>
+    <string name="drive_connect_hint">Kết nối Google Drive của bạn để chọn tài liệu cần ghi chú</string>
+    <string name="drive_connect_button">Kết nối Google Drive</string>
+    <string name="drive_my_drive">Drive của tôi</string>
+    <string name="drive_loading">Đang tải...</string>
+    <string name="drive_empty_folder">Không có PDF/ảnh nào trong thư mục này</string>
+
+    <!-- EditorViewModel.kt -->
+    <string name="editor_handwriting_not_recognized">Không nhận dạng được chữ viết tay trong vùng đã chọn</string>
+    <string name="editor_new_layer_name">Lớp %1$d</string>
+    <string name="editor_page_locked_orientation">Trang đã có nét vẽ nên không thể đổi khổ giấy nữa</string>
+    <string name="editor_page_locked_flip">Trang đã có nét vẽ nên không thể lật trang nữa</string>
+    <string name="editor_pdf_no_pages">Tệp PDF không có trang nào</string>
+    <string name="editor_pdf_import_failed">Nhập PDF thất bại</string>
+    <string name="editor_share_requires_signin">Hãy đăng nhập Google Drive trước (trong Dashboard) để chia sẻ link.</string>
+    <string name="editor_share_failed">Chia sẻ thất bại</string>
+    <string name="editor_export_failed">Xuất file thất bại</string>
+    <string name="action_delete">Xóa</string>
+
+    <!-- SettingsScreen.kt -->
+    <string name="settings_oauth_config_error">Lỗi cấu hình OAuth (DEVELOPER_ERROR): chưa có OAuth Client ID (loại Android) khớp với package \"%1$s\" trong Google Cloud Console - xem README.md mục 4</string>
+    <string name="settings_signin_failed_code">Đăng nhập thất bại (mã %1$d)</string>
+    <string name="settings_save_backup_chooser">Lưu file backup</string>
+    <string name="settings_share_sheet_failed">Không mở được hộp thoại chia sẻ: %1$s</string>
+    <string name="settings_share_sync_log_chooser">Chia sẻ log đồng bộ</string>
+    <string name="settings_title">Cài đặt</string>
+    <string name="settings_section_writing">Viết &amp; vẽ</string>
+    <string name="settings_palm_rejection_title">Bàn tay nghỉ trên màn hình (palm rejection)</string>
+    <string name="settings_palm_rejection_desc">Khi dùng bút cảm ứng, các điểm chạm bằng ngón tay/lòng bàn tay nghỉ trên màn hình sẽ bị bỏ qua để tránh vẽ nhầm.</string>
+    <string name="settings_stylus_only_title">Chỉ cho phép bút (vô hiệu hoá chạm tay)</string>
+    <string name="settings_stylus_only_desc">Khi bật, chỉ bút cảm ứng mới vẽ/xoá/kéo được - chạm bằng ngón tay sẽ không có tác dụng. Zoom bằng 2 ngón vẫn hoạt động bình thường.</string>
+    <string name="settings_section_data">Dữ liệu trên máy</string>
+    <string name="settings_data_desc">Ngoài đồng bộ qua Drive ở trên, bạn vẫn có thể xuất ghi chú ra một file riêng để sao lưu/chuyển máy thủ công, nhập lại, hoặc xóa toàn bộ dữ liệu trên máy này.</string>
+    <string name="settings_export_data">Xuất dữ liệu</string>
+    <string name="settings_import_data">Nhập dữ liệu</string>
+    <string name="settings_delete_all">Xóa tất cả</string>
+    <string name="settings_delete_all_confirm_title">Xóa toàn bộ dữ liệu?</string>
+    <string name="settings_delete_all_confirm_body">Mọi ghi chú, trang và nét vẽ trên máy sẽ bị xóa vĩnh viễn và không thể khôi phục (kể cả bản đã đồng bộ lên Drive vẫn còn, có thể đồng bộ lại để khôi phục).</string>
+    <string name="settings_section_account">Tài khoản &amp; đồng bộ</string>
+    <string name="settings_account_desc">Đăng nhập Google để lưu ghi chú lên Google Drive của chính bạn. Đăng nhập cùng tài khoản trên thiết bị khác sẽ tự động tải ghi chú về - không có máy chủ trung gian nào khác.</string>
+    <string name="settings_sign_in_google">Đăng nhập bằng Google</string>
+    <string name="settings_share_signin_log">Chia sẻ log đăng nhập (để điều tra lỗi)</string>
+    <string name="settings_sign_out">Đăng xuất</string>
+    <string name="settings_sync_with_drive">Đồng bộ với Google Drive</string>
+    <string name="settings_sync_status_idle">Chưa đồng bộ lần nào</string>
+    <string name="settings_sync_status_synced">Đã đồng bộ</string>
+    <string name="settings_sync_status_error">Lỗi đồng bộ, thử lại</string>
+    <string name="settings_share_sync_log">Chia sẻ log đồng bộ (để điều tra lỗi/timeout)</string>
+    <string name="action_copy">Sao chép</string>
+    <string name="action_share">Chia sẻ</string>
+
+    <!-- Recognition languages (ocr/HandwritingRecognizer.kt) -->
+    <string name="recognition_language_english">Tiếng Anh</string>
+    <string name="recognition_language_chinese">Chữ Hán</string>
+
+    <!-- EditorScreen.kt -->
+    <string name="editor_export_chooser_title">Xuất ghi chú</string>
+    <string name="editor_exit_fullscreen">Thoát toàn màn hình</string>
+    <string name="editor_choose_emoji">Chọn Emoji</string>
+    <string name="editor_insert_image">Chèn ảnh</string>
+    <string name="editor_insert_image_hint">Chọn nguồn ảnh để chèn vào trang.</string>
+    <string name="editor_gallery">Thư viện</string>
+    <string name="editor_take_photo">Chụp ảnh</string>
+    <string name="editor_edit_text">Sửa văn bản</string>
+    <string name="editor_insert_text">Chèn văn bản</string>
+    <string name="editor_text_placeholder">Nhập ghi chú...</string>
+    <string name="editor_font_size_minus">A-</string>
+    <string name="editor_font_size_plus">A+</string>
+    <string name="editor_font_default">Mặc định</string>
+    <string name="editor_font_serif">Chữ in</string>
+    <string name="editor_font_monospace">Đều nét</string>
+    <string name="editor_font_handwriting">Viết tay</string>
+    <string name="editor_notice_title">Thông báo</string>
+    <string name="editor_share_link_ready">Link xem-only đã sẵn sàng</string>
+    <string name="editor_share_link_hint">Bất kỳ ai có link này đều xem được ghi chú (không chỉnh sửa được):</string>
+    <string name="editor_note_link_label">Link ghi chú</string>
+    <string name="editor_share_link_chooser">Chia sẻ link</string>
+    <string name="editor_confirm_rename">Xác nhận đổi tên</string>
+    <string name="editor_rename_note">Đổi tên ghi chú</string>
+    <string name="editor_undo">Hoàn tác</string>
+    <string name="editor_redo">Làm lại</string>
+    <string name="editor_stylus_only_on">Chỉ cho phép bút (đang bật) - chạm để tắt</string>
+    <string name="editor_stylus_only_off">Chỉ cho phép bút (đang tắt) - chạm để bật</string>
+    <string name="editor_unbookmark_page">Bỏ đánh dấu trang</string>
+    <string name="editor_bookmark_page">Đánh dấu trang (để nhảy nhanh)</string>
+    <string name="editor_bookmarked_pages">Trang đã đánh dấu</string>
+    <string name="editor_no_bookmarked_pages">Chưa có trang nào được đánh dấu</string>
+    <string name="editor_page_n">Trang %1$d</string>
+    <string name="editor_more">Thêm</string>
+    <string name="editor_stop_recording">Dừng ghi âm</string>
+    <string name="editor_record_lecture">Ghi âm bài giảng</string>
+    <string name="editor_fullscreen">Toàn màn hình</string>
+    <string name="editor_export_pdf">Xuất ghi chú ra PDF</string>
+    <string name="editor_export_png">Xuất ảnh PNG (trang hiện tại)</string>
+    <string name="editor_share_view_only_link">Chia sẻ link xem-only (Drive)</string>
+    <string name="editor_paper_settings">Cài đặt giấy: loại giấy, xoay, lật</string>
+    <string name="editor_paper_style_label">Mẫu giấy</string>
+    <string name="editor_format_label">Định dạng</string>
+    <string name="editor_rotate">Xoay</string>
+    <string name="editor_flip">Lật</string>
+    <string name="editor_orientation_locked">Trang đã có nét vẽ nên không thể đổi khổ/lật nữa</string>
+    <string name="editor_page_tag_color">Nhãn màu trang</string>
+    <string name="editor_page_background_label">Nền trang (chèn ảnh/PDF để chú thích đè lên)</string>
+    <string name="editor_background_image">Ảnh nền</string>
+    <string name="editor_background_pdf">PDF làm nền</string>
+    <string name="editor_clear_background">Xóa nền trang này</string>
+    <string name="editor_tool_pen">Bút</string>
+    <string name="editor_tool_eraser">Tẩy</string>
+    <string name="editor_tool_shape">Hình</string>
+    <string name="editor_shape_line">Đường thẳng</string>
+    <string name="editor_shape_rectangle">Hình chữ nhật</string>
+    <string name="editor_shape_circle">Hình tròn</string>
+    <string name="editor_shape_arrow">Mũi tên</string>
+    <string name="editor_shape_triangle">Tam giác</string>
+    <string name="editor_tool_select">Chọn</string>
+    <string name="editor_tool_insert">Chèn</string>
+    <string name="editor_insert_image_item">Ảnh</string>
+    <string name="editor_insert_text_item">Văn bản</string>
+    <string name="editor_insert_emoji_item">Emoji</string>
+    <string name="editor_tool_more">Thêm</string>
+    <string name="editor_laser_off">Tắt con trỏ laser</string>
+    <string name="editor_laser_on">Con trỏ laser (trình chiếu)</string>
+    <string name="editor_ink_pen">Bút mực</string>
+    <string name="editor_ink_pencil">Bút chì</string>
+    <string name="editor_ink_brush">Cọ lông</string>
+    <string name="editor_ink_highlighter">Bút dạ quang</string>
+    <string name="editor_zoom_in">Phóng to</string>
+    <string name="editor_zoom_out">Thu nhỏ</string>
+    <string name="editor_zoom_collapse">Thu gọn thanh zoom</string>
+    <string name="editor_zoom_expand">Mở thanh zoom</string>
+    <string name="editor_pull_to_add_page">Kéo lên để thêm trang</string>
+    <string name="editor_add_page">Thêm trang</string>
+    <string name="editor_eraser_mode_label">Chế độ tẩy:</string>
+    <string name="editor_erase_by_stroke">Xóa theo nét</string>
+    <string name="editor_erase_flat">Xóa phẳng</string>
+    <string name="editor_crop_image_label">Cắt ảnh:</string>
+    <string name="editor_image_n">Ảnh %1$d</string>
+    <string name="editor_ruler">Thước</string>
+    <string name="editor_compass">Compa</string>
+    <string name="editor_add_custom_color">Thêm màu tùy chỉnh</string>
+    <string name="editor_fill_color">Tô màu</string>
+    <string name="editor_selection_mode_label">Kiểu chọn vùng:</string>
+    <string name="editor_selection_freeform">Tự do</string>
+    <string name="editor_selection_rectangle">Hình chữ nhật</string>
+    <string name="editor_recognize_handwriting">Nhận dạng chữ</string>
+    <string name="editor_custom_color_title">Màu tùy chỉnh</string>
+    <string name="editor_custom_color_hint">Nhập mã màu (RRGGBB)</string>
+    <string name="editor_add_color_button">Thêm</string>
+    <string name="editor_move_page_earlier">Chuyển trang này lên trước</string>
+    <string name="editor_move_page_later">Chuyển trang này ra sau</string>
+    <string name="editor_add_new_page">Thêm trang mới</string>
+    <string name="editor_duplicate_page">Nhân đôi trang này</string>
+    <string name="editor_delete_page">Xóa trang này</string>
+</resources>

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kapi.notes.R
 import com.kapi.notes.data.repository.AuthRepository
 import com.kapi.notes.data.repository.NotesRepository
 import com.kapi.notes.domain.model.Note
@@ -30,10 +31,10 @@ import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 
-enum class DashboardSection(val labelVi: String) {
-    MY_NOTES("Ghi chú của tôi"),
-    FAVORITES("Mục yêu thích"),
-    TRASH("Thùng rác")
+enum class DashboardSection(val labelRes: Int) {
+    MY_NOTES(R.string.dashboard_section_my_notes),
+    FAVORITES(R.string.dashboard_section_favorites),
+    TRASH(R.string.dashboard_section_trash)
 }
 
 /** A note's label as it appears in the dashboard's filter row - just the distinct (text, color)
@@ -164,7 +165,7 @@ class DashboardViewModel @Inject constructor(
     fun createBlankNote(title: String, paperType: PaperType, onCreated: (String) -> Unit) {
         viewModelScope.launch {
             isCreatingNote.value = true
-            val id = notesRepository.createBlankNote(title.ifBlank { "Ghi chú mới" }, paperType)
+            val id = notesRepository.createBlankNote(title.ifBlank { context.getString(R.string.dashboard_default_note_title) }, paperType)
             isCreatingNote.value = false
             onCreated(id)
         }
@@ -184,14 +185,14 @@ class DashboardViewModel @Inject constructor(
                 val isPdf = mimeType == "application/pdf" || displayName.endsWith(".pdf", ignoreCase = true)
                 val isImage = mimeType?.startsWith("image/") == true
                 check(isPdf || isImage) {
-                    "Chỉ hỗ trợ ghi chú trên PDF hoặc ảnh. Các định dạng khác (Word, Excel...) chưa hỗ trợ."
+                    context.getString(R.string.dashboard_import_unsupported_format)
                 }
 
                 val extension = if (isPdf) "pdf" else "img"
                 val tempFile = File(context.cacheDir, "local_import_${UUID.randomUUID()}.$extension")
                 context.contentResolver.openInputStream(uri)?.use { input ->
                     tempFile.outputStream().use { output -> input.copyTo(output) }
-                } ?: error("Không đọc được tệp đã chọn")
+                } ?: error(context.getString(R.string.dashboard_import_read_failed))
 
                 val noteIdPlaceholder = UUID.randomUUID().toString()
                 val pages = if (isPdf) {
@@ -214,7 +215,7 @@ class DashboardViewModel @Inject constructor(
                 onImported(noteId)
             }.onFailure { e ->
                 isImportingLocalFile.value = false
-                importError.value = e.message ?: "Nhập tệp thất bại"
+                importError.value = e.message ?: context.getString(R.string.dashboard_import_generic_failed)
             }
         }
     }

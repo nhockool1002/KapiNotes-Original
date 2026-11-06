@@ -1,5 +1,6 @@
 package com.kapi.notes.ui.editor
 
+import android.content.Context
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -21,6 +22,7 @@ import com.kapi.notes.domain.model.TextBoxItem
 import com.kapi.notes.domain.model.TextFontFamily
 import com.kapi.notes.domain.model.ToolType
 import com.kapi.notes.pdf.NoteExporter
+import com.kapi.notes.R
 import com.kapi.notes.pdf.PageContent
 import com.kapi.notes.ui.theme.PenColorSwatches
 import com.kapi.notes.update.UpdateChecker
@@ -110,6 +112,7 @@ class EditorViewModel @Inject constructor(
     private val driveRepository: com.kapi.notes.drive.DriveRepository,
     private val updateChecker: UpdateChecker,
     private val appSettingsStore: AppSettingsStore,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -569,7 +572,7 @@ class EditorViewModel @Inject constructor(
             val text = handwritingRecognizer.recognize(selected, language)
             _state.update { it.copy(isRecognizingHandwriting = false) }
             if (text.isNullOrBlank()) {
-                _state.update { it.copy(error = "Không nhận dạng được chữ viết tay trong vùng đã chọn") }
+                _state.update { it.copy(error = context.getString(R.string.editor_handwriting_not_recognized)) }
                 return@launch
             }
             val now = System.currentTimeMillis()
@@ -1017,7 +1020,7 @@ class EditorViewModel @Inject constructor(
     /** "Tách lớp" panel: adds a new, initially-visible layer on top and makes it active. */
     fun addLayer() {
         val page = _state.value.currentPage ?: return
-        val name = "Lớp ${page.layers.size + 1}"
+        val name = context.getString(R.string.editor_new_layer_name, page.layers.size + 1)
         val newLayer = com.kapi.notes.domain.model.PageLayer(id = UUID.randomUUID().toString(), name = name)
         val layers = page.layers + newLayer
         viewModelScope.launch {
@@ -1097,7 +1100,7 @@ class EditorViewModel @Inject constructor(
         val state = _state.value
         val page = state.currentPage ?: return
         if (state.strokes.isNotEmpty()) {
-            _state.update { it.copy(error = "Trang đã có nét vẽ nên không thể đổi khổ giấy nữa") }
+            _state.update { it.copy(error = context.getString(R.string.editor_page_locked_orientation)) }
             return
         }
         val newOrientation = if (page.orientation == PageOrientation.PORTRAIT) PageOrientation.LANDSCAPE else PageOrientation.PORTRAIT
@@ -1111,7 +1114,7 @@ class EditorViewModel @Inject constructor(
         val state = _state.value
         val page = state.currentPage ?: return
         if (state.strokes.isNotEmpty()) {
-            _state.update { it.copy(error = "Trang đã có nét vẽ nên không thể lật trang nữa") }
+            _state.update { it.copy(error = context.getString(R.string.editor_page_locked_flip)) }
             return
         }
         val newFlip = if (page.flip == PageFlip.NONE) PageFlip.HORIZONTAL else PageFlip.NONE
@@ -1149,7 +1152,7 @@ class EditorViewModel @Inject constructor(
             _state.update { it.copy(isImportingBackground = true, error = null) }
             runCatching {
                 val rendered = documentPageRenderer.renderPdf(sourceFile, note.id).getOrThrow()
-                check(rendered.isNotEmpty()) { "Tệp PDF không có trang nào" }
+                check(rendered.isNotEmpty()) { context.getString(R.string.editor_pdf_no_pages) }
                 notesRepository.insertBackgroundPages(
                     noteId = note.id,
                     afterPageId = afterPageId,
@@ -1163,7 +1166,7 @@ class EditorViewModel @Inject constructor(
                 _state.update { it.copy(isImportingBackground = false, pages = pages) }
             }.onFailure { e ->
                 sourceFile.delete()
-                _state.update { it.copy(isImportingBackground = false, error = e.message ?: "Nhập PDF thất bại") }
+                _state.update { it.copy(isImportingBackground = false, error = e.message ?: context.getString(R.string.editor_pdf_import_failed)) }
             }
         }
     }
@@ -1183,7 +1186,7 @@ class EditorViewModel @Inject constructor(
         val note = _state.value.note ?: return
         val account = driveAuthManager.lastSignedInAccount()
         if (account == null) {
-            _state.update { it.copy(error = "Hãy đăng nhập Google Drive trước (trong Dashboard) để chia sẻ link.") }
+            _state.update { it.copy(error = context.getString(R.string.editor_share_requires_signin)) }
             return
         }
         viewModelScope.launch {
@@ -1204,7 +1207,7 @@ class EditorViewModel @Inject constructor(
             }.onSuccess { link ->
                 _state.update { it.copy(isSharingLink = false, shareLink = link) }
             }.onFailure { e ->
-                _state.update { it.copy(isSharingLink = false, error = e.message ?: "Chia sẻ thất bại") }
+                _state.update { it.copy(isSharingLink = false, error = e.message ?: context.getString(R.string.editor_share_failed)) }
             }
         }
     }
@@ -1237,7 +1240,7 @@ class EditorViewModel @Inject constructor(
             }
             noteExporter.exportToPdf(_state.value.note?.title.orEmpty(), pages, contentByPage)
                 .onSuccess { file -> _state.update { it.copy(isExporting = false, exportedFile = file, exportedFileMimeType = "application/pdf") } }
-                .onFailure { e -> _state.update { it.copy(isExporting = false, error = e.message ?: "Xuất file thất bại") } }
+                .onFailure { e -> _state.update { it.copy(isExporting = false, error = e.message ?: context.getString(R.string.editor_export_failed)) } }
         }
     }
 
@@ -1256,7 +1259,7 @@ class EditorViewModel @Inject constructor(
             val pageLabel = "${_state.value.note?.title.orEmpty()}_trang${_state.value.currentPageIndex + 1}"
             noteExporter.exportToPng(pageLabel, page, content)
                 .onSuccess { file -> _state.update { it.copy(isExporting = false, exportedFile = file, exportedFileMimeType = "image/png") } }
-                .onFailure { e -> _state.update { it.copy(isExporting = false, error = e.message ?: "Xuất file thất bại") } }
+                .onFailure { e -> _state.update { it.copy(isExporting = false, error = e.message ?: context.getString(R.string.editor_export_failed)) } }
         }
     }
 

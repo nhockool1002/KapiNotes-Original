@@ -40,7 +40,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import com.kapi.notes.R
 import androidx.compose.ui.unit.dp
 
 private data class AboutFeature(val icon: ImageVector, val title: String, val description: String)
@@ -50,12 +52,12 @@ private data class AboutFeature(val icon: ImageVector, val title: String, val de
 // time AboutScreen reads it.
 private val features: List<AboutFeature>
     @Composable get() = listOf(
-        AboutFeature(KapiIcons.Draw, "Viết tay tự nhiên", "Bút, cọ, dạ quang với độ nhạy lực nhấn, tẩy và công cụ lasso chọn/di chuyển."),
-        AboutFeature(KapiIcons.Straighten, "Thước & Compa ảo", "Vẽ đường thẳng, hình tròn chuẩn xác dù tay không chạm đều."),
-        AboutFeature(KapiIcons.CloudSync, "Đồng bộ Google Drive", "Dữ liệu lưu trên Drive của chính bạn, không qua máy chủ trung gian."),
-        AboutFeature(KapiIcons.Link, "Chia sẻ link xem-only", "Gửi ghi chú cho bạn bè/giáo viên chỉ bằng một đường link."),
-        AboutFeature(KapiIcons.TextFields, "Nhận dạng chữ viết tay", "Chuyển nét vẽ tay thành văn bản ngay trên máy, không cần mạng."),
-        AboutFeature(KapiIcons.AutoAwesome, "Chèn ảnh/PDF làm nền", "Annotate trực tiếp lên giáo trình hoặc tài liệu PDF/ảnh.")
+        AboutFeature(KapiIcons.Draw, stringResource(R.string.about_feature_write_title), stringResource(R.string.about_feature_write_desc)),
+        AboutFeature(KapiIcons.Straighten, stringResource(R.string.about_feature_ruler_title), stringResource(R.string.about_feature_ruler_desc)),
+        AboutFeature(KapiIcons.CloudSync, stringResource(R.string.about_feature_sync_title), stringResource(R.string.about_feature_sync_desc)),
+        AboutFeature(KapiIcons.Link, stringResource(R.string.about_feature_share_title), stringResource(R.string.about_feature_share_desc)),
+        AboutFeature(KapiIcons.TextFields, stringResource(R.string.about_feature_ocr_title), stringResource(R.string.about_feature_ocr_desc)),
+        AboutFeature(KapiIcons.AutoAwesome, stringResource(R.string.about_feature_import_title), stringResource(R.string.about_feature_import_desc))
     )
 
 @Composable
@@ -63,10 +65,10 @@ fun AboutScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Giới thiệu") },
+                title = { Text(stringResource(R.string.dashboard_about)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(KapiIcons.ArrowBack, contentDescription = "Quay lại")
+                        Icon(KapiIcons.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 }
             )
@@ -91,10 +93,10 @@ fun AboutScreen(onBack: () -> Unit) {
                 com.kapi.notes.ui.common.KapiBrandMark(modifier = Modifier.fillMaxSize())
             }
             Spacer(Modifier.height(16.dp))
-            Text("Kapi Notes", style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(4.dp))
             Text(
-                "Phiên bản 1.0.0",
+                stringResource(R.string.about_version, "1.0.0"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -106,8 +108,7 @@ fun AboutScreen(onBack: () -> Unit) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Text(
-                    "KapiNotes là ứng dụng ghi chú viết tay dành cho Android, tối ưu cho máy tính bảng có bút cảm ứng (stylus). " +
-                        "Hỗ trợ nhiều loại giấy, chèn ảnh/PDF làm nền để chú thích, đồng bộ và sao lưu qua Google Drive của chính bạn.",
+                    stringResource(R.string.about_description),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(16.dp)
                 )
@@ -115,7 +116,7 @@ fun AboutScreen(onBack: () -> Unit) {
 
             Spacer(Modifier.height(24.dp))
             Text(
-                "Tính năng nổi bật",
+                stringResource(R.string.about_highlights_heading),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Start
@@ -157,7 +158,7 @@ fun AboutScreen(onBack: () -> Unit) {
 
             Spacer(Modifier.height(12.dp))
             Text(
-                "© 2026 KapiNotes. Dữ liệu ghi chú luôn thuộc về Google Drive của bạn - không có máy chủ trung gian nào khác.",
+                stringResource(R.string.about_footer),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center

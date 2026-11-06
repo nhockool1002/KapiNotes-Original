@@ -39,7 +39,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.kapi.notes.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
@@ -53,17 +56,14 @@ import com.kapi.notes.domain.model.DriveFileKind
  * app's package name + signing SHA-1 are not registered as an Android OAuth client yet, even
  * though the device already has a Google/Drive account signed in elsewhere.
  */
-private fun googleSignInErrorMessage(e: Throwable): String {
+private fun googleSignInErrorMessage(context: android.content.Context, e: Throwable): String {
     val code = (e as? ApiException)?.statusCode
     return when (code) {
-        CommonStatusCodes.DEVELOPER_ERROR ->
-            "Lỗi cấu hình (DEVELOPER_ERROR): OAuth Client ID cho app này chưa được đăng ký đúng " +
-                "trong Google Cloud Console (package name + SHA-1 chưa khớp). Việc máy đã đăng " +
-                "nhập Google Drive sẵn không đủ - xem README.md mục 3 để tạo OAuth Client ID Android."
-        CommonStatusCodes.NETWORK_ERROR -> "Không có kết nối mạng, thử lại sau."
+        CommonStatusCodes.DEVELOPER_ERROR -> context.getString(R.string.drive_oauth_config_error)
+        CommonStatusCodes.NETWORK_ERROR -> context.getString(R.string.drive_network_error)
         CommonStatusCodes.SIGN_IN_REQUIRED, CommonStatusCodes.CANCELED -> null
-        else -> "Đăng nhập Google Drive thất bại" + (code?.let { " (mã lỗi $it)" } ?: "")
-    } ?: "Đã hủy đăng nhập"
+        else -> context.getString(R.string.drive_signin_failed) + (code?.let { " (" + context.getString(R.string.drive_error_code, it) + ")" } ?: "")
+    } ?: context.getString(R.string.drive_signin_cancelled)
 }
 
 @Composable
@@ -73,6 +73,7 @@ fun DrivePickerScreen(
     viewModel: DrivePickerViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
 
     val signInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         // The Drive-scope consent step is often still finishing up (silently, at the Play
@@ -95,16 +96,16 @@ fun DrivePickerScreen(
             // real error; only a result we can actually attribute to a Google Sign-In exception
             // gets a message.
             val e = signInResult?.exceptionOrNull()
-            viewModel.onSignInResult(null, errorMessage = e?.let { googleSignInErrorMessage(it) })
+            viewModel.onSignInResult(null, errorMessage = e?.let { googleSignInErrorMessage(context, it) })
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Google Drive") },
+                title = { Text(stringResource(R.string.drive_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(KapiIcons.ArrowBack, contentDescription = "Quay lại") }
+                    IconButton(onClick = onBack) { Icon(KapiIcons.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 }
             )
         }
@@ -142,7 +143,7 @@ fun DrivePickerScreen(
                 }
 
                 if (state.isImporting) {
-                    LoadingBox(label = "Đang nhập tài liệu...")
+                    LoadingBox(label = stringResource(R.string.drive_importing_document))
                 }
             }
         }
@@ -158,16 +159,16 @@ private fun ConnectDriveState(onConnect: () -> Unit) {
     ) {
         Icon(KapiIcons.PictureAsPdf, contentDescription = null, modifier = Modifier.size(56.dp))
         Spacer(Modifier.height(16.dp))
-        Text("Kết nối Google Drive của bạn để chọn tài liệu cần ghi chú", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.drive_connect_hint), style = MaterialTheme.typography.bodyLarge)
         Spacer(Modifier.height(20.dp))
-        Button(onClick = onConnect) { Text("Kết nối Google Drive") }
+        Button(onClick = onConnect) { Text(stringResource(R.string.drive_connect_button)) }
     }
 }
 
 @Composable
 private fun Breadcrumbs(breadcrumb: List<Pair<String, String>>, onRootClick: () -> Unit, onCrumbClick: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(12.dp)) {
-        Text("Drive của tôi", color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable(onClick = onRootClick))
+        Text(stringResource(R.string.drive_my_drive), color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable(onClick = onRootClick))
         breadcrumb.forEachIndexed { index, crumb ->
             Text(" / ${crumb.second}", modifier = Modifier.clickable { onCrumbClick(index) })
         }
@@ -193,7 +194,7 @@ private fun DriveFileRow(file: DriveFile, onClick: () -> Unit) {
 }
 
 @Composable
-private fun LoadingBox(label: String = "Đang tải...") {
+private fun LoadingBox(label: String = stringResource(R.string.drive_loading)) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator()
@@ -209,7 +210,7 @@ private fun ErrorBox(message: String, onRetry: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(message, color = MaterialTheme.colorScheme.error)
             Spacer(Modifier.height(8.dp))
-            Button(onClick = onRetry) { Text("Thử lại") }
+            Button(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
         }
     }
 }
@@ -217,6 +218,6 @@ private fun ErrorBox(message: String, onRetry: () -> Unit) {
 @Composable
 private fun EmptyDriveBox() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Không có PDF/ảnh nào trong thư mục này")
+        Text(stringResource(R.string.drive_empty_folder))
     }
 }

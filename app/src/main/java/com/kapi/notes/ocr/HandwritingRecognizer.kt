@@ -17,9 +17,9 @@ import javax.inject.Singleton
  * to that button, defaulting to [CHINESE] on 田字格 (Chinese-character-grid) paper and [ENGLISH]
  * everywhere else. Vietnamese isn't in ML Kit's ink model catalogue at all, so it isn't offered
  * here; the English model still reads unaccented Vietnamese strokes reasonably. */
-enum class RecognitionLanguage(val languageTag: String, val labelVi: String) {
-    ENGLISH("en-US", "Tiếng Anh"),
-    CHINESE("zh-Hani-CN", "Chữ Hán");
+enum class RecognitionLanguage(val languageTag: String, val labelRes: Int) {
+    ENGLISH("en-US", com.kapi.notes.R.string.recognition_language_english),
+    CHINESE("zh-Hani-CN", com.kapi.notes.R.string.recognition_language_chinese);
 
     val modelIdentifier: DigitalInkRecognitionModelIdentifier
         get() = requireNotNull(DigitalInkRecognitionModelIdentifier.fromLanguageTag(languageTag)) {

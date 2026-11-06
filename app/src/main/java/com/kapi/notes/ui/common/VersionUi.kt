@@ -31,7 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.kapi.notes.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.kapi.notes.update.VersionStatus
@@ -81,15 +83,15 @@ fun UpdateDialog(
             dismissOnClickOutside = !mandatory
         ),
         icon = { Icon(KapiIcons.CloudDownload, contentDescription = null) },
-        title = { Text(if (status.isUpToDate) "Bạn đang dùng bản mới nhất" else "Đã có bản cập nhật mới") },
+        title = { Text(if (status.isUpToDate) stringResource(R.string.update_up_to_date_title) else stringResource(R.string.update_available_title)) },
         text = {
             Column {
                 Text(
                     if (status.isUpToDate) {
-                        "Phiên bản ${status.localVersion} là phiên bản mới nhất hiện có trên GitHub."
+                        stringResource(R.string.update_up_to_date_body, status.localVersion)
                     } else {
-                        "Phiên bản ${status.latestVersion} đã sẵn sàng trên GitHub." +
-                            (if (mandatory) " Vui lòng cập nhật để tiếp tục sử dụng KapiNotes." else "")
+                        stringResource(R.string.update_available_body, status.latestVersion.orEmpty()) +
+                            (if (mandatory) " " + stringResource(R.string.update_mandatory_suffix) else "")
                     },
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -111,9 +113,9 @@ fun UpdateDialog(
                 Button(onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(status.latestReleaseUrl))
                     context.startActivity(intent)
-                }) { Text("Tải bản cập nhật") }
+                }) { Text(stringResource(R.string.update_download_button)) }
             } else {
-                TextButton(onClick = onDismiss) { Text("Đóng") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
             }
         }
     )

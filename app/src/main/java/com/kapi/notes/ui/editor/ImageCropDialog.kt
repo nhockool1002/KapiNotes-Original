@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
+import com.kapi.notes.R
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -53,9 +55,9 @@ fun ImageCropDialog(
     if (bitmap == null) {
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("Cắt ảnh") },
-            text = { Text("Không đọc được ảnh này.") },
-            confirmButton = { TextButton(onClick = onDismiss) { Text("Đóng") } }
+            title = { Text(stringResource(R.string.crop_image_title)) },
+            text = { Text(stringResource(R.string.crop_image_load_error)) },
+            confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } }
         )
         return
     }
@@ -67,11 +69,11 @@ fun ImageCropDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Cắt ảnh") },
+        title = { Text(stringResource(R.string.crop_image_title)) },
         text = {
             Column {
                 Text(
-                    "Kéo các góc để chọn vùng cần giữ lại.",
+                    stringResource(R.string.crop_image_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -172,9 +174,9 @@ fun ImageCropDialog(
                 val outFile = File(File(imagePath).parentFile, "crop_${UUID.randomUUID().toString().take(8)}.png")
                 outFile.outputStream().use { out -> cropped.compress(Bitmap.CompressFormat.PNG, 100, out) }
                 onCropped(outFile.absolutePath, pw, ph)
-            }) { Text("Áp dụng") }
+            }) { Text(stringResource(R.string.action_apply)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Hủy") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } }
     )
 }
 

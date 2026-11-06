@@ -9,12 +9,20 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
+import com.kapi.notes.R
 import com.kapi.notes.domain.model.PaperType
 
 /** Draws the blank/lined/grid/dot pattern behind a page - the Compose equivalent of the
  * wireframe's `.paper-lined` / `.paper-grid` / `.paper-dot` CSS classes. */
 @Composable
 fun PaperBackground(paperType: PaperType, modifier: Modifier = Modifier) {
+    // Resolved here (composable scope) since the Canvas draw lambda below isn't one itself.
+    val cornellKeywordsLabel = stringResource(R.string.cornell_keywords)
+    val cornellNotesLabel = stringResource(R.string.cornell_notes)
+    val cornellSummaryLabel = stringResource(R.string.cornell_summary)
+    val timetableDays = stringArrayResource(R.array.timetable_days)
     Canvas(modifier = modifier.fillMaxSize().background(Color.White)) {
         val lineColor = Color(0xFFE2E8F0)
         val dotColor = Color(0xFFCBD5E1)
@@ -63,9 +71,9 @@ fun PaperBackground(paperType: PaperType, modifier: Modifier = Modifier) {
                 }
                 drawContext.canvas.nativeCanvas.apply {
                     val paint = android.graphics.Paint().apply { color = boldColor.toArgb(); textSize = 14f; isAntiAlias = true }
-                    drawText("Từ khóa", 8f, 18f, paint)
-                    drawText("Ghi chú", cueColumnX + 8f, 18f, paint)
-                    drawText("Tóm tắt", 8f, summaryY + 18f, paint)
+                    drawText(cornellKeywordsLabel, 8f, 18f, paint)
+                    drawText(cornellNotesLabel, cueColumnX + 8f, 18f, paint)
+                    drawText(cornellSummaryLabel, 8f, summaryY + 18f, paint)
                 }
             }
             PaperType.CHECKLIST -> {
@@ -80,7 +88,7 @@ fun PaperBackground(paperType: PaperType, modifier: Modifier = Modifier) {
             }
             PaperType.TIMETABLE -> {
                 val boldColor = Color(0xFF94A3B8)
-                val days = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
+                val days = timetableDays
                 val headerH = 30f
                 val rowH = (size.height - headerH) / 10f
                 val colW = (size.width - 30f) / days.size

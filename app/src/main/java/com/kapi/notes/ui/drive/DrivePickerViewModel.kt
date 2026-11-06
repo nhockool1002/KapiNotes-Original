@@ -1,8 +1,10 @@
 package com.kapi.notes.ui.drive
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.kapi.notes.R
 import com.kapi.notes.data.repository.NotesRepository
 import com.kapi.notes.domain.model.DriveFile
 import com.kapi.notes.domain.model.DriveFileKind
@@ -10,6 +12,7 @@ import com.kapi.notes.drive.DriveAuthManager
 import com.kapi.notes.drive.DriveRepository
 import com.kapi.notes.pdf.DocumentPageRenderer as PageRenderer
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,7 +34,8 @@ class DrivePickerViewModel @Inject constructor(
     val driveAuthManager: DriveAuthManager,
     private val driveRepository: DriveRepository,
     private val pageRenderer: PageRenderer,
-    private val notesRepository: NotesRepository
+    private val notesRepository: NotesRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DrivePickerUiState())
@@ -47,7 +51,7 @@ class DrivePickerViewModel @Inject constructor(
     fun onSignInResult(account: GoogleSignInAccount?, errorMessage: String? = null) {
         _state.value = _state.value.copy(
             account = account,
-            error = if (account == null) errorMessage ?: "Đăng nhập Google Drive thất bại" else null
+            error = if (account == null) errorMessage ?: context.getString(R.string.drive_signin_failed) else null
         )
         if (account != null) refresh()
     }
@@ -58,7 +62,7 @@ class DrivePickerViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true, error = null)
             driveRepository.listFiles(account, _state.value.currentFolderId)
                 .onSuccess { files -> _state.value = _state.value.copy(files = files, isLoading = false) }
-                .onFailure { e -> _state.value = _state.value.copy(isLoading = false, error = e.message ?: "Không tải được danh sách tệp") }
+                .onFailure { e -> _state.value = _state.value.copy(isLoading = false, error = e.message ?: context.getString(R.string.drive_list_files_failed)) }
         }
     }
 
@@ -120,7 +124,7 @@ class DrivePickerViewModel @Inject constructor(
                 _state.value = _state.value.copy(isImporting = false)
                 onImported(noteId)
             }.onFailure { e ->
-                _state.value = _state.value.copy(isImporting = false, error = e.message ?: "Nhập tài liệu thất bại")
+                _state.value = _state.value.copy(isImporting = false, error = e.message ?: context.getString(R.string.drive_import_failed))
             }
         }
     }

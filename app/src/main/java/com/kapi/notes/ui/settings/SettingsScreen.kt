@@ -41,7 +41,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.kapi.notes.R
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -90,8 +92,8 @@ fun SettingsScreen(
                 // Console matches THIS exact (package name, signing SHA-1) pair. Naming the
                 // actual package here saves a guessing round-trip into Cloud Console.
                 code == CommonStatusCodes.DEVELOPER_ERROR ->
-                    "Lỗi cấu hình OAuth (DEVELOPER_ERROR): chưa có OAuth Client ID (loại Android) khớp với package \"${context.packageName}\" trong Google Cloud Console - xem README.md mục 4"
-                code != null -> "Đăng nhập thất bại (mã $code)"
+                    context.getString(R.string.settings_oauth_config_error, context.packageName)
+                code != null -> context.getString(R.string.settings_signin_failed_code, code)
                 // No ApiException and not RESULT_OK usually just means the user backed out of the
                 // picker - showing a scary error for a plain cancel would be wrong, but it's still
                 // logged above so "I tapped sign-in and nothing happened" can be told apart from
@@ -119,8 +121,8 @@ fun SettingsScreen(
                     putExtra(android.content.Intent.EXTRA_STREAM, uri)
                     addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                context.startActivity(android.content.Intent.createChooser(intent, "Lưu file backup"))
-            }.onFailure { snackbarMessage = "Không mở được hộp thoại chia sẻ: ${it.message}" }
+                context.startActivity(android.content.Intent.createChooser(intent, context.getString(R.string.settings_save_backup_chooser)))
+            }.onFailure { snackbarMessage = context.getString(R.string.settings_share_sheet_failed, it.message) }
             viewModel.consumeExportedFile()
         }
     }
@@ -134,8 +136,8 @@ fun SettingsScreen(
                     putExtra(android.content.Intent.EXTRA_STREAM, uri)
                     addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                context.startActivity(android.content.Intent.createChooser(intent, "Chia sẻ log đồng bộ"))
-            }.onFailure { snackbarMessage = "Không mở được hộp thoại chia sẻ: ${it.message}" }
+                context.startActivity(android.content.Intent.createChooser(intent, context.getString(R.string.settings_share_sync_log_chooser)))
+            }.onFailure { snackbarMessage = context.getString(R.string.settings_share_sheet_failed, it.message) }
             viewModel.consumeSharedLogFile()
         }
     }
@@ -152,8 +154,8 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Cài đặt") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(KapiIcons.ArrowBack, contentDescription = "Quay lại") } }
+                title = { Text(stringResource(R.string.settings_title)) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(KapiIcons.ArrowBack, contentDescription = stringResource(R.string.action_back)) } }
             )
         }
     ) { padding ->
@@ -171,7 +173,7 @@ fun SettingsScreen(
             )
 
             Spacer(Modifier.height(24.dp))
-            Text("Viết & vẽ", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_section_writing), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             Card(Modifier.fillMaxWidth()) {
                 Row(
@@ -179,9 +181,9 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Bàn tay nghỉ trên màn hình (palm rejection)", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.settings_palm_rejection_title), style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            "Khi dùng bút cảm ứng, các điểm chạm bằng ngón tay/lòng bàn tay nghỉ trên màn hình sẽ bị bỏ qua để tránh vẽ nhầm.",
+                            stringResource(R.string.settings_palm_rejection_desc),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -196,9 +198,9 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Chỉ cho phép bút (vô hiệu hoá chạm tay)", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.settings_stylus_only_title), style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            "Khi bật, chỉ bút cảm ứng mới vẽ/xoá/kéo được - chạm bằng ngón tay sẽ không có tác dụng. Zoom bằng 2 ngón vẫn hoạt động bình thường.",
+                            stringResource(R.string.settings_stylus_only_desc),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -208,23 +210,23 @@ fun SettingsScreen(
             }
 
             Spacer(Modifier.height(24.dp))
-            Text("Dữ liệu trên máy", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_section_data), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             Text(
-                "Ngoài đồng bộ qua Drive ở trên, bạn vẫn có thể xuất ghi chú ra một file riêng để sao lưu/chuyển máy thủ công, nhập lại, hoặc xóa toàn bộ dữ liệu trên máy này.",
+                stringResource(R.string.settings_data_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(12.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = viewModel::exportBackup, enabled = !state.isWorkingOnBackup) { Text("Xuất dữ liệu") }
-                OutlinedButton(onClick = { importLauncher.launch(arrayOf("*/*")) }, enabled = !state.isWorkingOnBackup) { Text("Nhập dữ liệu") }
+                OutlinedButton(onClick = viewModel::exportBackup, enabled = !state.isWorkingOnBackup) { Text(stringResource(R.string.settings_export_data)) }
+                OutlinedButton(onClick = { importLauncher.launch(arrayOf("*/*")) }, enabled = !state.isWorkingOnBackup) { Text(stringResource(R.string.settings_import_data)) }
                 Button(
                     onClick = viewModel::requestDeleteAllData,
                     enabled = !state.isWorkingOnBackup,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text("Xóa tất cả") }
+                ) { Text(stringResource(R.string.settings_delete_all)) }
             }
 
             if (state.isWorkingOnBackup) {
@@ -242,10 +244,10 @@ fun SettingsScreen(
     if (state.showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = viewModel::cancelDeleteAllData,
-            title = { Text("Xóa toàn bộ dữ liệu?") },
-            text = { Text("Mọi ghi chú, trang và nét vẽ trên máy sẽ bị xóa vĩnh viễn và không thể khôi phục (kể cả bản đã đồng bộ lên Drive vẫn còn, có thể đồng bộ lại để khôi phục).") },
-            confirmButton = { TextButton(onClick = viewModel::confirmDeleteAllData) { Text("Xóa", color = MaterialTheme.colorScheme.error) } },
-            dismissButton = { TextButton(onClick = viewModel::cancelDeleteAllData) { Text("Hủy") } }
+            title = { Text(stringResource(R.string.settings_delete_all_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_delete_all_confirm_body)) },
+            confirmButton = { TextButton(onClick = viewModel::confirmDeleteAllData) { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = viewModel::cancelDeleteAllData) { Text(stringResource(R.string.action_cancel)) } }
         )
     }
 }
@@ -258,10 +260,10 @@ private fun AccountSection(
     onSync: () -> Unit,
     onShareLog: () -> Unit
 ) {
-    Text("Tài khoản & đồng bộ", style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.settings_section_account), style = MaterialTheme.typography.titleMedium)
     Spacer(Modifier.height(4.dp))
     Text(
-        "Đăng nhập Google để lưu ghi chú lên Google Drive của chính bạn. Đăng nhập cùng tài khoản trên thiết bị khác sẽ tự động tải ghi chú về - không có máy chủ trung gian nào khác.",
+        stringResource(R.string.settings_account_desc),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
@@ -275,7 +277,7 @@ private fun AccountSection(
                     Spacer(Modifier.height(8.dp))
                 }
                 Button(onClick = onSignIn, enabled = !state.isLoggingIn, modifier = Modifier.fillMaxWidth()) {
-                    if (state.isLoggingIn) CircularProgressIndicator(modifier = Modifier.height(16.dp)) else Text("Đăng nhập bằng Google")
+                    if (state.isLoggingIn) CircularProgressIndicator(modifier = Modifier.height(16.dp)) else Text(stringResource(R.string.settings_sign_in_google))
                 }
                 Spacer(Modifier.height(8.dp))
                 // Every step of a sign-in attempt (tap, activity result, exception if any) is now
@@ -283,7 +285,7 @@ private fun AccountSection(
                 // successfully, since that's exactly when this is needed most: "I tapped sign-in
                 // and nothing visibly happened" has no other way to investigate otherwise.
                 TextButton(onClick = onShareLog, modifier = Modifier.fillMaxWidth()) {
-                    Text("Chia sẻ log đăng nhập (để điều tra lỗi)")
+                    Text(stringResource(R.string.settings_share_signin_log))
                 }
             } else {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -291,18 +293,18 @@ private fun AccountSection(
                         Text(state.session.displayName, style = MaterialTheme.typography.bodyLarge)
                         Text(state.session.email, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    TextButton(onClick = onLogout) { Text("Đăng xuất") }
+                    TextButton(onClick = onLogout) { Text(stringResource(R.string.settings_sign_out)) }
                 }
                 Divider(Modifier.padding(vertical = 12.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text("Đồng bộ với Google Drive", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.settings_sync_with_drive), style = MaterialTheme.typography.bodyMedium)
                         Text(
                             when (state.syncStatus) {
-                                SyncStatus.IDLE -> "Chưa đồng bộ lần nào"
-                                SyncStatus.SYNCING -> "Đang đồng bộ..."
-                                SyncStatus.SYNCED -> "Đã đồng bộ"
-                                SyncStatus.ERROR -> "Lỗi đồng bộ, thử lại"
+                                SyncStatus.IDLE -> stringResource(R.string.settings_sync_status_idle)
+                                SyncStatus.SYNCING -> stringResource(R.string.dashboard_syncing)
+                                SyncStatus.SYNCED -> stringResource(R.string.settings_sync_status_synced)
+                                SyncStatus.ERROR -> stringResource(R.string.settings_sync_status_error)
                             },
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -311,13 +313,13 @@ private fun AccountSection(
                     if (state.syncStatus == SyncStatus.SYNCING) {
                         CircularProgressIndicator(modifier = Modifier.height(20.dp))
                     } else {
-                        OutlinedButton(onClick = onSync) { Text("Đồng bộ ngay") }
+                        OutlinedButton(onClick = onSync) { Text(stringResource(R.string.dashboard_sync_now)) }
                     }
                 }
                 // Always reachable (not just after an error) so the user can grab the log right
                 // after a timeout too, or just to double-check what the last sync actually did.
                 TextButton(onClick = onShareLog, modifier = Modifier.fillMaxWidth()) {
-                    Text("Chia sẻ log đồng bộ (để điều tra lỗi/timeout)")
+                    Text(stringResource(R.string.settings_share_sync_log))
                 }
             }
         }

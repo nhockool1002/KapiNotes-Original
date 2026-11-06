@@ -35,6 +35,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.kapi.notes.R
 import com.kapi.notes.domain.model.PageLayer
 
 /**
@@ -58,11 +60,11 @@ fun LayersPanelDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Lớp (layers)") },
+        title = { Text(stringResource(R.string.layers_dialog_title)) },
         text = {
             Column {
                 Text(
-                    "Ẩn/hiện lớp khi chỉnh sửa, chọn lớp đang vẽ. Khi xuất PDF/ảnh, mọi lớp đều được in ra bất kể đang ẩn hay hiện.",
+                    stringResource(R.string.layers_dialog_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -76,13 +78,13 @@ fun LayersPanelDialog(
                             IconButton(onClick = { onToggleVisible(layer.id) }) {
                                 Icon(
                                     if (layer.visible) KapiIcons.Visibility else KapiIcons.VisibilityOff,
-                                    contentDescription = if (layer.visible) "Ẩn lớp" else "Hiện lớp"
+                                    contentDescription = if (layer.visible) stringResource(R.string.layers_hide) else stringResource(R.string.layers_show)
                                 )
                             }
                             IconButton(onClick = { onSelectActive(layer.id) }) {
                                 Icon(
                                     if (layer.id == activeLayerId) KapiIcons.RadioButtonChecked else KapiIcons.RadioButtonUnchecked,
-                                    contentDescription = "Chọn làm lớp đang vẽ",
+                                    contentDescription = stringResource(R.string.layers_select_active),
                                     tint = if (layer.id == activeLayerId) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -92,10 +94,10 @@ fun LayersPanelDialog(
                                 modifier = Modifier.weight(1f)
                             )
                             IconButton(onClick = { renamingLayerId = layer.id }) {
-                                Icon(KapiIcons.Edit, contentDescription = "Đổi tên lớp", modifier = Modifier.width(18.dp))
+                                Icon(KapiIcons.Edit, contentDescription = stringResource(R.string.layers_rename), modifier = Modifier.width(18.dp))
                             }
                             IconButton(onClick = { onDeleteLayer(layer.id) }, enabled = layers.size > 1) {
-                                Icon(KapiIcons.Delete, contentDescription = "Xóa lớp", tint = MaterialTheme.colorScheme.error)
+                                Icon(KapiIcons.Delete, contentDescription = stringResource(R.string.layers_delete), tint = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -109,19 +111,19 @@ fun LayersPanelDialog(
                     TextButton(onClick = onAddLayer) {
                         Icon(KapiIcons.Add, contentDescription = null, modifier = Modifier.width(18.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Thêm lớp")
+                        Text(stringResource(R.string.layers_add))
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Xong") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) } }
     )
 
     renamingLayerId?.let { layerId ->
         var draft by remember(layerId) { mutableStateOf(layers.firstOrNull { it.id == layerId }?.name.orEmpty()) }
         AlertDialog(
             onDismissRequest = { renamingLayerId = null },
-            title = { Text("Đổi tên lớp") },
+            title = { Text(stringResource(R.string.layers_rename_title)) },
             text = {
                 OutlinedTextField(value = draft, onValueChange = { draft = it }, singleLine = true)
             },
@@ -129,9 +131,9 @@ fun LayersPanelDialog(
                 TextButton(onClick = {
                     onRenameLayer(layerId, draft)
                     renamingLayerId = null
-                }) { Text("Lưu") }
+                }) { Text(stringResource(R.string.action_save)) }
             },
-            dismissButton = { TextButton(onClick = { renamingLayerId = null }) { Text("Hủy") } }
+            dismissButton = { TextButton(onClick = { renamingLayerId = null }) { Text(stringResource(R.string.action_cancel)) } }
         )
     }
 }

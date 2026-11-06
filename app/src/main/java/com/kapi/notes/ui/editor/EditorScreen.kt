@@ -141,6 +141,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
@@ -155,6 +156,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.kapi.notes.domain.model.PaperType
 import com.kapi.notes.ui.common.PaperBackground
 import com.kapi.notes.ui.theme.PenColorSwatches
+import com.kapi.notes.R
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
@@ -262,7 +264,7 @@ fun EditorScreen(
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(intent, "Xuất ghi chú"))
+        context.startActivity(Intent.createChooser(intent, context.getString(R.string.editor_export_chooser_title)))
         viewModel.consumeExportedFile()
     }
 
@@ -560,7 +562,7 @@ fun EditorScreen(
 
                 if (state.isFullscreen) {
                     Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.TopEnd) {
-                        TooltipIconButton(icon = KapiIcons.FullscreenExit, tooltip = "Thoát toàn màn hình", onClick = viewModel::toggleFullscreen)
+                        TooltipIconButton(icon = KapiIcons.FullscreenExit, tooltip = stringResource(R.string.editor_exit_fullscreen), onClick = viewModel::toggleFullscreen)
                     }
                 }
             }
@@ -631,7 +633,7 @@ fun EditorScreen(
     if (state.isEmojiPickerOpen) {
         AlertDialog(
             onDismissRequest = viewModel::dismissEmojiPicker,
-            title = { Text("Chọn Emoji") },
+            title = { Text(stringResource(R.string.editor_choose_emoji)) },
             text = {
                 LazyVerticalGrid(columns = GridCells.Fixed(8), modifier = Modifier.height(260.dp)) {
                     items(CuratedEmojis) { emoji ->
@@ -650,17 +652,17 @@ fun EditorScreen(
                 }
             },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = viewModel::dismissEmojiPicker) { Text("Hủy") } }
+            dismissButton = { TextButton(onClick = viewModel::dismissEmojiPicker) { Text(stringResource(R.string.action_cancel)) } }
         )
     }
 
     if (isImageSourceDialogOpen) {
         AlertDialog(
             onDismissRequest = { isImageSourceDialogOpen = false; pendingImagePoint = null },
-            title = { Text("Chèn ảnh") },
-            text = { Text("Chọn nguồn ảnh để chèn vào trang.") },
+            title = { Text(stringResource(R.string.editor_insert_image)) },
+            text = { Text(stringResource(R.string.editor_insert_image_hint)) },
             confirmButton = {
-                TextButton(onClick = { galleryLauncher.launch("image/*") }) { Text("Thư viện") }
+                TextButton(onClick = { galleryLauncher.launch("image/*") }) { Text(stringResource(R.string.editor_gallery)) }
             },
             dismissButton = {
                 TextButton(onClick = {
@@ -669,7 +671,7 @@ fun EditorScreen(
                     pendingCameraFile = file
                     val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                     cameraLauncher.launch(uri)
-                }) { Text("Chụp ảnh") }
+                }) { Text(stringResource(R.string.editor_take_photo)) }
             }
         )
     }
@@ -680,31 +682,31 @@ fun EditorScreen(
         var draft by remember(editingTextBox?.id) { mutableStateOf(editingTextBox?.text.orEmpty()) }
         AlertDialog(
             onDismissRequest = viewModel::dismissTextBoxDialog,
-            title = { Text(if (editingTextBox != null) "Sửa văn bản" else "Chèn văn bản") },
+            title = { Text(if (editingTextBox != null) stringResource(R.string.editor_edit_text) else stringResource(R.string.editor_insert_text)) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = draft,
                         onValueChange = { draft = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Nhập ghi chú...") }
+                        placeholder = { Text(stringResource(R.string.editor_text_placeholder)) }
                     )
                     Spacer(Modifier.height(10.dp))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         StyleToggleChip(label = "B", active = state.textDialogBold, onClick = { viewModel.setTextDialogBold(!state.textDialogBold) })
                         StyleToggleChip(label = "I", active = state.textDialogItalic, onClick = { viewModel.setTextDialogItalic(!state.textDialogItalic) })
                         Spacer(Modifier.width(8.dp))
-                        TextButton(onClick = { viewModel.setTextDialogFontSize((state.textDialogFontSize - 4f).coerceAtLeast(12f)) }) { Text("A-") }
+                        TextButton(onClick = { viewModel.setTextDialogFontSize((state.textDialogFontSize - 4f).coerceAtLeast(12f)) }) { Text(stringResource(R.string.editor_font_size_minus)) }
                         Text("${state.textDialogFontSize.toInt()}px", style = MaterialTheme.typography.labelSmall)
-                        TextButton(onClick = { viewModel.setTextDialogFontSize((state.textDialogFontSize + 4f).coerceAtMost(96f)) }) { Text("A+") }
+                        TextButton(onClick = { viewModel.setTextDialogFontSize((state.textDialogFontSize + 4f).coerceAtMost(96f)) }) { Text(stringResource(R.string.editor_font_size_plus)) }
                     }
                     Spacer(Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(
-                            com.kapi.notes.domain.model.TextFontFamily.DEFAULT to "Mặc định",
-                            com.kapi.notes.domain.model.TextFontFamily.SERIF to "Chữ in",
-                            com.kapi.notes.domain.model.TextFontFamily.MONOSPACE to "Đều nét",
-                            com.kapi.notes.domain.model.TextFontFamily.HANDWRITING to "Viết tay"
+                            com.kapi.notes.domain.model.TextFontFamily.DEFAULT to stringResource(R.string.editor_font_default),
+                            com.kapi.notes.domain.model.TextFontFamily.SERIF to stringResource(R.string.editor_font_serif),
+                            com.kapi.notes.domain.model.TextFontFamily.MONOSPACE to stringResource(R.string.editor_font_monospace),
+                            com.kapi.notes.domain.model.TextFontFamily.HANDWRITING to stringResource(R.string.editor_font_handwriting)
                         ).forEach { (family, label) ->
                             StyleToggleChip(label = label, active = state.textDialogFontFamily == family, onClick = { viewModel.setTextDialogFontFamily(family) })
                         }
@@ -712,14 +714,14 @@ fun EditorScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { viewModel.confirmTextBox(draft) }) { Text("Lưu") }
+                TextButton(onClick = { viewModel.confirmTextBox(draft) }) { Text(stringResource(R.string.action_save)) }
             },
             dismissButton = {
                 Row {
                     if (editingTextBox != null) {
-                        TextButton(onClick = viewModel::removeEditingTextBox) { Text("Xóa", color = MaterialTheme.colorScheme.error) }
+                        TextButton(onClick = viewModel::removeEditingTextBox) { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) }
                     }
-                    TextButton(onClick = viewModel::dismissTextBoxDialog) { Text("Hủy") }
+                    TextButton(onClick = viewModel::dismissTextBoxDialog) { Text(stringResource(R.string.action_cancel)) }
                 }
             }
         )
@@ -728,19 +730,19 @@ fun EditorScreen(
     state.error?.let { message ->
         AlertDialog(
             onDismissRequest = viewModel::dismissError,
-            title = { Text("Thông báo") },
+            title = { Text(stringResource(R.string.editor_notice_title)) },
             text = { Text(message) },
-            confirmButton = { TextButton(onClick = viewModel::dismissError) { Text("Đã hiểu") } }
+            confirmButton = { TextButton(onClick = viewModel::dismissError) { Text(stringResource(R.string.action_got_it)) } }
         )
     }
 
     state.shareLink?.let { link ->
         AlertDialog(
             onDismissRequest = viewModel::consumeShareLink,
-            title = { Text("Link xem-only đã sẵn sàng") },
+            title = { Text(stringResource(R.string.editor_share_link_ready)) },
             text = {
                 Column {
-                    Text("Bất kỳ ai có link này đều xem được ghi chú (không chỉnh sửa được):", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.editor_share_link_hint), style = MaterialTheme.typography.bodySmall)
                     Spacer(Modifier.height(8.dp))
                     Text(link, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 }
@@ -748,9 +750,9 @@ fun EditorScreen(
             confirmButton = {
                 TextButton(onClick = {
                     val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
-                    clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Link ghi chú", link))
+                    clipboard?.setPrimaryClip(android.content.ClipData.newPlainText(context.getString(R.string.editor_note_link_label), link))
                     viewModel.consumeShareLink()
-                }) { Text("Sao chép") }
+                }) { Text(stringResource(R.string.action_copy)) }
             },
             dismissButton = {
                 TextButton(onClick = {
@@ -758,9 +760,9 @@ fun EditorScreen(
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, link)
                     }
-                    context.startActivity(Intent.createChooser(intent, "Chia sẻ link"))
+                    context.startActivity(Intent.createChooser(intent, context.getString(R.string.editor_share_link_chooser)))
                     viewModel.consumeShareLink()
-                }) { Text("Chia sẻ") }
+                }) { Text(stringResource(R.string.action_share)) }
             }
         )
     }
@@ -849,7 +851,7 @@ private fun EditorTopBar(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TooltipIconButton(icon = KapiIcons.ArrowBack, tooltip = "Quay lại", onClick = onBack, size = 44.dp)
+            TooltipIconButton(icon = KapiIcons.ArrowBack, tooltip = stringResource(R.string.action_back), onClick = onBack, size = 44.dp)
             if (editingTitle) {
                 // EditorTopBar's Row is hardcoded to a white background regardless of the app's
                 // overall (dark) MaterialTheme, but OutlinedTextField's default text/cursor/border
@@ -872,7 +874,7 @@ private fun EditorTopBar(
                         unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
-                TooltipIconButton(icon = KapiIcons.Check, tooltip = "Xác nhận đổi tên", onClick = { editingTitle = false; onRenameConfirmed(titleDraft) })
+                TooltipIconButton(icon = KapiIcons.Check, tooltip = stringResource(R.string.editor_confirm_rename), onClick = { editingTitle = false; onRenameConfirmed(titleDraft) })
             } else {
                 Text(
                     title,
@@ -882,15 +884,15 @@ private fun EditorTopBar(
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     modifier = Modifier.widthIn(max = 84.dp).padding(horizontal = 8.dp)
                 )
-                TooltipIconButton(icon = KapiIcons.Edit, tooltip = "Đổi tên ghi chú", onClick = { editingTitle = true }, size = 44.dp)
+                TooltipIconButton(icon = KapiIcons.Edit, tooltip = stringResource(R.string.editor_rename_note), onClick = { editingTitle = true }, size = 44.dp)
             }
         }
 
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TooltipIconButton(icon = KapiIcons.Undo, tooltip = "Hoàn tác", onClick = onUndo, enabled = canUndo, size = 44.dp)
-            TooltipIconButton(icon = KapiIcons.Redo, tooltip = "Làm lại", onClick = onRedo, enabled = canRedo, size = 44.dp)
+            TooltipIconButton(icon = KapiIcons.Undo, tooltip = stringResource(R.string.editor_undo), onClick = onUndo, enabled = canUndo, size = 44.dp)
+            TooltipIconButton(icon = KapiIcons.Redo, tooltip = stringResource(R.string.editor_redo), onClick = onRedo, enabled = canRedo, size = 44.dp)
 
             // "Chỉ cho phép bút": right here in the Editor's own top bar (not buried in Settings)
             // so it's as quick to flip mid-session as it is in KiloNotes - icon itself flips to
@@ -898,7 +900,7 @@ private fun EditorTopBar(
             // DrawingCanvas's stylusOnlyEnabled check, which only ever gates a LONE finger).
             TooltipIconButton(
                 icon = if (stylusOnlyEnabled) KapiIcons.DoNotTouch else KapiIcons.TouchApp,
-                tooltip = if (stylusOnlyEnabled) "Chỉ cho phép bút (đang bật) - chạm để tắt" else "Chỉ cho phép bút (đang tắt) - chạm để bật",
+                tooltip = if (stylusOnlyEnabled) stringResource(R.string.editor_stylus_only_on) else stringResource(R.string.editor_stylus_only_off),
                 onClick = onToggleStylusOnly,
                 tint = if (stylusOnlyEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 size = 44.dp
@@ -906,21 +908,21 @@ private fun EditorTopBar(
 
             TooltipIconButton(
                 icon = if (isCurrentPageBookmarked) KapiIcons.Bookmark else KapiIcons.BookmarkBorder,
-                tooltip = if (isCurrentPageBookmarked) "Bỏ đánh dấu trang" else "Đánh dấu trang (để nhảy nhanh)",
+                tooltip = if (isCurrentPageBookmarked) stringResource(R.string.editor_unbookmark_page) else stringResource(R.string.editor_bookmark_page),
                 onClick = onToggleBookmark,
                 tint = if (isCurrentPageBookmarked) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
                 size = 44.dp
             )
 
             Box {
-                TooltipIconButton(icon = KapiIcons.Bookmarks, tooltip = "Trang đã đánh dấu", onClick = { isBookmarksMenuOpen = true }, enabled = bookmarkedPages.isNotEmpty(), size = 44.dp)
+                TooltipIconButton(icon = KapiIcons.Bookmarks, tooltip = stringResource(R.string.editor_bookmarked_pages), onClick = { isBookmarksMenuOpen = true }, enabled = bookmarkedPages.isNotEmpty(), size = 44.dp)
                 DropdownMenu(expanded = isBookmarksMenuOpen, onDismissRequest = { isBookmarksMenuOpen = false }) {
                     if (bookmarkedPages.isEmpty()) {
-                        DropdownMenuItem(text = { Text("Chưa có trang nào được đánh dấu") }, onClick = {}, enabled = false)
+                        DropdownMenuItem(text = { Text(stringResource(R.string.editor_no_bookmarked_pages)) }, onClick = {}, enabled = false)
                     } else {
                         bookmarkedPages.forEach { pageIndex ->
                             DropdownMenuItem(
-                                text = { Text("Trang ${pageIndex + 1}") },
+                                text = { Text(stringResource(R.string.editor_page_n, pageIndex + 1)) },
                                 leadingIcon = { Icon(KapiIcons.Bookmark, contentDescription = null, tint = Color(0xFFF59E0B)) },
                                 onClick = { isBookmarksMenuOpen = false; onJumpToPage(pageIndex) }
                             )
@@ -930,7 +932,7 @@ private fun EditorTopBar(
             }
 
             Box {
-                TooltipIconButton(icon = KapiIcons.MoreVert, tooltip = "Thêm", onClick = { isMoreMenuOpen = true }, size = 44.dp)
+                TooltipIconButton(icon = KapiIcons.MoreVert, tooltip = stringResource(R.string.editor_more), onClick = { isMoreMenuOpen = true }, size = 44.dp)
                 if (isRecording) {
                     Box(
                         Modifier
@@ -943,22 +945,22 @@ private fun EditorTopBar(
                 }
                 DropdownMenu(expanded = isMoreMenuOpen, onDismissRequest = { isMoreMenuOpen = false }) {
                     DropdownMenuItem(
-                        text = { Text("Lớp (layers)") },
+                        text = { Text(stringResource(R.string.layers_dialog_title)) },
                         leadingIcon = { Icon(KapiIcons.Layers, contentDescription = null) },
                         onClick = { isMoreMenuOpen = false; onOpenLayers() }
                     )
                     DropdownMenuItem(
-                        text = { Text(if (isRecording) "Dừng ghi âm" else "Ghi âm bài giảng") },
+                        text = { Text(if (isRecording) stringResource(R.string.editor_stop_recording) else stringResource(R.string.editor_record_lecture)) },
                         leadingIcon = { Icon(KapiIcons.Mic, contentDescription = null, tint = if (isRecording) MaterialTheme.colorScheme.error else LocalContentColor.current) },
                         onClick = { isMoreMenuOpen = false; onToggleRecording() }
                     )
                     DropdownMenuItem(
-                        text = { Text("Toàn màn hình") },
+                        text = { Text(stringResource(R.string.editor_fullscreen)) },
                         leadingIcon = { Icon(KapiIcons.Fullscreen, contentDescription = null) },
                         onClick = { isMoreMenuOpen = false; onFullscreenToggle() }
                     )
                     DropdownMenuItem(
-                        text = { Text("Xuất ghi chú ra PDF") },
+                        text = { Text(stringResource(R.string.editor_export_pdf)) },
                         leadingIcon = {
                             if (isExporting) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                             else Icon(KapiIcons.Share, contentDescription = null)
@@ -967,7 +969,7 @@ private fun EditorTopBar(
                         onClick = { isMoreMenuOpen = false; onExportPdf() }
                     )
                     DropdownMenuItem(
-                        text = { Text("Xuất ảnh PNG (trang hiện tại)") },
+                        text = { Text(stringResource(R.string.editor_export_png)) },
                         leadingIcon = {
                             if (isExporting) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                             else Icon(KapiIcons.Image, contentDescription = null)
@@ -976,7 +978,7 @@ private fun EditorTopBar(
                         onClick = { isMoreMenuOpen = false; onExportPng() }
                     )
                     DropdownMenuItem(
-                        text = { Text("Chia sẻ link xem-only (Drive)") },
+                        text = { Text(stringResource(R.string.editor_share_view_only_link)) },
                         leadingIcon = {
                             if (isSharingLink) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                             else Icon(KapiIcons.Link, contentDescription = null)
@@ -988,10 +990,10 @@ private fun EditorTopBar(
             }
 
             Box {
-                TooltipIconButton(icon = KapiIcons.Description, tooltip = "Cài đặt giấy: loại giấy, xoay, lật", onClick = { onPaperMenuToggle(true) }, size = 44.dp)
+                TooltipIconButton(icon = KapiIcons.Description, tooltip = stringResource(R.string.editor_paper_settings), onClick = { onPaperMenuToggle(true) }, size = 44.dp)
                 DropdownMenu(expanded = isPaperMenuOpen, onDismissRequest = { onPaperMenuToggle(false) }) {
                     Column(Modifier.padding(12.dp).width(260.dp)) {
-                        Text("Loại giấy", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.dashboard_paper_type_label), style = MaterialTheme.typography.labelSmall)
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(PaperType.BLANK, PaperType.LINED, PaperType.GRID, PaperType.DOT).forEach { type ->
@@ -999,7 +1001,7 @@ private fun EditorTopBar(
                             }
                         }
                         Spacer(Modifier.height(8.dp))
-                        Text("Mẫu giấy", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.editor_paper_style_label), style = MaterialTheme.typography.labelSmall)
                         Spacer(Modifier.height(8.dp))
                         // All 9 at 40dp each + 8dp spacing (424dp) badly overflow this 260dp-wide
                         // dropdown in one Row - Row doesn't wrap or scroll on its own, so every
@@ -1019,30 +1021,30 @@ private fun EditorTopBar(
                             Spacer(Modifier.height(8.dp))
                         }
                         Spacer(Modifier.height(12.dp))
-                        Text("Định dạng", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.editor_format_label), style = MaterialTheme.typography.labelSmall)
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(enabled = canChangeOrientation, onClick = { onRotate(); onPaperMenuToggle(false) }) {
                                 Icon(KapiIcons.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("Xoay")
+                                Text(stringResource(R.string.editor_rotate))
                             }
                             OutlinedButton(enabled = canChangeOrientation, onClick = { onFlip(); onPaperMenuToggle(false) }) {
                                 Icon(KapiIcons.Flip, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("Lật")
+                                Text(stringResource(R.string.editor_flip))
                             }
                         }
                         if (!canChangeOrientation) {
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "Trang đã có nét vẽ nên không thể đổi khổ/lật nữa",
+                                stringResource(R.string.editor_orientation_locked),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Spacer(Modifier.height(12.dp))
-                        Text("Nhãn màu trang", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.editor_page_tag_color), style = MaterialTheme.typography.labelSmall)
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Box(
@@ -1065,25 +1067,25 @@ private fun EditorTopBar(
                             }
                         }
                         Spacer(Modifier.height(12.dp))
-                        Text("Nền trang (chèn ảnh/PDF để chú thích đè lên)", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.editor_page_background_label), style = MaterialTheme.typography.labelSmall)
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(onClick = { onInsertBackgroundImage(); onPaperMenuToggle(false) }, enabled = !isImportingBackground) {
                                 Icon(KapiIcons.Image, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("Ảnh nền")
+                                Text(stringResource(R.string.editor_background_image))
                             }
                             OutlinedButton(onClick = { onInsertBackgroundPdf(); onPaperMenuToggle(false) }, enabled = !isImportingBackground) {
                                 if (isImportingBackground) CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
                                 else Icon(KapiIcons.Description, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("PDF làm nền")
+                                Text(stringResource(R.string.editor_background_pdf))
                             }
                         }
                         if (hasPageBackground) {
                             Spacer(Modifier.height(6.dp))
                             TextButton(onClick = { onClearPageBackground(); onPaperMenuToggle(false) }) {
-                                Text("Xóa nền trang này", color = MaterialTheme.colorScheme.error)
+                                Text(stringResource(R.string.editor_clear_background), color = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -1116,42 +1118,42 @@ private fun BottomToolDock(
         // Tapping "Bút" always starts (or returns to) the ink pen directly - no dropdown. To
         // switch pen type (pencil/brush/highlighter) once drawing, use the picker that appears
         // in the secondary toolbar above the page whenever an ink tool is active.
-        DockToolButton(icon = inkToolIcon(tool), label = "Bút", selected = tool in InkTools, onClick = { onToolSelected(EditorTool.PEN) })
+        DockToolButton(icon = inkToolIcon(tool), label = stringResource(R.string.editor_tool_pen), selected = tool in InkTools, onClick = { onToolSelected(EditorTool.PEN) })
 
-        DockToolButton(icon = KapiIcons.Backspace, label = "Tẩy", selected = tool == EditorTool.ERASER, onClick = { onToolSelected(EditorTool.ERASER) })
+        DockToolButton(icon = KapiIcons.Backspace, label = stringResource(R.string.editor_tool_eraser), selected = tool == EditorTool.ERASER, onClick = { onToolSelected(EditorTool.ERASER) })
 
         Box {
-            DockToolButton(icon = shapeToolIcon(tool), label = "Hình", selected = tool in ShapeTools, onClick = { onShapeMenuToggle(true) })
+            DockToolButton(icon = shapeToolIcon(tool), label = stringResource(R.string.editor_tool_shape), selected = tool in ShapeTools, onClick = { onShapeMenuToggle(true) })
             DropdownMenu(expanded = isShapeMenuOpen, onDismissRequest = { onShapeMenuToggle(false) }) {
                 DropdownMenuItem(
-                    text = { Text("Đường thẳng") },
+                    text = { Text(stringResource(R.string.editor_shape_line)) },
                     leadingIcon = { Icon(KapiIcons.Remove, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.LINE); onShapeMenuToggle(false) }
                 )
                 DropdownMenuItem(
-                    text = { Text("Hình chữ nhật") },
+                    text = { Text(stringResource(R.string.editor_shape_rectangle)) },
                     leadingIcon = { Icon(KapiIcons.CropSquare, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.RECTANGLE); onShapeMenuToggle(false) }
                 )
                 DropdownMenuItem(
-                    text = { Text("Hình tròn") },
+                    text = { Text(stringResource(R.string.editor_shape_circle)) },
                     leadingIcon = { Icon(KapiIcons.RadioButtonUnchecked, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.CIRCLE); onShapeMenuToggle(false) }
                 )
                 DropdownMenuItem(
-                    text = { Text("Mũi tên") },
+                    text = { Text(stringResource(R.string.editor_shape_arrow)) },
                     leadingIcon = { Icon(KapiIcons.ArrowForward, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.ARROW); onShapeMenuToggle(false) }
                 )
                 DropdownMenuItem(
-                    text = { Text("Tam giác") },
+                    text = { Text(stringResource(R.string.editor_shape_triangle)) },
                     leadingIcon = { Icon(KapiIcons.ChangeHistory, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.TRIANGLE); onShapeMenuToggle(false) }
                 )
             }
         }
 
-        DockToolButton(icon = KapiIcons.CropFree, label = "Chọn", selected = tool == EditorTool.LASSO, onClick = { onToolSelected(EditorTool.LASSO) })
+        DockToolButton(icon = KapiIcons.CropFree, label = stringResource(R.string.editor_tool_select), selected = tool == EditorTool.LASSO, onClick = { onToolSelected(EditorTool.LASSO) })
 
         Box {
             DockToolButton(
@@ -1161,23 +1163,23 @@ private fun BottomToolDock(
                     EditorTool.EMOJI -> KapiIcons.EmojiEmotions
                     else -> KapiIcons.Add
                 },
-                label = "Chèn",
+                label = stringResource(R.string.editor_tool_insert),
                 selected = tool in insertTools,
                 onClick = { isInsertMenuOpen = true }
             )
             DropdownMenu(expanded = isInsertMenuOpen, onDismissRequest = { isInsertMenuOpen = false }) {
                 DropdownMenuItem(
-                    text = { Text("Ảnh") },
+                    text = { Text(stringResource(R.string.editor_insert_image_item)) },
                     leadingIcon = { Icon(KapiIcons.Image, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.IMAGE); isInsertMenuOpen = false }
                 )
                 DropdownMenuItem(
-                    text = { Text("Văn bản") },
+                    text = { Text(stringResource(R.string.editor_insert_text_item)) },
                     leadingIcon = { Icon(KapiIcons.TextFields, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.TEXT); isInsertMenuOpen = false }
                 )
                 DropdownMenuItem(
-                    text = { Text("Emoji") },
+                    text = { Text(stringResource(R.string.editor_insert_emoji_item)) },
                     leadingIcon = { Icon(KapiIcons.EmojiEmotions, contentDescription = null) },
                     onClick = { onToolSelected(EditorTool.EMOJI); isInsertMenuOpen = false }
                 )
@@ -1185,10 +1187,10 @@ private fun BottomToolDock(
         }
 
         Box {
-            DockToolButton(icon = KapiIcons.MoreHoriz, label = "Thêm", selected = tool == EditorTool.LASER, onClick = { isMoreMenuOpen = true })
+            DockToolButton(icon = KapiIcons.MoreHoriz, label = stringResource(R.string.editor_tool_more), selected = tool == EditorTool.LASER, onClick = { isMoreMenuOpen = true })
             DropdownMenu(expanded = isMoreMenuOpen, onDismissRequest = { isMoreMenuOpen = false }) {
                 DropdownMenuItem(
-                    text = { Text(if (tool == EditorTool.LASER) "Tắt con trỏ laser" else "Con trỏ laser (trình chiếu)") },
+                    text = { Text(if (tool == EditorTool.LASER) stringResource(R.string.editor_laser_off) else stringResource(R.string.editor_laser_on)) },
                     leadingIcon = { Icon(KapiIcons.Adjust, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                     onClick = {
                         onToolSelected(if (tool == EditorTool.LASER) EditorTool.PEN else EditorTool.LASER)
@@ -1247,12 +1249,13 @@ private fun inkToolIcon(tool: EditorTool): ImageVector = when (tool) {
     else -> KapiIcons.Draw
 }
 
+@Composable
 private fun inkToolLabel(tool: EditorTool): String = when (tool) {
-    EditorTool.PEN -> "Bút mực"
-    EditorTool.PENCIL -> "Bút chì"
-    EditorTool.BRUSH -> "Cọ lông"
-    EditorTool.HIGHLIGHTER -> "Bút dạ quang"
-    else -> "Bút mực"
+    EditorTool.PEN -> stringResource(R.string.editor_ink_pen)
+    EditorTool.PENCIL -> stringResource(R.string.editor_ink_pencil)
+    EditorTool.BRUSH -> stringResource(R.string.editor_ink_brush)
+    EditorTool.HIGHLIGHTER -> stringResource(R.string.editor_ink_highlighter)
+    else -> stringResource(R.string.editor_ink_pen)
 }
 
 /** Floating quick-zoom control shown over the page (bottom-end) as an alternative to two-finger
@@ -1292,7 +1295,7 @@ private fun ZoomControl(
                         enabled = zoom < MAX_ZOOM,
                         modifier = Modifier.size(26.dp)
                     ) {
-                        Icon(KapiIcons.Add, contentDescription = "Phóng to", modifier = Modifier.size(15.dp))
+                        Icon(KapiIcons.Add, contentDescription = stringResource(R.string.editor_zoom_in), modifier = Modifier.size(15.dp))
                     }
                     Spacer(Modifier.height(2.dp))
                     // Rotating a real Material3 Slider (via Modifier.rotate(), and even via the
@@ -1313,7 +1316,7 @@ private fun ZoomControl(
                         enabled = zoom > MIN_ZOOM,
                         modifier = Modifier.size(26.dp)
                     ) {
-                        Icon(KapiIcons.Remove, contentDescription = "Thu nhỏ", modifier = Modifier.size(15.dp))
+                        Icon(KapiIcons.Remove, contentDescription = stringResource(R.string.editor_zoom_out), modifier = Modifier.size(15.dp))
                     }
                     Text(
                         "${(zoom * 100).toInt()}%",
@@ -1333,7 +1336,7 @@ private fun ZoomControl(
             IconButton(onClick = onToggleExpanded, modifier = Modifier.size(44.dp)) {
                 Icon(
                     KapiIcons.Search,
-                    contentDescription = if (expanded) "Thu gọn thanh zoom" else "Mở thanh zoom",
+                    contentDescription = if (expanded) stringResource(R.string.editor_zoom_collapse) else stringResource(R.string.editor_zoom_expand),
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1436,7 +1439,7 @@ private fun PullToAddPageIndicator(widthDp: Dp, onAddPage: () -> Unit) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                "Kéo lên để thêm trang",
+                stringResource(R.string.editor_pull_to_add_page),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1464,7 +1467,7 @@ private fun PullToAddPageIndicator(widthDp: Dp, onAddPage: () -> Unit) {
             ) {
                 Icon(
                     KapiIcons.Add,
-                    contentDescription = "Thêm trang",
+                    contentDescription = stringResource(R.string.editor_add_page),
                     tint = if (dragProgress >= 1f) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -1584,18 +1587,18 @@ private fun SecondaryToolbar(
         horizontalArrangement = Arrangement.Center
     ) {
         if (showEraserOptions) {
-            Text("Chế độ tẩy:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.editor_eraser_mode_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(8.dp))
-            LassoModeChip(label = "Xóa theo nét", icon = KapiIcons.Layers, selected = eraseMode == EraseMode.STROKE, onClick = { onEraseModeChange(EraseMode.STROKE) })
+            LassoModeChip(label = stringResource(R.string.editor_erase_by_stroke), icon = KapiIcons.Layers, selected = eraseMode == EraseMode.STROKE, onClick = { onEraseModeChange(EraseMode.STROKE) })
             Spacer(Modifier.width(6.dp))
-            LassoModeChip(label = "Xóa phẳng", icon = KapiIcons.Remove, selected = eraseMode == EraseMode.FLAT, onClick = { onEraseModeChange(EraseMode.FLAT) })
+            LassoModeChip(label = stringResource(R.string.editor_erase_flat), icon = KapiIcons.Remove, selected = eraseMode == EraseMode.FLAT, onClick = { onEraseModeChange(EraseMode.FLAT) })
         }
 
         if (showImageOptions) {
-            Text("Cắt ảnh:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.editor_crop_image_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(8.dp))
             images.forEachIndexed { index, image ->
-                LassoModeChip(label = "Ảnh ${index + 1}", icon = KapiIcons.Crop, selected = false, onClick = { onCropImage(image.id) })
+                LassoModeChip(label = stringResource(R.string.editor_image_n, index + 1), icon = KapiIcons.Crop, selected = false, onClick = { onCropImage(image.id) })
                 Spacer(Modifier.width(6.dp))
             }
         }
@@ -1608,9 +1611,9 @@ private fun SecondaryToolbar(
             // "Thước"/"Compa": constrain the next stroke to a perfectly straight line or a true
             // center+radius circle, while keeping the currently selected pen's own look (unlike
             // just switching to the generic Line/Circle shape tools).
-            LassoModeChip(label = "Thước", icon = KapiIcons.Remove, selected = rulerMode, onClick = onToggleRulerMode)
+            LassoModeChip(label = stringResource(R.string.editor_ruler), icon = KapiIcons.Remove, selected = rulerMode, onClick = onToggleRulerMode)
             Spacer(Modifier.width(6.dp))
-            LassoModeChip(label = "Compa", icon = KapiIcons.RadioButtonUnchecked, selected = compassMode, onClick = onToggleCompassMode)
+            LassoModeChip(label = stringResource(R.string.editor_compass), icon = KapiIcons.RadioButtonUnchecked, selected = compassMode, onClick = onToggleCompassMode)
             Spacer(Modifier.width(10.dp))
         }
 
@@ -1636,7 +1639,7 @@ private fun SecondaryToolbar(
                     .clickable { isCustomColorDialogOpen = true },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(KapiIcons.Add, contentDescription = "Thêm màu tùy chỉnh", modifier = Modifier.size(14.dp))
+                Icon(KapiIcons.Add, contentDescription = stringResource(R.string.editor_add_custom_color), modifier = Modifier.size(14.dp))
             }
             Spacer(Modifier.width(16.dp))
             Box(Modifier.width(140.dp)) {
@@ -1644,21 +1647,21 @@ private fun SecondaryToolbar(
             }
             if (tool in fillableShapes) {
                 Spacer(Modifier.width(12.dp))
-                LassoModeChip(label = "Tô màu", icon = KapiIcons.FormatColorFill, selected = isShapeFillEnabled, onClick = onToggleShapeFill)
+                LassoModeChip(label = stringResource(R.string.editor_fill_color), icon = KapiIcons.FormatColorFill, selected = isShapeFillEnabled, onClick = onToggleShapeFill)
             }
         }
 
         if (showLassoOptions) {
-            Text("Kiểu chọn vùng:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.editor_selection_mode_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(8.dp))
-            LassoModeChip(label = "Tự do", icon = KapiIcons.Gesture, selected = !lassoRectMode, onClick = { if (lassoRectMode) onToggleLassoRectMode() })
+            LassoModeChip(label = stringResource(R.string.editor_selection_freeform), icon = KapiIcons.Gesture, selected = !lassoRectMode, onClick = { if (lassoRectMode) onToggleLassoRectMode() })
             Spacer(Modifier.width(6.dp))
-            LassoModeChip(label = "Hình chữ nhật", icon = KapiIcons.CropSquare, selected = lassoRectMode, onClick = { if (!lassoRectMode) onToggleLassoRectMode() })
+            LassoModeChip(label = stringResource(R.string.editor_selection_rectangle), icon = KapiIcons.CropSquare, selected = lassoRectMode, onClick = { if (!lassoRectMode) onToggleLassoRectMode() })
             if (hasSelection) {
                 Spacer(Modifier.width(12.dp))
                 com.kapi.notes.ocr.RecognitionLanguage.entries.forEach { lang ->
                     LassoModeChip(
-                        label = lang.labelVi,
+                        label = stringResource(lang.labelRes),
                         icon = KapiIcons.Translate,
                         selected = recognitionLanguage == lang,
                         onClick = { onRecognitionLanguageChange(lang) }
@@ -1668,7 +1671,7 @@ private fun SecondaryToolbar(
                 if (isRecognizingHandwriting) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp))
                 } else {
-                    LassoModeChip(label = "Nhận dạng chữ", icon = KapiIcons.AutoAwesome, selected = false, onClick = onRecognizeHandwriting)
+                    LassoModeChip(label = stringResource(R.string.editor_recognize_handwriting), icon = KapiIcons.AutoAwesome, selected = false, onClick = onRecognizeHandwriting)
                 }
             }
         }
@@ -1678,10 +1681,10 @@ private fun SecondaryToolbar(
         var hex by remember { mutableStateOf("FF0000") }
         AlertDialog(
             onDismissRequest = { isCustomColorDialogOpen = false },
-            title = { Text("Màu tùy chỉnh") },
+            title = { Text(stringResource(R.string.editor_custom_color_title)) },
             text = {
                 Column {
-                    Text("Nhập mã màu (RRGGBB)", style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.editor_custom_color_hint), style = MaterialTheme.typography.labelSmall)
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(value = hex, onValueChange = { hex = it.take(6) }, singleLine = true)
                 }
@@ -1691,9 +1694,9 @@ private fun SecondaryToolbar(
                     val parsed = hex.toLongOrNull(16)
                     if (parsed != null) onCustomColorAdded(0xFF000000L or parsed)
                     isCustomColorDialogOpen = false
-                }) { Text("Thêm") }
+                }) { Text(stringResource(R.string.editor_add_color_button)) }
             },
-            dismissButton = { TextButton(onClick = { isCustomColorDialogOpen = false }) { Text("Hủy") } }
+            dismissButton = { TextButton(onClick = { isCustomColorDialogOpen = false }) { Text(stringResource(R.string.action_cancel)) } }
         )
     }
 }
@@ -1759,7 +1762,7 @@ private fun AudioClipsBar(
                     }
                     Text("${clip.durationMs / 1000}s", style = MaterialTheme.typography.labelSmall)
                     IconButton(onClick = { onRemove(clip.id) }, modifier = Modifier.size(24.dp)) {
-                        Icon(KapiIcons.Close, contentDescription = "Xóa", modifier = Modifier.size(14.dp))
+                        Icon(KapiIcons.Close, contentDescription = stringResource(R.string.action_delete), modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -1803,8 +1806,8 @@ private fun PageSwitcher(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TooltipIconButton(icon = KapiIcons.ArrowBack, tooltip = "Chuyển trang này lên trước", onClick = { onMovePage(-1) }, enabled = currentIndex > 0)
-            TooltipIconButton(icon = KapiIcons.ArrowForward, tooltip = "Chuyển trang này ra sau", onClick = { onMovePage(1) }, enabled = currentIndex < pageCount - 1)
+            TooltipIconButton(icon = KapiIcons.ArrowBack, tooltip = stringResource(R.string.editor_move_page_earlier), onClick = { onMovePage(-1) }, enabled = currentIndex > 0)
+            TooltipIconButton(icon = KapiIcons.ArrowForward, tooltip = stringResource(R.string.editor_move_page_later), onClick = { onMovePage(1) }, enabled = currentIndex < pageCount - 1)
         }
 
         Row(
@@ -1870,9 +1873,9 @@ private fun PageSwitcher(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TooltipIconButton(icon = KapiIcons.Add, tooltip = "Thêm trang mới", onClick = onAddPage)
-            TooltipIconButton(icon = KapiIcons.ContentCopy, tooltip = "Nhân đôi trang này", onClick = onDuplicatePage)
-            TooltipIconButton(icon = KapiIcons.Delete, tooltip = "Xóa trang này", onClick = onDeletePage, enabled = pageCount > 1)
+            TooltipIconButton(icon = KapiIcons.Add, tooltip = stringResource(R.string.editor_add_new_page), onClick = onAddPage)
+            TooltipIconButton(icon = KapiIcons.ContentCopy, tooltip = stringResource(R.string.editor_duplicate_page), onClick = onDuplicatePage)
+            TooltipIconButton(icon = KapiIcons.Delete, tooltip = stringResource(R.string.editor_delete_page), onClick = onDeletePage, enabled = pageCount > 1)
         }
     }
 }

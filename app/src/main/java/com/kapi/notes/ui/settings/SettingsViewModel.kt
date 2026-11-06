@@ -1,6 +1,7 @@
 package com.kapi.notes.ui.settings
 
 import android.content.Context
+import com.kapi.notes.R
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -103,7 +104,7 @@ class SettingsViewModel @Inject constructor(
 
     fun triggerSync() {
         viewModelScope.launch {
-            authRepository.syncNow().onFailure { backupMessage.value = "Đồng bộ thất bại: ${it.message}" }
+            authRepository.syncNow().onFailure { backupMessage.value = context.getString(R.string.settings_sync_failed, it.message) }
         }
     }
 
@@ -119,9 +120,9 @@ class SettingsViewModel @Inject constructor(
             backupRepository.exportToFile(dest)
                 .onSuccess { file ->
                     lastExportedFile.value = file
-                    backupMessage.value = "Đã xuất dữ liệu ra ${file.name}"
+                    backupMessage.value = context.getString(R.string.settings_export_success, file.name)
                 }
-                .onFailure { backupMessage.value = "Xuất dữ liệu thất bại: ${it.message}" }
+                .onFailure { backupMessage.value = context.getString(R.string.settings_export_failed, it.message) }
             isWorkingOnBackup.value = false
         }
     }
@@ -134,8 +135,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             isWorkingOnBackup.value = true
             backupRepository.importFromFile(file)
-                .onSuccess { backupMessage.value = "Đã nhập dữ liệu thành công" }
-                .onFailure { backupMessage.value = "Nhập dữ liệu thất bại: ${it.message}" }
+                .onSuccess { backupMessage.value = context.getString(R.string.settings_import_success) }
+                .onFailure { backupMessage.value = context.getString(R.string.settings_import_failed, it.message) }
             isWorkingOnBackup.value = false
         }
     }
@@ -153,7 +154,7 @@ class SettingsViewModel @Inject constructor(
             showDeleteConfirm.value = false
             isWorkingOnBackup.value = true
             backupRepository.deleteEverything()
-            backupMessage.value = "Đã xóa toàn bộ dữ liệu trên máy"
+            backupMessage.value = context.getString(R.string.settings_delete_all_success)
             isWorkingOnBackup.value = false
         }
     }

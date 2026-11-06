@@ -197,9 +197,9 @@ class NoteExporter @Inject constructor(
                     canvas.drawLine(0f, y, w, y, linePaint)
                     y += 80f
                 }
-                canvas.drawText("Từ khóa", 16f, 32f, labelPaint)
-                canvas.drawText("Ghi chú", cueColumnX + 16f, 32f, labelPaint)
-                canvas.drawText("Tóm tắt", 16f, summaryY + 32f, labelPaint)
+                canvas.drawText(context.getString(com.kapi.notes.R.string.cornell_keywords), 16f, 32f, labelPaint)
+                canvas.drawText(context.getString(com.kapi.notes.R.string.cornell_notes), cueColumnX + 16f, 32f, labelPaint)
+                canvas.drawText(context.getString(com.kapi.notes.R.string.cornell_summary), 16f, summaryY + 32f, labelPaint)
             }
             PaperType.CHECKLIST -> {
                 var y = 80f

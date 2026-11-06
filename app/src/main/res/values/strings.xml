@@ -1,5 +1,311 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Kapi Notes</string>
-    <string name="widget_quick_note">Tạo ghi chú</string>
+    <string name="widget_quick_note">New note</string>
+
+    <!-- Formatting.kt -->
+    <string name="date_today">Today, %1$s</string>
+    <string name="date_yesterday">Yesterday, %1$s</string>
+
+    <!-- PaperBackground.kt -->
+    <string name="cornell_keywords">Keywords</string>
+    <string name="cornell_notes">Notes</string>
+    <string name="cornell_summary">Summary</string>
+    <string-array name="timetable_days">
+        <item>Mon</item>
+        <item>Tue</item>
+        <item>Wed</item>
+        <item>Thu</item>
+        <item>Fri</item>
+        <item>Sat</item>
+        <item>Sun</item>
+    </string-array>
+
+    <!-- VersionUi.kt -->
+    <string name="update_up_to_date_title">You\'re on the latest version</string>
+    <string name="update_available_title">An update is available</string>
+    <string name="update_up_to_date_body">Version %1$s is the latest version available on GitHub.</string>
+    <string name="update_available_body">Version %1$s is now available on GitHub.</string>
+    <string name="update_mandatory_suffix">Please update to keep using KapiNotes.</string>
+    <string name="update_download_button">Download update</string>
+    <string name="action_close">Close</string>
+
+    <!-- DashboardViewModel.kt -->
+    <string name="dashboard_section_my_notes">My notes</string>
+    <string name="dashboard_section_favorites">Favorites</string>
+    <string name="dashboard_section_trash">Trash</string>
+    <string name="dashboard_default_note_title">New note</string>
+    <string name="dashboard_import_unsupported_format">Only PDF or image files are supported for notes. Other formats (Word, Excel…) aren\'t supported yet.</string>
+    <string name="dashboard_import_read_failed">Couldn\'t read the selected file</string>
+    <string name="dashboard_import_generic_failed">Import failed</string>
+
+    <!-- DrivePickerViewModel.kt -->
+    <string name="drive_signin_failed">Google Drive sign-in failed</string>
+    <string name="drive_list_files_failed">Couldn\'t load the file list</string>
+    <string name="drive_import_failed">Document import failed</string>
+
+    <!-- SplashScreen.kt -->
+    <string name="splash_tagline">Lean notes. Expansive thinking.</string>
+
+    <!-- ImageCropDialog.kt -->
+    <string name="crop_image_title">Crop image</string>
+    <string name="crop_image_load_error">Couldn\'t read this image.</string>
+    <string name="crop_image_hint">Drag the corners to pick the area to keep.</string>
+    <string name="action_apply">Apply</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_done">Done</string>
+    <string name="action_save">Save</string>
+
+    <!-- LayersPanelDialog.kt -->
+    <string name="layers_dialog_title">Layers</string>
+    <string name="layers_dialog_hint">Show/hide layers while editing and pick which one you\'re drawing on. Exported PDFs/images always include every layer, visible or not.</string>
+    <string name="layers_hide">Hide layer</string>
+    <string name="layers_show">Show layer</string>
+    <string name="layers_select_active">Set as active layer</string>
+    <string name="layers_rename">Rename layer</string>
+    <string name="layers_delete">Delete layer</string>
+    <string name="layers_add">Add layer</string>
+    <string name="layers_rename_title">Rename layer</string>
+
+    <!-- SettingsViewModel.kt -->
+    <string name="settings_sync_failed">Sync failed: %1$s</string>
+    <string name="settings_export_success">Exported data to %1$s</string>
+    <string name="settings_export_failed">Export failed: %1$s</string>
+    <string name="settings_import_success">Data imported successfully</string>
+    <string name="settings_import_failed">Import failed: %1$s</string>
+    <string name="settings_delete_all_success">All local data has been deleted</string>
+    <string name="action_got_it">Got it</string>
+    <string name="action_create">Create</string>
+
+    <!-- DashboardScreen.kt -->
+    <string name="dashboard_default_doc_name">Document</string>
+    <string name="dashboard_heading_my_notes">Recent documents</string>
+    <string name="dashboard_upload_local_file">Upload photo/PDF</string>
+    <string name="dashboard_import_from_drive">Import from Drive</string>
+    <string name="dashboard_import_error_title">Couldn\'t import file</string>
+    <string name="dashboard_about">About</string>
+    <string name="dashboard_sidebar_settings">Settings</string>
+    <string name="dashboard_open_menu">Open menu</string>
+    <string name="dashboard_search_placeholder">Search documents…</string>
+    <string name="dashboard_syncing">Syncing…</string>
+    <string name="dashboard_sync_tooltip">Sync notes with Google Drive</string>
+    <string name="dashboard_sync_now">Sync now</string>
+    <string name="dashboard_note_options">Options</string>
+    <string name="dashboard_restore">Restore</string>
+    <string name="dashboard_delete_forever">Delete forever</string>
+    <string name="dashboard_unfavorite">Remove from favorites</string>
+    <string name="dashboard_favorite">Favorite</string>
+    <string name="dashboard_duplicate_note">Duplicate note</string>
+    <string name="dashboard_edit_label">Edit label</string>
+    <string name="dashboard_add_label">Add label</string>
+    <string name="dashboard_move_to_trash">Move to trash</string>
+    <string name="dashboard_empty_my_notes">No notes yet. Tap \"New note\" to get started.</string>
+    <string name="dashboard_empty_favorites">No favorites yet.</string>
+    <string name="dashboard_empty_trash">Trash is empty.</string>
+    <string name="dashboard_create_note_dialog_title">New note</string>
+    <string name="dashboard_note_name_label">Note name</string>
+    <string name="dashboard_paper_type_label">Paper type</string>
+
+    <!-- Paper type names (shared: Dashboard create-note dialog + Editor paper menu) -->
+    <string name="paper_type_blank">Blank</string>
+    <string name="paper_type_lined">Ruled</string>
+    <string name="paper_type_grid">Grid</string>
+    <string name="paper_type_dot">Dot grid</string>
+    <string name="paper_type_cornell">Cornell</string>
+    <string name="paper_type_checklist">Checklist</string>
+    <string name="paper_type_timetable">Timetable</string>
+    <string name="paper_type_chinese_grid">Chinese grid</string>
+    <string name="paper_type_genkou_youshi">Genkou youshi</string>
+    <string name="paper_type_music_staff">Music staff</string>
+    <string name="paper_type_table">Table</string>
+    <string name="paper_type_isometric_dot">Isometric dot</string>
+    <string name="paper_type_handwriting_guide">Handwriting guide</string>
+
+    <!-- Label dialog -->
+    <string name="label_dialog_title">Note label</string>
+    <string name="label_existing">Existing labels</string>
+    <string name="label_or_create_new">Or create a new one</string>
+    <string name="label_name_placeholder">Label name (e.g. Work, Exam prep)</string>
+    <string name="label_color">Label color</string>
+    <string name="label_delete">Remove label</string>
+    <string name="action_back">Back</string>
+
+    <!-- AboutScreen.kt -->
+    <string name="about_feature_write_title">Natural handwriting</string>
+    <string name="about_feature_write_desc">Pen, brush, highlighter with pressure sensitivity, eraser, and a lasso tool to select/move.</string>
+    <string name="about_feature_ruler_title">Virtual ruler &amp; compass</string>
+    <string name="about_feature_ruler_desc">Draw straight lines and perfect circles even with an unsteady hand.</string>
+    <string name="about_feature_sync_title">Google Drive sync</string>
+    <string name="about_feature_sync_desc">Data stays in your own Drive - no server in between.</string>
+    <string name="about_feature_share_title">View-only link sharing</string>
+    <string name="about_feature_share_desc">Send a note to a friend or teacher with just a link.</string>
+    <string name="about_feature_ocr_title">Handwriting recognition</string>
+    <string name="about_feature_ocr_desc">Turns ink into text right on your device, no internet needed.</string>
+    <string name="about_feature_import_title">Insert photo/PDF as background</string>
+    <string name="about_feature_import_desc">Annotate directly on a textbook or PDF/image document.</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_description">KapiNotes is a handwriting notes app for Android, optimized for tablets with a stylus. Supports many paper types, inserting photos/PDFs as a background to annotate, and syncing/backing up through your own Google Drive.</string>
+    <string name="about_highlights_heading">Highlights</string>
+    <string name="about_footer">© 2026 KapiNotes. Your notes always belong to your own Google Drive - there is no other server in between.</string>
+    <string name="action_retry">Retry</string>
+
+    <!-- DrivePickerScreen.kt -->
+    <string name="drive_oauth_config_error">Configuration error (DEVELOPER_ERROR): this app\'s OAuth Client ID isn\'t registered correctly in Google Cloud Console (package name + SHA-1 don\'t match). Already being signed in to Google Drive elsewhere on this device isn\'t enough - see README.md section 3 to create an Android OAuth Client ID.</string>
+    <string name="drive_network_error">No network connection, try again later.</string>
+    <string name="drive_error_code">error code %1$d</string>
+    <string name="drive_signin_cancelled">Sign-in cancelled</string>
+    <string name="drive_title">Google Drive</string>
+    <string name="drive_importing_document">Importing document…</string>
+    <string name="drive_connect_hint">Connect your Google Drive to pick a document to annotate</string>
+    <string name="drive_connect_button">Connect Google Drive</string>
+    <string name="drive_my_drive">My Drive</string>
+    <string name="drive_loading">Loading…</string>
+    <string name="drive_empty_folder">No PDFs/images in this folder</string>
+
+    <!-- EditorViewModel.kt -->
+    <string name="editor_handwriting_not_recognized">Couldn\'t recognize handwriting in the selected area</string>
+    <string name="editor_new_layer_name">Layer %1$d</string>
+    <string name="editor_page_locked_orientation">This page already has ink, so its orientation can\'t be changed anymore</string>
+    <string name="editor_page_locked_flip">This page already has ink, so it can\'t be flipped anymore</string>
+    <string name="editor_pdf_no_pages">The PDF file has no pages</string>
+    <string name="editor_pdf_import_failed">PDF import failed</string>
+    <string name="editor_share_requires_signin">Sign in to Google Drive first (from the Dashboard) to share a link.</string>
+    <string name="editor_share_failed">Sharing failed</string>
+    <string name="editor_export_failed">Export failed</string>
+    <string name="action_delete">Delete</string>
+
+    <!-- SettingsScreen.kt -->
+    <string name="settings_oauth_config_error">OAuth configuration error (DEVELOPER_ERROR): no Android OAuth Client ID matches package \"%1$s\" in Google Cloud Console yet - see README.md section 4</string>
+    <string name="settings_signin_failed_code">Sign-in failed (code %1$d)</string>
+    <string name="settings_save_backup_chooser">Save backup file</string>
+    <string name="settings_share_sheet_failed">Couldn\'t open the share sheet: %1$s</string>
+    <string name="settings_share_sync_log_chooser">Share sync log</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_writing">Writing &amp; drawing</string>
+    <string name="settings_palm_rejection_title">Palm resting on screen (palm rejection)</string>
+    <string name="settings_palm_rejection_desc">When using a stylus, touches from a finger/palm resting on the screen are ignored to avoid stray marks.</string>
+    <string name="settings_stylus_only_title">Stylus only (disables finger touch)</string>
+    <string name="settings_stylus_only_desc">When on, only the stylus can draw/erase/drag - finger touches do nothing. Two-finger zoom still works normally.</string>
+    <string name="settings_section_data">Data on this device</string>
+    <string name="settings_data_desc">Besides Drive sync above, you can also export your notes to a separate file to back up/transfer manually, import it back, or delete all data on this device.</string>
+    <string name="settings_export_data">Export data</string>
+    <string name="settings_import_data">Import data</string>
+    <string name="settings_delete_all">Delete all</string>
+    <string name="settings_delete_all_confirm_title">Delete all data?</string>
+    <string name="settings_delete_all_confirm_body">Every note, page and stroke on this device will be permanently deleted and can\'t be recovered (except what\'s already synced to Drive, which you can sync back down to restore).</string>
+    <string name="settings_section_account">Account &amp; sync</string>
+    <string name="settings_account_desc">Sign in with Google to save your notes to your own Google Drive. Signing in with the same account on another device automatically pulls your notes down - there is no other server in between.</string>
+    <string name="settings_sign_in_google">Sign in with Google</string>
+    <string name="settings_share_signin_log">Share sign-in log (to investigate an error)</string>
+    <string name="settings_sign_out">Sign out</string>
+    <string name="settings_sync_with_drive">Sync with Google Drive</string>
+    <string name="settings_sync_status_idle">Never synced</string>
+    <string name="settings_sync_status_synced">Synced</string>
+    <string name="settings_sync_status_error">Sync error, try again</string>
+    <string name="settings_share_sync_log">Share sync log (to investigate an error/timeout)</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_share">Share</string>
+
+    <!-- Recognition languages (ocr/HandwritingRecognizer.kt) -->
+    <string name="recognition_language_english">English</string>
+    <string name="recognition_language_chinese">Chinese</string>
+
+    <!-- EditorScreen.kt -->
+    <string name="editor_export_chooser_title">Export note</string>
+    <string name="editor_exit_fullscreen">Exit fullscreen</string>
+    <string name="editor_choose_emoji">Choose emoji</string>
+    <string name="editor_insert_image">Insert image</string>
+    <string name="editor_insert_image_hint">Choose an image source to insert on the page.</string>
+    <string name="editor_gallery">Gallery</string>
+    <string name="editor_take_photo">Take photo</string>
+    <string name="editor_edit_text">Edit text</string>
+    <string name="editor_insert_text">Insert text</string>
+    <string name="editor_text_placeholder">Type a note…</string>
+    <string name="editor_font_size_minus">A-</string>
+    <string name="editor_font_size_plus">A+</string>
+    <string name="editor_font_default">Default</string>
+    <string name="editor_font_serif">Serif</string>
+    <string name="editor_font_monospace">Monospace</string>
+    <string name="editor_font_handwriting">Handwriting</string>
+    <string name="editor_notice_title">Notice</string>
+    <string name="editor_share_link_ready">View-only link is ready</string>
+    <string name="editor_share_link_hint">Anyone with this link can view the note (not edit it):</string>
+    <string name="editor_note_link_label">Note link</string>
+    <string name="editor_share_link_chooser">Share link</string>
+    <string name="editor_confirm_rename">Confirm rename</string>
+    <string name="editor_rename_note">Rename note</string>
+    <string name="editor_undo">Undo</string>
+    <string name="editor_redo">Redo</string>
+    <string name="editor_stylus_only_on">Stylus only (on) - tap to turn off</string>
+    <string name="editor_stylus_only_off">Stylus only (off) - tap to turn on</string>
+    <string name="editor_unbookmark_page">Remove page bookmark</string>
+    <string name="editor_bookmark_page">Bookmark page (for quick jumping)</string>
+    <string name="editor_bookmarked_pages">Bookmarked pages</string>
+    <string name="editor_no_bookmarked_pages">No pages bookmarked yet</string>
+    <string name="editor_page_n">Page %1$d</string>
+    <string name="editor_more">More</string>
+    <string name="editor_stop_recording">Stop recording</string>
+    <string name="editor_record_lecture">Record lecture</string>
+    <string name="editor_fullscreen">Fullscreen</string>
+    <string name="editor_export_pdf">Export note as PDF</string>
+    <string name="editor_export_png">Export image PNG (current page)</string>
+    <string name="editor_share_view_only_link">Share view-only link (Drive)</string>
+    <string name="editor_paper_settings">Paper settings: type, rotate, flip</string>
+    <string name="editor_paper_style_label">Paper style</string>
+    <string name="editor_format_label">Format</string>
+    <string name="editor_rotate">Rotate</string>
+    <string name="editor_flip">Flip</string>
+    <string name="editor_orientation_locked">This page already has ink, so its size/flip can\'t be changed anymore</string>
+    <string name="editor_page_tag_color">Page tag color</string>
+    <string name="editor_page_background_label">Page background (insert image/PDF to annotate over)</string>
+    <string name="editor_background_image">Background image</string>
+    <string name="editor_background_pdf">Background PDF</string>
+    <string name="editor_clear_background">Clear this page background</string>
+    <string name="editor_tool_pen">Pen</string>
+    <string name="editor_tool_eraser">Eraser</string>
+    <string name="editor_tool_shape">Shape</string>
+    <string name="editor_shape_line">Line</string>
+    <string name="editor_shape_rectangle">Rectangle</string>
+    <string name="editor_shape_circle">Circle</string>
+    <string name="editor_shape_arrow">Arrow</string>
+    <string name="editor_shape_triangle">Triangle</string>
+    <string name="editor_tool_select">Select</string>
+    <string name="editor_tool_insert">Insert</string>
+    <string name="editor_insert_image_item">Image</string>
+    <string name="editor_insert_text_item">Text</string>
+    <string name="editor_insert_emoji_item">Emoji</string>
+    <string name="editor_tool_more">More</string>
+    <string name="editor_laser_off">Turn off laser pointer</string>
+    <string name="editor_laser_on">Laser pointer (presenting)</string>
+    <string name="editor_ink_pen">Pen</string>
+    <string name="editor_ink_pencil">Pencil</string>
+    <string name="editor_ink_brush">Brush</string>
+    <string name="editor_ink_highlighter">Highlighter</string>
+    <string name="editor_zoom_in">Zoom in</string>
+    <string name="editor_zoom_out">Zoom out</string>
+    <string name="editor_zoom_collapse">Collapse zoom bar</string>
+    <string name="editor_zoom_expand">Open zoom bar</string>
+    <string name="editor_pull_to_add_page">Pull up to add a page</string>
+    <string name="editor_add_page">Add page</string>
+    <string name="editor_eraser_mode_label">Eraser mode:</string>
+    <string name="editor_erase_by_stroke">Erase by stroke</string>
+    <string name="editor_erase_flat">Flat erase</string>
+    <string name="editor_crop_image_label">Crop image:</string>
+    <string name="editor_image_n">Image %1$d</string>
+    <string name="editor_ruler">Ruler</string>
+    <string name="editor_compass">Compass</string>
+    <string name="editor_add_custom_color">Add custom color</string>
+    <string name="editor_fill_color">Fill color</string>
+    <string name="editor_selection_mode_label">Selection style:</string>
+    <string name="editor_selection_freeform">Freeform</string>
+    <string name="editor_selection_rectangle">Rectangle</string>
+    <string name="editor_recognize_handwriting">Recognize text</string>
+    <string name="editor_custom_color_title">Custom color</string>
+    <string name="editor_custom_color_hint">Enter a color code (RRGGBB)</string>
+    <string name="editor_add_color_button">Add</string>
+    <string name="editor_move_page_earlier">Move this page earlier</string>
+    <string name="editor_move_page_later">Move this page later</string>
+    <string name="editor_add_new_page">Add new page</string>
+    <string name="editor_duplicate_page">Duplicate this page</string>
+    <string name="editor_delete_page">Delete this page</string>
 </resources>
