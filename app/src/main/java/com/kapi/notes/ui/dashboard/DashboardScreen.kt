@@ -203,7 +203,16 @@ fun DashboardScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         OutlinedButton(
-                            onClick = { localFilePicker.launch(arrayOf("application/pdf", "image/*")) },
+                            onClick = {
+                                localFilePicker.launch(
+                                    arrayOf(
+                                        "application/pdf",
+                                        "image/*",
+                                        "text/plain",
+                                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                    )
+                                )
+                            },
                             enabled = !state.isImportingLocalFile,
                             shape = MaterialTheme.shapes.medium
                         ) {

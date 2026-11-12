@@ -44,7 +44,7 @@
     <string name="dashboard_section_favorites">Favorites</string>
     <string name="dashboard_section_trash">Trash</string>
     <string name="dashboard_default_note_title">New note</string>
-    <string name="dashboard_import_unsupported_format">Only PDF or image files are supported for notes. Other formats (Word, Excel…) aren\'t supported yet.</string>
+    <string name="dashboard_import_unsupported_format">Only PDF, image, .txt or .docx files are supported for notes. Other formats (Excel, legacy .doc…) aren\'t supported yet.</string>
     <string name="dashboard_import_read_failed">Couldn\'t read the selected file</string>
     <string name="dashboard_import_generic_failed">Import failed</string>
 
@@ -84,7 +84,7 @@
     <!-- DashboardScreen.kt -->
     <string name="dashboard_default_doc_name">Document</string>
     <string name="dashboard_heading_my_notes">Recent documents</string>
-    <string name="dashboard_upload_local_file">Upload photo/PDF</string>
+    <string name="dashboard_upload_local_file">Import file</string>
     <string name="dashboard_import_error_title">Couldn\'t import file</string>
     <string name="dashboard_about">About</string>
     <string name="dashboard_sidebar_settings">Settings</string>

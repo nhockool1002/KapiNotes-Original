@@ -61,6 +61,7 @@ class DashboardViewModel @Inject constructor(
     private val notesRepository: NotesRepository,
     private val authRepository: AuthRepository,
     private val pageRenderer: DocumentPageRenderer,
+    private val documentTextImporter: com.kapi.notes.pdf.DocumentTextImporter,
     private val updateChecker: UpdateChecker,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -184,32 +185,18 @@ class DashboardViewModel @Inject constructor(
             runCatching {
                 val isPdf = mimeType == "application/pdf" || displayName.endsWith(".pdf", ignoreCase = true)
                 val isImage = mimeType?.startsWith("image/") == true
-                check(isPdf || isImage) {
+                val isTxt = mimeType == "text/plain" || displayName.endsWith(".txt", ignoreCase = true)
+                val isDocx = mimeType == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+                    displayName.endsWith(".docx", ignoreCase = true)
+                check(isPdf || isImage || isTxt || isDocx) {
                     context.getString(R.string.dashboard_import_unsupported_format)
                 }
 
-                val extension = if (isPdf) "pdf" else "img"
-                val tempFile = File(context.cacheDir, "local_import_${UUID.randomUUID()}.$extension")
-                context.contentResolver.openInputStream(uri)?.use { input ->
-                    tempFile.outputStream().use { output -> input.copyTo(output) }
-                } ?: error(context.getString(R.string.dashboard_import_read_failed))
-
-                val noteIdPlaceholder = UUID.randomUUID().toString()
-                val pages = if (isPdf) {
-                    pageRenderer.renderPdf(tempFile, noteIdPlaceholder).getOrThrow()
+                if (isTxt || isDocx) {
+                    importTextDocument(uri, displayName, isDocx)
                 } else {
-                    listOf(pageRenderer.renderImage(tempFile, noteIdPlaceholder).getOrThrow())
+                    importVisualDocument(uri, displayName, isPdf)
                 }
-                tempFile.delete()
-
-                notesRepository.createImportedNote(
-                    title = displayName.substringBeforeLast('.'),
-                    driveFileId = null,
-                    driveFileName = displayName,
-                    pageBackgroundPaths = pages.map { it.filePath },
-                    pageWidthPx = pages.first().widthPx,
-                    pageHeightPx = pages.first().heightPx
-                )
             }.onSuccess { noteId ->
                 isImportingLocalFile.value = false
                 onImported(noteId)
@@ -218,6 +205,68 @@ class DashboardViewModel @Inject constructor(
                 importError.value = e.message ?: context.getString(R.string.dashboard_import_generic_failed)
             }
         }
+    }
+
+    private suspend fun importVisualDocument(uri: Uri, displayName: String, isPdf: Boolean): String {
+        val extension = if (isPdf) "pdf" else "img"
+        val tempFile = File(context.cacheDir, "local_import_${UUID.randomUUID()}.$extension")
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            tempFile.outputStream().use { output -> input.copyTo(output) }
+        } ?: error(context.getString(R.string.dashboard_import_read_failed))
+
+        val noteIdPlaceholder = UUID.randomUUID().toString()
+        val pages = if (isPdf) {
+            pageRenderer.renderPdf(tempFile, noteIdPlaceholder).getOrThrow()
+        } else {
+            listOf(pageRenderer.renderImage(tempFile, noteIdPlaceholder).getOrThrow())
+        }
+        tempFile.delete()
+
+        return notesRepository.createImportedNote(
+            title = displayName.substringBeforeLast('.'),
+            driveFileId = null,
+            driveFileName = displayName,
+            pageBackgroundPaths = pages.map { it.filePath },
+            pageWidthPx = pages.first().widthPx,
+            pageHeightPx = pages.first().heightPx
+        )
+    }
+
+    /** `.txt`/`.docx` have no fixed page layout of their own - unlike PDFs/images (rendered as a
+     * page BACKGROUND image), their text is placed as an editable [com.kapi.notes.domain.model.TextBoxItem]
+     * on one or more blank pages, split at paragraph/word boundaries by
+     * [com.kapi.notes.pdf.paginateImportedText] so a long document doesn't overflow a single page. */
+    private suspend fun importTextDocument(uri: Uri, displayName: String, isDocx: Boolean): String {
+        val text = documentTextImporter.extractPlainText(context, uri, isDocx).getOrThrow()
+        val pages = com.kapi.notes.pdf.paginateImportedText(text)
+
+        val noteId = notesRepository.createBlankNote(displayName.substringBeforeLast('.'), PaperType.BLANK)
+        val note = notesRepository.getNote(noteId) ?: error("Note vanished right after creation")
+        val firstPageId = notesRepository.getPages(noteId).first().id
+
+        val marginPx = com.kapi.notes.pdf.IMPORTED_TEXT_MARGIN_PX
+        val fontSizePx = com.kapi.notes.pdf.IMPORTED_TEXT_FONT_SIZE_PX
+        // 1588x2246: NotesRepositoryImpl's DEFAULT_PAGE_WIDTH_PX/HEIGHT_PX (private to that file,
+        // can't reference directly) - both createBlankNote and addPage(..., null, ...) with no
+        // PDF template to inherit from use exactly these for a BLANK page, so this stays correct
+        // as long as that default doesn't change independently of this file.
+        pages.forEachIndexed { index, pageText ->
+            val pageId = if (index == 0) firstPageId else notesRepository.addPage(noteId, null, PaperType.BLANK)
+            notesRepository.addTextBox(
+                com.kapi.notes.domain.model.TextBoxItem(
+                    id = UUID.randomUUID().toString(),
+                    pageId = pageId,
+                    text = pageText,
+                    x = marginPx,
+                    y = marginPx,
+                    widthPx = 1588f - marginPx * 2,
+                    heightPx = 2246f - marginPx * 2,
+                    fontSizePx = fontSizePx,
+                    colorArgb = 0xFF1E293BL
+                )
+            )
+        }
+        return note.id
     }
 
     fun dismissImportError() {

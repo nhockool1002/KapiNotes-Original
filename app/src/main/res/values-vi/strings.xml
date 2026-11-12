@@ -44,7 +44,7 @@
     <string name="dashboard_section_favorites">Mục yêu thích</string>
     <string name="dashboard_section_trash">Thùng rác</string>
     <string name="dashboard_default_note_title">Ghi chú mới</string>
-    <string name="dashboard_import_unsupported_format">Chỉ hỗ trợ ghi chú trên PDF hoặc ảnh. Các định dạng khác (Word, Excel...) chưa hỗ trợ.</string>
+    <string name="dashboard_import_unsupported_format">Chỉ hỗ trợ ghi chú trên PDF, ảnh, .txt hoặc .docx. Các định dạng khác (Excel, .doc cũ...) chưa hỗ trợ.</string>
     <string name="dashboard_import_read_failed">Không đọc được tệp đã chọn</string>
     <string name="dashboard_import_generic_failed">Nhập tệp thất bại</string>
 
@@ -84,7 +84,7 @@
     <!-- DashboardScreen.kt -->
     <string name="dashboard_default_doc_name">Tài liệu</string>
     <string name="dashboard_heading_my_notes">Tài liệu gần đây</string>
-    <string name="dashboard_upload_local_file">Chọn ảnh/PDF</string>
+    <string name="dashboard_upload_local_file">Nhập tệp</string>
     <string name="dashboard_import_error_title">Không nhập được tệp</string>
     <string name="dashboard_about">Giới thiệu</string>
     <string name="dashboard_sidebar_settings">Cài đặt</string>
