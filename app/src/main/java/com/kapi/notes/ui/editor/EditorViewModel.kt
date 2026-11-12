@@ -108,8 +108,8 @@ class EditorViewModel @Inject constructor(
     private val audioRecorder: AudioRecorderManager,
     private val handwritingRecognizer: com.kapi.notes.ocr.HandwritingRecognizer,
     private val documentPageRenderer: com.kapi.notes.pdf.DocumentPageRenderer,
-    private val driveAuthManager: com.kapi.notes.drive.DriveAuthManager,
-    private val driveRepository: com.kapi.notes.drive.DriveRepository,
+    private val googleAuthManager: com.kapi.notes.auth.GoogleAuthManager,
+    private val syncApi: com.kapi.notes.sync.SyncApi,
     private val updateChecker: UpdateChecker,
     private val appSettingsStore: AppSettingsStore,
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: Context,
@@ -1180,12 +1180,15 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    /** Exports the note to PDF, uploads it to the signed-in Drive account and makes it
-     * "anyone with the link can view" - for sending a read-only copy to a friend/teacher. */
+    /** Exports the note to PDF and uploads it to our own Cloudflare Worker (see [SyncApi]),
+     * which hands back a public "anyone with the link can view" URL - for sending a read-only
+     * copy to a friend/teacher. No Drive (or any other third-party storage) involved - the
+     * Worker is the only thing holding R2 credentials, same as note sync itself. */
     fun shareNoteViewOnlyLink() {
         val note = _state.value.note ?: return
-        val account = driveAuthManager.lastSignedInAccount()
-        if (account == null) {
+        val account = googleAuthManager.lastSignedInAccount()
+        val idToken = account?.idToken
+        if (idToken == null) {
             _state.update { it.copy(error = context.getString(R.string.editor_share_requires_signin)) }
             return
         }
@@ -1202,8 +1205,7 @@ class EditorViewModel @Inject constructor(
                     )
                 }
                 val pdfFile = noteExporter.exportToPdf(note.title, pages, contentByPage).getOrThrow()
-                val fileId = driveRepository.uploadFile(account, "${note.title}.pdf", "application/pdf", pdfFile.readBytes()).getOrThrow()
-                driveRepository.shareFilePublicly(account, fileId).getOrThrow()
+                syncApi.uploadShare(idToken, pdfFile.readBytes()).getOrThrow()
             }.onSuccess { link ->
                 _state.update { it.copy(isSharingLink = false, shareLink = link) }
             }.onFailure { e ->

@@ -1,0 +1,16 @@
+name = "kapinotes-sync"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+
+# Each signed-in user's backup lives at "users/<google-sub>/kapinotes_sync.kapibackup"
+# inside this bucket - the Worker is the only thing with credentials to read/write it,
+# the app never holds an R2 key.
+[[r2_buckets]]
+binding = "SYNC_BUCKET"
+bucket_name = "kapinotes-sync"
+
+# Must match the OAuth Android client ID(s) from Google Cloud Console (README.md section 4) -
+# the Worker only accepts Google ID tokens whose "aud" claim is one of these, so a token minted
+# for some other app/client can't be used to read/write this bucket.
+[vars]
+ALLOWED_AUDIENCES = "440629560986-7itdq5l08fde0nfp4c9ci01a1nhq0v4b.apps.googleusercontent.com"

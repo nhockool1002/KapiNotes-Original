@@ -15,9 +15,9 @@ import javax.inject.Singleton
 private val Context.sessionDataStore by preferencesDataStore(name = "session")
 
 /**
- * Persists the signed-in Google account (+ which Drive file holds its notes backup) across app
- * restarts. See [com.kapi.notes.data.repository.DriveSyncAuthRepository] - there is no backend,
- * so this is the entire "session" the app needs to remember.
+ * Persists the signed-in Google account across app restarts. See
+ * [com.kapi.notes.data.repository.DriveSyncAuthRepository] - there is no separate KapiNotes
+ * account, so this is the entire "session" the app needs to remember.
  */
 @Singleton
 class SessionStore @Inject constructor(@ApplicationContext private val context: Context) {
@@ -27,7 +27,6 @@ class SessionStore @Inject constructor(@ApplicationContext private val context: 
         val EMAIL = stringPreferencesKey("email")
         val DISPLAY_NAME = stringPreferencesKey("display_name")
         val AVATAR_URL = stringPreferencesKey("avatar_url")
-        val DRIVE_SYNC_FILE_ID = stringPreferencesKey("drive_sync_file_id")
         val LAST_SYNCED_AT = longPreferencesKey("last_synced_at")
     }
 
@@ -38,7 +37,6 @@ class SessionStore @Inject constructor(@ApplicationContext private val context: 
             email = prefs[Keys.EMAIL].orEmpty(),
             displayName = prefs[Keys.DISPLAY_NAME].orEmpty(),
             avatarUrl = prefs[Keys.AVATAR_URL],
-            driveSyncFileId = prefs[Keys.DRIVE_SYNC_FILE_ID],
             lastSyncedAt = prefs[Keys.LAST_SYNCED_AT]
         )
     }
@@ -49,14 +47,12 @@ class SessionStore @Inject constructor(@ApplicationContext private val context: 
             prefs[Keys.EMAIL] = session.email
             prefs[Keys.DISPLAY_NAME] = session.displayName
             session.avatarUrl?.let { prefs[Keys.AVATAR_URL] = it }
-            session.driveSyncFileId?.let { prefs[Keys.DRIVE_SYNC_FILE_ID] = it }
             session.lastSyncedAt?.let { prefs[Keys.LAST_SYNCED_AT] = it }
         }
     }
 
-    suspend fun updateSyncState(driveSyncFileId: String?, lastSyncedAt: Long) {
+    suspend fun updateLastSyncedAt(lastSyncedAt: Long) {
         context.sessionDataStore.edit { prefs ->
-            driveSyncFileId?.let { prefs[Keys.DRIVE_SYNC_FILE_ID] = it }
             prefs[Keys.LAST_SYNCED_AT] = lastSyncedAt
         }
     }

@@ -5,8 +5,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.kapi.notes.data.datastore.SessionStore
 import com.kapi.notes.domain.model.SyncStatus
 import com.kapi.notes.domain.model.UserSession
-import com.kapi.notes.drive.DriveAuthManager
-import com.kapi.notes.drive.DriveRepository
+import com.kapi.notes.auth.GoogleAuthManager
+import com.kapi.notes.sync.SyncApi
 import com.kapi.notes.sync.SyncLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -21,8 +21,6 @@ import java.util.concurrent.TimeoutException
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val SYNC_FILE_NAME = "kapinotes_sync.kapibackup"
-private const val SYNC_MIME_TYPE = "application/zip"
 // Backups carry every imported PDF/photo page as a full-size PNG, so a heavily-used note set can
 // run to 100+ MB - 45s was timing out a normal download+import+export+upload round trip for any
 // account with a non-trivial amount of content (not just a slow connection), as seen in sync
@@ -31,17 +29,17 @@ private const val SYNC_MIME_TYPE = "application/zip"
 private const val SYNC_TIMEOUT_MS = 240_000L
 
 /**
- * "Login" is just Google Sign-In (the same account/scopes already used to browse Drive in
- * [com.kapi.notes.ui.drive.DrivePickerScreen]) and "sync" is one backup file - produced by the
- * exact same [BackupRepository] zip format used for the on-device export/import in Settings -
- * stored in that account's own Drive. Signing in on a second device downloads that file and
- * merges it in; there is no other backend.
+ * "Login" is Google Sign-In (see [GoogleAuthManager]) and "sync" is one backup file - produced by
+ * the exact same [BackupRepository] zip format used for the on-device export/import in Settings -
+ * sent to our own Cloudflare Worker via [SyncApi], keyed by this Google account's stable id. The
+ * Worker, not this app, is the only thing holding storage credentials. Signing in on a second
+ * device downloads that file back down and merges it in.
  */
 @Singleton
 class DriveSyncAuthRepository @Inject constructor(
     private val sessionStore: SessionStore,
-    private val driveAuthManager: DriveAuthManager,
-    private val driveRepository: DriveRepository,
+    private val googleAuthManager: GoogleAuthManager,
+    private val syncApi: SyncApi,
     private val backupRepository: BackupRepository,
     private val syncLogger: SyncLogger,
     @ApplicationContext private val context: Context
@@ -75,7 +73,7 @@ class DriveSyncAuthRepository @Inject constructor(
     }
 
     override suspend fun logout() {
-        driveAuthManager.signOut()
+        googleAuthManager.signOut()
         sessionStore.clear()
         _syncStatus.value = SyncStatus.IDLE
         syncLogger.log("Đã đăng xuất")
@@ -86,7 +84,7 @@ class DriveSyncAuthRepository @Inject constructor(
      * downloading, importing, exporting, or uploading) and the underlying exception, instead of
      * just a generic "Lỗi đồng bộ". */
     override suspend fun syncNow(): Result<Unit> {
-        val account = driveAuthManager.lastSignedInAccount()
+        val account = googleAuthManager.lastSignedInAccount()
         if (account == null) {
             syncLogger.log("Bỏ qua đồng bộ: chưa đăng nhập Google")
             return Result.failure(IllegalStateException("Chưa đăng nhập Google"))
@@ -114,27 +112,24 @@ class DriveSyncAuthRepository @Inject constructor(
         // blocking HTTP call is still unwinding in the background after we give up on it.
         val result = withTimeoutOrNull(SYNC_TIMEOUT_MS) {
             runCatching {
-                syncLogger.log("Tìm file đồng bộ trên Drive ($SYNC_FILE_NAME)...")
-                val remote = driveRepository.findFileByName(account, SYNC_FILE_NAME)
-                    .onFailure { syncLogger.logError("tìm file trên Drive", it) }
+                val idToken = account.idToken
+                    ?: error("Thiếu Google ID token - hãy đăng xuất rồi đăng nhập lại")
+
+                syncLogger.log("Kiểm tra bản sao lưu từ server...")
+                val downloaded = File(context.cacheDir, "sync_pull_${UUID.randomUUID()}.kapibackup")
+                val hasRemote = syncApi.download(idToken, downloaded)
+                    .onFailure { syncLogger.logError("tải bản sao lưu từ server", it) }
                     .getOrThrow()
 
-                if (remote != null) {
-                    syncLogger.log("Đã có file trên Drive (id=${remote.id}) - tải về trước khi đẩy lên.")
-                    val downloaded = File(context.cacheDir, "sync_pull_${UUID.randomUUID()}.kapibackup")
-                    downloaded.outputStream().use { out ->
-                        driveRepository.downloadFile(account, remote.id, out)
-                            .onFailure { syncLogger.logError("tải file từ Drive", it) }
-                            .getOrThrow()
-                    }
-                    syncLogger.log("Tải về xong (${downloaded.length()} bytes) - đang nhập vào dữ liệu cục bộ...")
+                if (hasRemote) {
+                    syncLogger.log("Đã có bản sao lưu trên server (${downloaded.length()} bytes) - đang nhập vào dữ liệu cục bộ...")
                     backupRepository.importFromFile(downloaded)
                         .onFailure { syncLogger.logError("nhập dữ liệu tải về", it) }
                         .getOrThrow()
                     downloaded.delete()
                     syncLogger.log("Nhập dữ liệu tải về thành công.")
                 } else {
-                    syncLogger.log("Chưa có file đồng bộ nào trên Drive - sẽ tạo mới.")
+                    syncLogger.log("Chưa có bản sao lưu nào trên server - sẽ tạo mới.")
                 }
 
                 syncLogger.log("Xuất dữ liệu cục bộ để chuẩn bị đẩy lên...")
@@ -145,19 +140,13 @@ class DriveSyncAuthRepository @Inject constructor(
                 val bytes = toUpload.readBytes()
                 toUpload.delete()
 
-                syncLogger.log("Đang tải lên Drive (${bytes.size} bytes)...")
-                val fileId = driveRepository.upsertFile(
-                    account = account,
-                    fileId = remote?.id,
-                    displayName = SYNC_FILE_NAME,
-                    mimeType = SYNC_MIME_TYPE,
-                    bytes = bytes
-                ).onFailure { syncLogger.logError("tải lên Drive", it) }
+                syncLogger.log("Đang tải lên server (${bytes.size} bytes)...")
+                syncApi.upload(idToken, bytes)
+                    .onFailure { syncLogger.logError("tải lên server", it) }
                     .getOrThrow()
-                syncLogger.log("Tải lên Drive thành công (id=$fileId).")
+                syncLogger.log("Tải lên server thành công.")
 
-                val now = System.currentTimeMillis()
-                sessionStore.updateSyncState(driveSyncFileId = fileId, lastSyncedAt = now)
+                sessionStore.updateLastSyncedAt(System.currentTimeMillis())
             }
         } ?: run {
             syncLogger.log("Đồng bộ quá thời gian chờ (${SYNC_TIMEOUT_MS / 1000}s) - hủy và báo lỗi.")

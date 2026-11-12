@@ -6,33 +6,27 @@ Ngày soát xét: 2026-11-02. Phạm vi: toàn bộ mã nguồn trong repo hiệ
 
 | Mức độ | Số lượng |
 |---|---|
-| 🔴 Chặn nộp (phải xử lý trước khi submit) | 3 |
+| 🔴 Chặn nộp (phải xử lý trước khi submit) | 1 |
 | 🟡 Nên xử lý trước khi nộp | 4 |
 | 🟢 Đã sửa trong lần soát xét này | 2 |
+| ✅ Đã xử lý sau đó (2026-11-11) | 2 |
 | ⚪ Khuyến nghị dài hạn (không chặn) | 2 |
 
 ---
 
+## ✅ Đã xử lý sau lần soát xét này (2026-11-11)
+
+### 1. Cấu hình ký bản release (release signing)
+Đã có `signingConfigs { release { ... } }` trong `app/build.gradle.kts`, đọc từ `key.properties` (gitignored) khi file đó tồn tại. Keystore thật đã được tạo và đặt ngoài git.
+
+### 2. Google Drive OAuth scope `drive.readonly` (restricted scope)
+`DriveAuthManager.kt` từng xin 2 scope `DriveScopes.DRIVE_READONLY` + `DriveScopes.DRIVE_FILE` cho tính năng "Nhập từ Drive" (duyệt/liệt kê file bất kỳ). `drive.readonly` là **restricted scope**, bắt buộc xác minh OAuth consent screen + đánh giá bảo mật CASA trả phí nếu vượt quá 100 test user ở chế độ "In production".
+
+**Đã xử lý:** bỏ hẳn tính năng "Nhập từ Drive" (duyệt folder) cùng scope `drive.readonly` - xem README.md mục 4/5. App giờ chỉ xin `drive.file` (non-sensitive, cho tính năng chia sẻ link view-only) và dùng ID token thuần cho đăng nhập/đồng bộ (sync chuyển sang Cloudflare Worker + R2 riêng, xem `sync-worker/`). Không còn rào cản CASA để publish production cho nhiều người dùng.
+
+---
+
 ## 🔴 Mục chặn nộp
-
-### 1. Chưa có cấu hình ký bản release (release signing)
-`app/build.gradle.kts` → `buildTypes { release { ... } }` **không có `signingConfig`**. Play Console bắt buộc mọi bản build nộp lên phải được ký (dùng Play App Signing là chuẩn hiện tại: bạn giữ một "upload key" để ký file nộp, Google giữ "app signing key" để ký bản phát hành thật cho người dùng).
-
-**Cần làm (phía bạn, không thể tự động hóa an toàn vì cần keystore thật):**
-1. Tạo upload keystore: `keytool -genkeypair -v -keystore upload-keystore.jks -alias kapinotes -keyalg RSA -keysize 2048 -validity 10000`
-2. Lưu `upload-keystore.jks` **ngoài git** (đã có `*.jks` trong `.gitignore`, tốt).
-3. Thêm `signingConfigs { release { ... } }` vào `build.gradle.kts`, đọc mật khẩu từ file `key.properties` không commit (đã có trong `.gitignore`).
-4. Khi tạo app mới trên Play Console, chọn "Let Google manage and protect your app signing key" (Play App Signing) — đây là lựa chọn mặc định và được khuyến nghị.
-
-### 2. Google Drive OAuth scope `drive.readonly` là "restricted scope"
-`DriveAuthManager.kt` yêu cầu 2 scope: `DriveScopes.DRIVE_READONLY` + `DriveScopes.DRIVE_FILE`.
-- `drive.file` — scope **không hạn chế**, chỉ truy cập file do chính app tạo/mở — an toàn, không cần xác minh thêm.
-- `drive.readonly` — scope **hạn chế** (restricted scope): cho phép đọc TẤT CẢ file trong Drive của người dùng. Google yêu cầu **xác minh OAuth consent screen** (và có thể cả đánh giá bảo mật CASA hàng năm) nếu ứng dụng vượt quá 100 người dùng thử nghiệm và dùng scope này ở chế độ "In production".
-
-**Cần làm:**
-- Vào Google Cloud Console → OAuth consent screen → nộp để xác minh app (giải thích rõ vì sao cần đọc toàn bộ Drive — ví dụ: tính năng "Nhập từ Drive" cho phép chọn file bất kỳ do người dùng chọn, không chỉ file app tạo ra).
-- Nếu có thể, cân nhắc đổi sang Google Drive **Picker API** (chỉ cấp quyền đúng file người dùng chọn qua UI chọn file của Google, dùng scope `drive.file` là đủ) để **tránh hoàn toàn** việc cần xin scope hạn chế — giảm rủi ro và thời gian chờ xét duyệt. Đây là thay đổi kiến trúc, nên cân nhắc làm riêng nếu muốn né bước xác minh.
-- Việc này độc lập với Play Console, nằm ở Google Cloud Console — cần làm trước khi public app cho >100 user.
 
 ### 3. Chưa có Chính sách quyền riêng tư (Privacy Policy) công khai
 App xin quyền Internet, ghi âm (`RECORD_AUDIO`), và truy cập Google Drive/tài khoản Google — Play Console **bắt buộc** nhập URL Chính sách quyền riêng tư cho mọi app xử lý dữ liệu cá nhân.

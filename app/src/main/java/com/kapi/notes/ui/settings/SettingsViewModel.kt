@@ -9,7 +9,7 @@ import com.kapi.notes.data.datastore.AppSettingsStore
 import com.kapi.notes.data.repository.AuthRepository
 import com.kapi.notes.data.repository.BackupRepository
 import com.kapi.notes.domain.model.SyncStatus
-import com.kapi.notes.drive.DriveAuthManager
+import com.kapi.notes.auth.GoogleAuthManager
 import com.kapi.notes.domain.model.UserSession
 import com.kapi.notes.sync.SyncLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,7 +45,7 @@ class SettingsViewModel @Inject constructor(
     private val backupRepository: BackupRepository,
     private val syncLogger: SyncLogger,
     private val appSettingsStore: AppSettingsStore,
-    val driveAuthManager: DriveAuthManager
+    val googleAuthManager: GoogleAuthManager
 ) : ViewModel() {
 
     private val isLoggingIn = MutableStateFlow(false)

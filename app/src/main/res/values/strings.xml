@@ -30,6 +30,15 @@
     <string name="update_download_button">Download update</string>
     <string name="action_close">Close</string>
 
+    <!-- PlayUpdateDialog.kt -->
+    <string name="play_update_available_title">A new version is available</string>
+    <string name="play_update_available_body">A newer version of KapiNotes is available on Google Play. Update now to get the latest features and fixes.</string>
+    <string name="play_update_button">Update</string>
+    <string name="play_update_later">Later</string>
+    <string name="play_update_ready_title">Update ready to install</string>
+    <string name="play_update_ready_body">The new version has finished downloading. Restart the app to finish installing it.</string>
+    <string name="play_update_restart_button">Restart now</string>
+
     <!-- DashboardViewModel.kt -->
     <string name="dashboard_section_my_notes">My notes</string>
     <string name="dashboard_section_favorites">Favorites</string>
@@ -38,11 +47,6 @@
     <string name="dashboard_import_unsupported_format">Only PDF or image files are supported for notes. Other formats (Word, Excel…) aren\'t supported yet.</string>
     <string name="dashboard_import_read_failed">Couldn\'t read the selected file</string>
     <string name="dashboard_import_generic_failed">Import failed</string>
-
-    <!-- DrivePickerViewModel.kt -->
-    <string name="drive_signin_failed">Google Drive sign-in failed</string>
-    <string name="drive_list_files_failed">Couldn\'t load the file list</string>
-    <string name="drive_import_failed">Document import failed</string>
 
     <!-- SplashScreen.kt -->
     <string name="splash_tagline">Lean notes. Expansive thinking.</string>
@@ -81,14 +85,13 @@
     <string name="dashboard_default_doc_name">Document</string>
     <string name="dashboard_heading_my_notes">Recent documents</string>
     <string name="dashboard_upload_local_file">Upload photo/PDF</string>
-    <string name="dashboard_import_from_drive">Import from Drive</string>
     <string name="dashboard_import_error_title">Couldn\'t import file</string>
     <string name="dashboard_about">About</string>
     <string name="dashboard_sidebar_settings">Settings</string>
     <string name="dashboard_open_menu">Open menu</string>
     <string name="dashboard_search_placeholder">Search documents…</string>
     <string name="dashboard_syncing">Syncing…</string>
-    <string name="dashboard_sync_tooltip">Sync notes with Google Drive</string>
+    <string name="dashboard_sync_tooltip">Sync notes to the cloud</string>
     <string name="dashboard_sync_now">Sync now</string>
     <string name="dashboard_note_options">Options</string>
     <string name="dashboard_restore">Restore</string>
@@ -135,8 +138,8 @@
     <string name="about_feature_write_desc">Pen, brush, highlighter with pressure sensitivity, eraser, and a lasso tool to select/move.</string>
     <string name="about_feature_ruler_title">Virtual ruler &amp; compass</string>
     <string name="about_feature_ruler_desc">Draw straight lines and perfect circles even with an unsteady hand.</string>
-    <string name="about_feature_sync_title">Google Drive sync</string>
-    <string name="about_feature_sync_desc">Data stays in your own Drive - no server in between.</string>
+    <string name="about_feature_sync_title">Cross-device sync</string>
+    <string name="about_feature_sync_desc">Sign in with Google and your notes sync automatically between your devices.</string>
     <string name="about_feature_share_title">View-only link sharing</string>
     <string name="about_feature_share_desc">Send a note to a friend or teacher with just a link.</string>
     <string name="about_feature_ocr_title">Handwriting recognition</string>
@@ -144,23 +147,10 @@
     <string name="about_feature_import_title">Insert photo/PDF as background</string>
     <string name="about_feature_import_desc">Annotate directly on a textbook or PDF/image document.</string>
     <string name="about_version">Version %1$s</string>
-    <string name="about_description">KapiNotes is a handwriting notes app for Android, optimized for tablets with a stylus. Supports many paper types, inserting photos/PDFs as a background to annotate, and syncing/backing up through your own Google Drive.</string>
+    <string name="about_description">KapiNotes is a handwriting notes app for Android, optimized for tablets with a stylus. Supports many paper types, inserting photos/PDFs as a background to annotate, and syncing/backing up across your devices.</string>
     <string name="about_highlights_heading">Highlights</string>
-    <string name="about_footer">© 2026 KapiNotes. Your notes always belong to your own Google Drive - there is no other server in between.</string>
+    <string name="about_footer">© 2026 KapiNotes.</string>
     <string name="action_retry">Retry</string>
-
-    <!-- DrivePickerScreen.kt -->
-    <string name="drive_oauth_config_error">Configuration error (DEVELOPER_ERROR): this app\'s OAuth Client ID isn\'t registered correctly in Google Cloud Console (package name + SHA-1 don\'t match). Already being signed in to Google Drive elsewhere on this device isn\'t enough - see README.md section 3 to create an Android OAuth Client ID.</string>
-    <string name="drive_network_error">No network connection, try again later.</string>
-    <string name="drive_error_code">error code %1$d</string>
-    <string name="drive_signin_cancelled">Sign-in cancelled</string>
-    <string name="drive_title">Google Drive</string>
-    <string name="drive_importing_document">Importing document…</string>
-    <string name="drive_connect_hint">Connect your Google Drive to pick a document to annotate</string>
-    <string name="drive_connect_button">Connect Google Drive</string>
-    <string name="drive_my_drive">My Drive</string>
-    <string name="drive_loading">Loading…</string>
-    <string name="drive_empty_folder">No PDFs/images in this folder</string>
 
     <!-- EditorViewModel.kt -->
     <string name="editor_handwriting_not_recognized">Couldn\'t recognize handwriting in the selected area</string>
@@ -187,18 +177,18 @@
     <string name="settings_stylus_only_title">Stylus only (disables finger touch)</string>
     <string name="settings_stylus_only_desc">When on, only the stylus can draw/erase/drag - finger touches do nothing. Two-finger zoom still works normally.</string>
     <string name="settings_section_data">Data on this device</string>
-    <string name="settings_data_desc">Besides Drive sync above, you can also export your notes to a separate file to back up/transfer manually, import it back, or delete all data on this device.</string>
+    <string name="settings_data_desc">Besides cloud sync above, you can also export your notes to a separate file to back up/transfer manually, import it back, or delete all data on this device.</string>
     <string name="settings_export_data">Export data</string>
     <string name="settings_import_data">Import data</string>
     <string name="settings_delete_all">Delete all</string>
     <string name="settings_delete_all_confirm_title">Delete all data?</string>
-    <string name="settings_delete_all_confirm_body">Every note, page and stroke on this device will be permanently deleted and can\'t be recovered (except what\'s already synced to Drive, which you can sync back down to restore).</string>
+    <string name="settings_delete_all_confirm_body">Every note, page and stroke on this device will be permanently deleted and can\'t be recovered (except what\'s already synced, which you can sync back down to restore).</string>
     <string name="settings_section_account">Account &amp; sync</string>
-    <string name="settings_account_desc">Sign in with Google to save your notes to your own Google Drive. Signing in with the same account on another device automatically pulls your notes down - there is no other server in between.</string>
+    <string name="settings_account_desc">Sign in with Google to back up your notes to the cloud. Signing in with the same account on another device automatically pulls your notes down.</string>
     <string name="settings_sign_in_google">Sign in with Google</string>
     <string name="settings_share_signin_log">Share sign-in log (to investigate an error)</string>
     <string name="settings_sign_out">Sign out</string>
-    <string name="settings_sync_with_drive">Sync with Google Drive</string>
+    <string name="settings_sync_with_drive">Sync now</string>
     <string name="settings_sync_status_idle">Never synced</string>
     <string name="settings_sync_status_synced">Synced</string>
     <string name="settings_sync_status_error">Sync error, try again</string>

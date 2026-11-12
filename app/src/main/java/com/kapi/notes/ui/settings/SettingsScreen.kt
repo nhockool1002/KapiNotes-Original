@@ -78,7 +78,7 @@ fun SettingsScreen(
             viewModel.logSignInEvent("Không phải RESULT_OK - người dùng có thể đã huỷ, hoặc Play Services trả về lỗi trước khi mở được màn hình chọn tài khoản")
             Result.failure(IllegalStateException("non-OK activity result"))
         }
-        val fallbackAccount = if (signInResult.isFailure) viewModel.driveAuthManager.lastSignedInAccount() else null
+        val fallbackAccount = if (signInResult.isFailure) viewModel.googleAuthManager.lastSignedInAccount() else null
         if (fallbackAccount != null) viewModel.logSignInEvent("Fallback lastSignedInAccount() tìm thấy: ${fallbackAccount.email}")
         val account = signInResult.getOrNull() ?: fallbackAccount
         if (account != null) {
@@ -164,7 +164,7 @@ fun SettingsScreen(
                 state = state,
                 onSignIn = {
                     viewModel.logSignInEvent("Bấm 'Đăng nhập bằng Google'")
-                    runCatching { signInLauncher.launch(viewModel.driveAuthManager.signInIntent()) }
+                    runCatching { signInLauncher.launch(viewModel.googleAuthManager.signInIntent()) }
                         .onFailure { viewModel.logSignInEvent("Không mở được màn hình chọn tài khoản: ${it::class.java.simpleName} - ${it.message}") }
                 },
                 onLogout = viewModel::logout,

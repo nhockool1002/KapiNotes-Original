@@ -3,6 +3,9 @@ import java.util.Properties
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    // Kotlin 2.0+ no longer bundles the Compose compiler with the Kotlin distribution - this
+    // plugin replaces composeOptions.kotlinCompilerExtensionVersion below (removed).
+    id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.dagger.hilt.android")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
@@ -22,19 +25,31 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.kapi.notes"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.kapi.notes"
         // Xiaomi Pad Pro 8 ships with Android 13+ (API 33+); minSdk 26 covers the pen/stylus
         // MotionEvent APIs (TOOL_TYPE_STYLUS, pressure, tilt) we rely on everywhere else too.
         minSdk = 26
-        targetSdk = 35
-        versionCode = 13
-        versionName = "1.5.1"
+        targetSdk = 36
+        versionCode = 15
+        versionName = "1.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+
+        // Sync now goes through our own Cloudflare Worker (see sync-worker/) instead of each
+        // user's Google Drive - this avoids the drive.readonly *restricted* scope entirely, so
+        // publishing to production only needs Google's lightweight standard verification, not a
+        // paid CASA security assessment. The Worker only accepts Google ID tokens whose "aud"
+        // matches this web client id (sync-worker/wrangler.toml's ALLOWED_AUDIENCES).
+        buildConfigField("String", "SYNC_BASE_URL", "\"https://kapinotes-sync.kapinotes.workers.dev\"")
+        buildConfigField(
+            "String",
+            "GOOGLE_SERVER_CLIENT_ID",
+            "\"440629560986-7itdq5l08fde0nfp4c9ci01a1nhq0v4b.apps.googleusercontent.com\""
+        )
     }
 
     signingConfigs {
@@ -50,10 +65,27 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // Was false ("DEX code optimization is below our threshold / Obfuscation 0%" in Play
+            // Console's pre-launch report). Paired with the keep rules in proguard-rules.pro for
+            // every reflection-dependent spot in this app (kotlinx.serialization data classes,
+            // ML Kit's native->Java callback classes) - Room/Hilt are covered by their own
+            // bundled consumer rules. shrinkResources requires isMinifyEnabled too.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
+            }
+            // Would bundle native debug symbols into the AAB so Play Console can symbolicate
+            // native crashes/ANRs - in practice this is a no-op here: the only .so files in the
+            // app (libdatastore_shared_counter.so from AndroidX DataStore, libdigitalink.so from
+            // ML Kit) ship pre-stripped by their vendors with no debug info to extract (confirmed
+            // via `gradle :app:stripReleaseDebugSymbols` logging "Unable to strip ... packaging
+            // them as they are"). Left set in case a future native dependency DOES ship symbols,
+            // but Play Console's "no native debug symbols uploaded" warning on this project is
+            // expected and not fixable from our side - informational only, never blocks publishing.
+            ndk {
+                debugSymbolLevel = "FULL"
             }
         }
         debug {
@@ -81,10 +113,6 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     packaging {
@@ -128,27 +156,35 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    // Google Sign-In + Drive REST API (real Drive file picking / import)
+    // Google Sign-In (identity only - email + ID token, no Drive/API scope at all; see
+    // auth/GoogleAuthManager.kt). Sync and sharing both go through our own Cloudflare Worker
+    // (sync/SyncApi.kt) instead of any Google storage API, so none of the old
+    // google-api-client-android / google-apis:google-api-services-drive /
+    // google-http-client-android dependencies are needed anymore - dropping them also removes
+    // the org.apache.httpcomponents-exclusion dance they used to need for R8.
     implementation("com.google.android.gms:play-services-auth:21.2.0")
-    implementation("com.google.api-client:google-api-client-android:2.6.0") {
-        exclude(group = "org.apache.httpcomponents")
-    }
-    implementation("com.google.apis:google-api-services-drive:v3-rev20261011-2.0.0")
-    implementation("com.google.http-client:google-http-client-android:1.44.2")
 
     // Image loading for thumbnails / imported pages
     implementation("io.coil-kt:coil-compose:2.6.0")
 
+    // Google Play In-App Updates - checks the Play Store listing itself for a newer published
+    // version and lets the user update without leaving the app. No-ops safely (reports no
+    // update) on a build not installed through Play Store, e.g. a debug build or a GitHub-
+    // distributed APK - UpdateChecker above remains the update path for those installs.
+    implementation("com.google.android.play:app-update:2.1.0")
+
     // On-device handwriting-to-text ("Nhận dạng chữ viết tay") - recognizes ink straight from
     // the same StrokePoint coordinates already captured for drawing, no network/cloud needed.
-    implementation("com.google.mlkit:digital-ink-recognition:18.1.0")
+    // 19.0.0 (not 18.1.0): the older release's libdigitalink.so is only 4KB-page-aligned, which
+    // Play Console flags as "Recompile your app with 16 KB native library alignment" - 19.0.0's
+    // native libs are built with the required 16KB alignment (verified via its ELF program
+    // headers), fixing the warning without any API-level source changes.
+    implementation("com.google.mlkit:digital-ink-recognition:19.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
-    // Networking (future real backend - mock implementations live behind the same interfaces)
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.retrofit2:converter-kotlinx-serialization:2.11.0")
+    // Plain OkHttp client for the sync Worker (sync/SyncApi.kt) - no Retrofit, just a couple of
+    // GET/PUT/POST calls to one endpoint, not worth the extra abstraction.
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

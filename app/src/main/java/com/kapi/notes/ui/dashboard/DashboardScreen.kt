@@ -48,7 +48,6 @@ import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.InsertDriveFile
 import androidx.compose.material.icons.rounded.Label
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MoreVert
@@ -112,7 +111,6 @@ import com.kapi.notes.ui.common.formatNoteTimestamp
 @Composable
 fun DashboardScreen(
     onOpenNote: (String) -> Unit,
-    onOpenDrivePicker: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
     quickNoteRequested: Boolean = false,
@@ -168,7 +166,6 @@ fun DashboardScreen(
                 DashboardSidebar(
                     section = state.section,
                     onSectionSelected = viewModel::selectSection,
-                    onOpenDrive = onOpenDrivePicker,
                     onOpenSettings = onOpenSettings,
                     onOpenAbout = onOpenAbout,
                     onClose = { isSidebarOpen = false }
@@ -217,11 +214,6 @@ fun DashboardScreen(
                             }
                             Spacer(Modifier.width(6.dp))
                             Text(stringResource(R.string.dashboard_upload_local_file))
-                        }
-                        OutlinedButton(onClick = onOpenDrivePicker, shape = MaterialTheme.shapes.medium) {
-                            Icon(KapiIcons.InsertDriveFile, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(R.string.dashboard_import_from_drive))
                         }
                         Button(
                             onClick = { showCreateDialog = true },
@@ -327,7 +319,6 @@ fun DashboardScreen(
                 DashboardSidebar(
                     section = state.section,
                     onSectionSelected = { viewModel.selectSection(it); isSidebarOpen = false },
-                    onOpenDrive = { isSidebarOpen = false; onOpenDrivePicker() },
                     onOpenSettings = { isSidebarOpen = false; onOpenSettings() },
                     onOpenAbout = { isSidebarOpen = false; onOpenAbout() },
                     onClose = { isSidebarOpen = false }
@@ -374,7 +365,6 @@ fun DashboardScreen(
 private fun DashboardSidebar(
     section: DashboardSection,
     onSectionSelected: (DashboardSection) -> Unit,
-    onOpenDrive: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
     onClose: (() -> Unit)? = null
@@ -408,13 +398,6 @@ private fun DashboardSidebar(
                     label = stringResource(DashboardSection.MY_NOTES.labelRes),
                     selected = section == DashboardSection.MY_NOTES,
                     onClick = { onSectionSelected(DashboardSection.MY_NOTES) }
-                )
-                SidebarItem(
-                    icon = KapiIcons.InsertDriveFile,
-                    label = "Google Drive",
-                    selected = false,
-                    onClick = onOpenDrive,
-                    tint = Color(0xFF22C55E)
                 )
                 SidebarItem(
                     icon = KapiIcons.Star,

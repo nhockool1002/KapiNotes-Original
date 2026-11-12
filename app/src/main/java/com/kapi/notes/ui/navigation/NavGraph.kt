@@ -6,8 +6,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.kapi.notes.ui.about.AboutScreen
+import com.kapi.notes.ui.common.PlayUpdateHost
 import com.kapi.notes.ui.dashboard.DashboardScreen
-import com.kapi.notes.ui.drive.DrivePickerScreen
 import com.kapi.notes.ui.editor.EditorScreen
 import com.kapi.notes.ui.settings.SettingsScreen
 import com.kapi.notes.ui.splash.SplashScreen
@@ -28,6 +28,11 @@ fun KapiNotesNavGraph(
     quickNoteRequested: Boolean = false,
     onQuickNoteConsumed: () -> Unit = {}
 ) {
+    // Checked once per app session, independent of whichever screen is on top - mirrors Play's
+    // own recommendation to check for an in-app update on launch rather than tying it to one
+    // particular screen.
+    PlayUpdateHost()
+
     NavHost(navController = navController, startDestination = Routes.SPLASH) {
         composable(Routes.SPLASH) {
             SplashScreen(
@@ -41,20 +46,10 @@ fun KapiNotesNavGraph(
         composable(Routes.DASHBOARD) {
             DashboardScreen(
                 onOpenNote = { noteId -> navController.navigate(Routes.editor(noteId)) },
-                onOpenDrivePicker = { navController.navigate(Routes.DRIVE_PICKER) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onOpenAbout = { navController.navigate(Routes.ABOUT) },
                 quickNoteRequested = quickNoteRequested,
                 onQuickNoteConsumed = onQuickNoteConsumed
-            )
-        }
-        composable(Routes.DRIVE_PICKER) {
-            DrivePickerScreen(
-                onBack = { navController.safePopBackStack() },
-                onNoteImported = { noteId ->
-                    navController.safePopBackStack()
-                    navController.navigate(Routes.editor(noteId))
-                }
             )
         }
         composable(Routes.EDITOR) {

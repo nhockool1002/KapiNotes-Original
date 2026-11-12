@@ -30,6 +30,15 @@
     <string name="update_download_button">Tải bản cập nhật</string>
     <string name="action_close">Đóng</string>
 
+    <!-- PlayUpdateDialog.kt -->
+    <string name="play_update_available_title">Đã có phiên bản mới</string>
+    <string name="play_update_available_body">Phiên bản mới của KapiNotes đã có trên Google Play. Cập nhật ngay để nhận tính năng và bản sửa lỗi mới nhất.</string>
+    <string name="play_update_button">Cập nhật</string>
+    <string name="play_update_later">Để sau</string>
+    <string name="play_update_ready_title">Bản cập nhật đã sẵn sàng</string>
+    <string name="play_update_ready_body">Phiên bản mới đã tải xong. Khởi động lại app để hoàn tất cài đặt.</string>
+    <string name="play_update_restart_button">Khởi động lại</string>
+
     <!-- DashboardViewModel.kt -->
     <string name="dashboard_section_my_notes">Ghi chú của tôi</string>
     <string name="dashboard_section_favorites">Mục yêu thích</string>
@@ -38,11 +47,6 @@
     <string name="dashboard_import_unsupported_format">Chỉ hỗ trợ ghi chú trên PDF hoặc ảnh. Các định dạng khác (Word, Excel...) chưa hỗ trợ.</string>
     <string name="dashboard_import_read_failed">Không đọc được tệp đã chọn</string>
     <string name="dashboard_import_generic_failed">Nhập tệp thất bại</string>
-
-    <!-- DrivePickerViewModel.kt -->
-    <string name="drive_signin_failed">Đăng nhập Google Drive thất bại</string>
-    <string name="drive_list_files_failed">Không tải được danh sách tệp</string>
-    <string name="drive_import_failed">Nhập tài liệu thất bại</string>
 
     <!-- SplashScreen.kt -->
     <string name="splash_tagline">Ghi chú tinh gọn. Tư duy mở rộng.</string>
@@ -80,15 +84,14 @@
     <!-- DashboardScreen.kt -->
     <string name="dashboard_default_doc_name">Tài liệu</string>
     <string name="dashboard_heading_my_notes">Tài liệu gần đây</string>
-    <string name="dashboard_upload_local_file">Tải ảnh/PDF từ máy</string>
-    <string name="dashboard_import_from_drive">Nhập từ Drive</string>
+    <string name="dashboard_upload_local_file">Chọn ảnh/PDF</string>
     <string name="dashboard_import_error_title">Không nhập được tệp</string>
     <string name="dashboard_about">Giới thiệu</string>
     <string name="dashboard_sidebar_settings">Cài đặt</string>
     <string name="dashboard_open_menu">Mở menu</string>
     <string name="dashboard_search_placeholder">Tìm kiếm tài liệu...</string>
     <string name="dashboard_syncing">Đang đồng bộ...</string>
-    <string name="dashboard_sync_tooltip">Đồng bộ ghi chú với Google Drive</string>
+    <string name="dashboard_sync_tooltip">Đồng bộ ghi chú lên đám mây</string>
     <string name="dashboard_sync_now">Đồng bộ ngay</string>
     <string name="dashboard_note_options">Tùy chọn</string>
     <string name="dashboard_restore">Khôi phục</string>
@@ -135,8 +138,8 @@
     <string name="about_feature_write_desc">Bút, cọ, dạ quang với độ nhạy lực nhấn, tẩy và công cụ lasso chọn/di chuyển.</string>
     <string name="about_feature_ruler_title">Thước &amp; Compa ảo</string>
     <string name="about_feature_ruler_desc">Vẽ đường thẳng, hình tròn chuẩn xác dù tay không chạm đều.</string>
-    <string name="about_feature_sync_title">Đồng bộ Google Drive</string>
-    <string name="about_feature_sync_desc">Dữ liệu lưu trên Drive của chính bạn, không qua máy chủ trung gian.</string>
+    <string name="about_feature_sync_title">Đồng bộ đa thiết bị</string>
+    <string name="about_feature_sync_desc">Đăng nhập Google và ghi chú tự động đồng bộ giữa các thiết bị của bạn.</string>
     <string name="about_feature_share_title">Chia sẻ link xem-only</string>
     <string name="about_feature_share_desc">Gửi ghi chú cho bạn bè/giáo viên chỉ bằng một đường link.</string>
     <string name="about_feature_ocr_title">Nhận dạng chữ viết tay</string>
@@ -144,23 +147,10 @@
     <string name="about_feature_import_title">Chèn ảnh/PDF làm nền</string>
     <string name="about_feature_import_desc">Annotate trực tiếp lên giáo trình hoặc tài liệu PDF/ảnh.</string>
     <string name="about_version">Phiên bản %1$s</string>
-    <string name="about_description">KapiNotes là ứng dụng ghi chú viết tay dành cho Android, tối ưu cho máy tính bảng có bút cảm ứng (stylus). Hỗ trợ nhiều loại giấy, chèn ảnh/PDF làm nền để chú thích, đồng bộ và sao lưu qua Google Drive của chính bạn.</string>
+    <string name="about_description">KapiNotes là ứng dụng ghi chú viết tay dành cho Android, tối ưu cho máy tính bảng có bút cảm ứng (stylus). Hỗ trợ nhiều loại giấy, chèn ảnh/PDF làm nền để chú thích, đồng bộ và sao lưu giữa các thiết bị của bạn.</string>
     <string name="about_highlights_heading">Tính năng nổi bật</string>
-    <string name="about_footer">© 2026 KapiNotes. Dữ liệu ghi chú luôn thuộc về Google Drive của bạn - không có máy chủ trung gian nào khác.</string>
+    <string name="about_footer">© 2026 KapiNotes.</string>
     <string name="action_retry">Thử lại</string>
-
-    <!-- DrivePickerScreen.kt -->
-    <string name="drive_oauth_config_error">Lỗi cấu hình (DEVELOPER_ERROR): OAuth Client ID cho app này chưa được đăng ký đúng trong Google Cloud Console (package name + SHA-1 chưa khớp). Việc máy đã đăng nhập Google Drive sẵn không đủ - xem README.md mục 3 để tạo OAuth Client ID Android.</string>
-    <string name="drive_network_error">Không có kết nối mạng, thử lại sau.</string>
-    <string name="drive_error_code">mã lỗi %1$d</string>
-    <string name="drive_signin_cancelled">Đã hủy đăng nhập</string>
-    <string name="drive_title">Google Drive</string>
-    <string name="drive_importing_document">Đang nhập tài liệu...</string>
-    <string name="drive_connect_hint">Kết nối Google Drive của bạn để chọn tài liệu cần ghi chú</string>
-    <string name="drive_connect_button">Kết nối Google Drive</string>
-    <string name="drive_my_drive">Drive của tôi</string>
-    <string name="drive_loading">Đang tải...</string>
-    <string name="drive_empty_folder">Không có PDF/ảnh nào trong thư mục này</string>
 
     <!-- EditorViewModel.kt -->
     <string name="editor_handwriting_not_recognized">Không nhận dạng được chữ viết tay trong vùng đã chọn</string>
@@ -187,18 +177,18 @@
     <string name="settings_stylus_only_title">Chỉ cho phép bút (vô hiệu hoá chạm tay)</string>
     <string name="settings_stylus_only_desc">Khi bật, chỉ bút cảm ứng mới vẽ/xoá/kéo được - chạm bằng ngón tay sẽ không có tác dụng. Zoom bằng 2 ngón vẫn hoạt động bình thường.</string>
     <string name="settings_section_data">Dữ liệu trên máy</string>
-    <string name="settings_data_desc">Ngoài đồng bộ qua Drive ở trên, bạn vẫn có thể xuất ghi chú ra một file riêng để sao lưu/chuyển máy thủ công, nhập lại, hoặc xóa toàn bộ dữ liệu trên máy này.</string>
+    <string name="settings_data_desc">Ngoài đồng bộ đám mây ở trên, bạn vẫn có thể xuất ghi chú ra một file riêng để sao lưu/chuyển máy thủ công, nhập lại, hoặc xóa toàn bộ dữ liệu trên máy này.</string>
     <string name="settings_export_data">Xuất dữ liệu</string>
     <string name="settings_import_data">Nhập dữ liệu</string>
     <string name="settings_delete_all">Xóa tất cả</string>
     <string name="settings_delete_all_confirm_title">Xóa toàn bộ dữ liệu?</string>
-    <string name="settings_delete_all_confirm_body">Mọi ghi chú, trang và nét vẽ trên máy sẽ bị xóa vĩnh viễn và không thể khôi phục (kể cả bản đã đồng bộ lên Drive vẫn còn, có thể đồng bộ lại để khôi phục).</string>
+    <string name="settings_delete_all_confirm_body">Mọi ghi chú, trang và nét vẽ trên máy sẽ bị xóa vĩnh viễn và không thể khôi phục (kể cả bản đã đồng bộ, vẫn có thể đồng bộ lại để khôi phục).</string>
     <string name="settings_section_account">Tài khoản &amp; đồng bộ</string>
-    <string name="settings_account_desc">Đăng nhập Google để lưu ghi chú lên Google Drive của chính bạn. Đăng nhập cùng tài khoản trên thiết bị khác sẽ tự động tải ghi chú về - không có máy chủ trung gian nào khác.</string>
+    <string name="settings_account_desc">Đăng nhập Google để sao lưu ghi chú lên đám mây. Đăng nhập cùng tài khoản trên thiết bị khác sẽ tự động tải ghi chú về.</string>
     <string name="settings_sign_in_google">Đăng nhập bằng Google</string>
     <string name="settings_share_signin_log">Chia sẻ log đăng nhập (để điều tra lỗi)</string>
     <string name="settings_sign_out">Đăng xuất</string>
-    <string name="settings_sync_with_drive">Đồng bộ với Google Drive</string>
+    <string name="settings_sync_with_drive">Đồng bộ ngay</string>
     <string name="settings_sync_status_idle">Chưa đồng bộ lần nào</string>
     <string name="settings_sync_status_synced">Đã đồng bộ</string>
     <string name="settings_sync_status_error">Lỗi đồng bộ, thử lại</string>

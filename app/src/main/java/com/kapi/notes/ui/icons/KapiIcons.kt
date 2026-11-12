@@ -116,14 +116,8 @@ object KapiIcons {
     val Description: ImageVector
         @Composable get() = ImageVector.vectorResource(id = R.drawable.ic_kapi_description)
 
-    val InsertDriveFile: ImageVector
-        @Composable get() = ImageVector.vectorResource(id = R.drawable.ic_kapi_insert_drive_file)
-
     val PictureAsPdf: ImageVector
         @Composable get() = ImageVector.vectorResource(id = R.drawable.ic_kapi_picture_as_pdf)
-
-    val Folder: ImageVector
-        @Composable get() = ImageVector.vectorResource(id = R.drawable.ic_kapi_folder)
 
     val Book: ImageVector
         @Composable get() = ImageVector.vectorResource(id = R.drawable.ic_kapi_book)
