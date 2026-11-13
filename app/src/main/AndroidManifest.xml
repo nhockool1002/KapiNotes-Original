@@ -8,6 +8,11 @@
     <!-- For the "Ghi âm đính kèm" (attached lecture recording) feature -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- play-services-ads (AdMob) is supposed to merge this in from its own AAR manifest, but
+         Play Console's pre-launch report still flagged it missing from the merged manifest - so
+         declaring it explicitly here instead of relying on the merge. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
     <!-- Stylus is a huge plus on Xiaomi Pad Pro but the app must still work with a finger -->
     <uses-feature
         android:name="android.hardware.touchscreen"
