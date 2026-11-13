@@ -42,8 +42,9 @@ app/src/main/java/com/kapi/notes/
 ├── sync/                 SyncApi (gọi Cloudflare Worker trong sync-worker/ để đồng bộ backup) +
 │                         SyncLogger
 ├── pdf/                  DocumentPageRenderer (PDF/ảnh -> bitmap trang), NoteExporter (-> PDF)
-├── update/               UpdateChecker (GitHub releases) + PlayUpdateChecker/PlayUpdateViewModel
-│                         (Play In-App Updates - chỉ báo có bản mới khi cài qua Play Store)
+├── update/               UpdateChecker (GitHub releases - hiện TẮT, xem GITHUB_UPDATE_CHECK_ENABLED
+│                         trong UpdateChecker.kt, vì giờ chỉ phát hành qua Play Store) +
+│                         PlayUpdateChecker/PlayUpdateViewModel (Play In-App Updates)
 ├── di/                   Hilt modules
 └── ui/
     ├── dashboard/        Màn hình chính
@@ -89,11 +90,15 @@ hạn 100 test user và không cần đánh giá bảo mật CASA khi publish r�
    hơn).
 3. **Clients** → **Create client** → loại **Android** - debug và release build có package name
    KHÁC NHAU (`applicationIdSuffix` trong `app/build.gradle.kts`), nên **mỗi build type cần một
-   client riêng** (cùng SHA-1 nếu cùng keystore):
-   - `com.kapi.notes.debug` (debug build)
-   - `com.kapi.notes` (release build, APK phát hành trên GitHub Releases/Play Store - cần tạo
-     thêm client này nếu muốn chạy ở bản release)
-   - SHA-1: lấy bằng `gradle :app:signingReport`
+   client riêng**:
+   - `com.kapi.notes.debug` (debug build) - SHA-1 lấy bằng `gradle :app:signingReport`.
+   - `com.kapi.notes` (release build - **người dùng chỉ cài/cập nhật qua Google Play Store**;
+     GitHub Releases vẫn được tạo để lưu trữ file APK/AAB, nhưng không phải nơi người dùng tải
+     app) - SHA-1 phải là chứng chỉ **Play App Signing** (Play Console → app → Protected with
+     Play → Play Store protection → Manage Play app signing → "SHA-1 certificate fingerprint"
+     dưới mục "App signing key"), KHÔNG PHẢI SHA-1 của keystore local trong `keystore/` - Play tự
+     ký lại AAB bằng chứng chỉ riêng của Play trước khi cài lên máy người dùng, nên local
+     keystore's SHA-1 không khớp với bản thực tế chạy trên máy.
 4. Tạo thêm **1 client loại Web application** (không cần redirect URI) - Client ID của client này
    dùng làm "audience" để Worker xác thực ID token (xem mục 5), KHÔNG phải để đăng nhập trên web.
    Đặt Client ID này vào `GOOGLE_SERVER_CLIENT_ID` trong `app/build.gradle.kts` và vào

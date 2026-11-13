@@ -519,8 +519,24 @@ fun EditorScreen(
                 // zooms together with it, exactly like the KiloNotes reference - instead of being
                 // a separate, statically-positioned element that would drift out of alignment with
                 // the page the moment the user zooms or pans.
+                //
+                // transformOrigin pivots from top-center (not the default center) to match the
+                // parent Box's contentAlignment = TopCenter above: graphicsLayer only affects
+                // painting, never the (unscaled) layout bounds TopCenter uses, so a center pivot
+                // disagreed with that top alignment by (height/2)*(1-zoom) - invisible at zoom=1,
+                // but at zoom>1 (tablet's old flat 1.5x) it pushed the page's top edge above the
+                // visible area, and at zoom<1 (a phone's fit-to-width zoom) it pushed the page
+                // DOWN by that same amount instead, leaving it floating in the middle of the
+                // screen with large empty margins above and below - reported on both ends once
+                // each zoom regime was hit.
                 Column(
-                    Modifier.graphicsLayer(scaleX = zoom, scaleY = zoom, translationX = pan.x, translationY = pan.y),
+                    Modifier.graphicsLayer(
+                        scaleX = zoom,
+                        scaleY = zoom,
+                        translationX = pan.x,
+                        translationY = pan.y,
+                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
+                    ),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                 Box(
