@@ -50,6 +50,13 @@ android {
             "GOOGLE_SERVER_CLIENT_ID",
             "\"440629560986-7itdq5l08fde0nfp4c9ci01a1nhq0v4b.apps.googleusercontent.com\""
         )
+
+        // AdMob - ads only for now, no paid "remove ads" tier yet (see AdsGate). The App ID also
+        // needs to be duplicated into AndroidManifest.xml's APPLICATION_ID meta-data since the SDK
+        // reads it from there at startup, not from BuildConfig.
+        buildConfigField("String", "ADMOB_APP_ID", "\"ca-app-pub-2312438042296128~7670996988\"")
+        buildConfigField("String", "ADMOB_BANNER_AD_UNIT_ID", "\"ca-app-pub-2312438042296128/6444565289\"")
+        buildConfigField("String", "ADMOB_INTERSTITIAL_AD_UNIT_ID", "\"ca-app-pub-2312438042296128/7566075268\"")
     }
 
     signingConfigs {
@@ -163,6 +170,10 @@ dependencies {
     // google-http-client-android dependencies are needed anymore - dropping them also removes
     // the org.apache.httpcomponents-exclusion dance they used to need for R8.
     implementation("com.google.android.gms:play-services-auth:21.2.0")
+
+    // AdMob - banner (Dashboard) + interstitial (Editor -> Dashboard), see AdsGate/AdsManager.
+    // No Billing library yet: there is no paid "remove ads" tier, only the hardcoded allowlist.
+    implementation("com.google.android.gms:play-services-ads:23.6.0")
 
     // Image loading for thumbnails / imported pages
     implementation("io.coil-kt:coil-compose:2.6.0")

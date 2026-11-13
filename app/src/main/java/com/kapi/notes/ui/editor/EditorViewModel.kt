@@ -32,6 +32,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
@@ -115,6 +116,8 @@ class EditorViewModel @Inject constructor(
     private val syncApi: com.kapi.notes.sync.SyncApi,
     private val updateChecker: UpdateChecker,
     private val appSettingsStore: AppSettingsStore,
+    private val adsGate: com.kapi.notes.ads.AdsGate,
+    private val adsManager: com.kapi.notes.ads.AdsManager,
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -1319,10 +1322,15 @@ class EditorViewModel @Inject constructor(
     // nothing at all - the black screen this was reported as.
     private var isNavigatingBack = false
 
-    fun saveThumbnailThenBack(onBack: () -> Unit) {
+    fun saveThumbnailThenBack(activity: android.app.Activity?, onBack: () -> Unit) {
         if (isNavigatingBack) return
         isNavigatingBack = true
         refreshRecognizedTextInBackground(_state.value.currentPage?.id)
+        if (activity != null) {
+            viewModelScope.launch {
+                runCatching { if (adsGate.shouldShowAds.first()) adsManager.maybeShowOnEditorBack(activity) }
+            }
+        }
         viewModelScope.launch {
             runCatching { saveThumbnailSnapshot() }
             onBack()

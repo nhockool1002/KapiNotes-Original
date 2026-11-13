@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kapi.notes.R
+import com.kapi.notes.ads.AdsGate
 import com.kapi.notes.data.repository.AuthRepository
 import com.kapi.notes.data.repository.NotesRepository
 import com.kapi.notes.domain.model.Note
@@ -52,7 +53,8 @@ data class DashboardUiState(
     val importError: String? = null,
     val versionStatus: VersionStatus? = null,
     val availableLabels: List<NoteLabelFilter> = emptyList(),
-    val selectedLabel: String? = null
+    val selectedLabel: String? = null,
+    val shouldShowAds: Boolean = false
 )
 
 @OptIn(FlowPreview::class)
@@ -63,6 +65,7 @@ class DashboardViewModel @Inject constructor(
     private val pageRenderer: DocumentPageRenderer,
     private val documentTextImporter: com.kapi.notes.pdf.DocumentTextImporter,
     private val updateChecker: UpdateChecker,
+    private val adsGate: AdsGate,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -100,7 +103,7 @@ class DashboardViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val uiState: StateFlow<DashboardUiState> = combine(
-        section, query, notesForSection, authRepository.session, isCreatingNote, isImportingLocalFile, importError, authRepository.syncStatus, contentSearchResults, versionStatus, selectedLabel
+        section, query, notesForSection, authRepository.session, isCreatingNote, isImportingLocalFile, importError, authRepository.syncStatus, contentSearchResults, versionStatus, selectedLabel, adsGate.shouldShowAds
     ) { values ->
         val q = values[1] as String
         val sectionNotes = (values[2] as List<*>).filterIsInstance<Note>()
@@ -132,7 +135,8 @@ class DashboardViewModel @Inject constructor(
             syncStatus = values[7] as SyncStatus,
             versionStatus = values[9] as VersionStatus?,
             availableLabels = labels,
-            selectedLabel = label
+            selectedLabel = label,
+            shouldShowAds = values[11] as Boolean
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 

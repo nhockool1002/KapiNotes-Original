@@ -1,6 +1,8 @@
 package com.kapi.notes
 
 import android.app.Application
+import com.google.android.gms.ads.MobileAds
+import com.kapi.notes.ads.AdsManager
 import com.kapi.notes.data.repository.AuthRepository
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -26,10 +28,13 @@ private val SYNC_INTERVAL_MS = 3 * 60 * 1000L
 class KapiNotesApp : Application() {
 
     @Inject lateinit var authRepository: AuthRepository
+    @Inject lateinit var adsManager: AdsManager
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()
+        MobileAds.initialize(this)
+        adsManager.preloadInterstitial(this)
         appScope.launch {
             while (isActive) {
                 delay(SYNC_INTERVAL_MS)

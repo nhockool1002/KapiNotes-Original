@@ -94,6 +94,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -289,6 +290,10 @@ fun DashboardScreen(
                     }
                 }
             }
+
+            if (state.shouldShowAds) {
+                DashboardBannerAd()
+            }
             }
 
             // Floats over the content pane only (not the sidebar) so it never gets clipped by a
@@ -369,6 +374,27 @@ fun DashboardScreen(
     }
 }
 
+
+/** Docked at the bottom of the note grid, gated by [DashboardUiState.shouldShowAds] (AdsGate's
+ * allowlist) - see AdsManager for the separate interstitial shown on Editor -> Dashboard. Uses a
+ * plain AndroidView since Compose has no native AdMob wrapper; the surrounding background is set
+ * to the current theme's surface color so the strip doesn't look like a jarring white bar in dark
+ * mode (the ad creative itself is served by Google and out of our control). */
+@Composable
+private fun DashboardBannerAd(modifier: Modifier = Modifier) {
+    val surfaceColor = MaterialTheme.colorScheme.surface.toArgb()
+    androidx.compose.ui.viewinterop.AndroidView(
+        modifier = modifier.fillMaxWidth(),
+        factory = { context ->
+            com.google.android.gms.ads.AdView(context).apply {
+                setAdSize(com.google.android.gms.ads.AdSize.BANNER)
+                adUnitId = com.kapi.notes.BuildConfig.ADMOB_BANNER_AD_UNIT_ID
+                setBackgroundColor(surfaceColor)
+                loadAd(com.google.android.gms.ads.AdRequest.Builder().build())
+            }
+        }
+    )
+}
 
 @Composable
 private fun DashboardSidebar(

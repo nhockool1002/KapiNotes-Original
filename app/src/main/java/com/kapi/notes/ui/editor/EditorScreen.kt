@@ -262,7 +262,7 @@ fun EditorScreen(
 
     // Hardware/gesture back also needs to refresh the dashboard thumbnail, not just the top
     // bar's arrow button.
-    androidx.activity.compose.BackHandler { viewModel.saveThumbnailThenBack(onBack) }
+    androidx.activity.compose.BackHandler { viewModel.saveThumbnailThenBack(context as? android.app.Activity, onBack) }
 
     state.exportedFile?.let { file ->
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
@@ -367,7 +367,7 @@ fun EditorScreen(
         if (!state.isFullscreen) {
             EditorTopBar(
                 title = state.note?.title.orEmpty(),
-                onBack = { viewModel.saveThumbnailThenBack(onBack) },
+                onBack = { viewModel.saveThumbnailThenBack(context as? android.app.Activity, onBack) },
                 onRenameConfirmed = viewModel::renameNote,
                 canUndo = state.canUndo,
                 canRedo = state.canRedo,

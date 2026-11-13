@@ -30,6 +30,12 @@
         tools:targetApi="35"
         xmlns:tools="http://schemas.android.com/tools">
 
+        <!-- AdMob reads this at SDK init, separately from BuildConfig.ADMOB_APP_ID - keep both in
+             sync (see app/build.gradle.kts) if the AdMob app is ever recreated. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-2312438042296128~7670996988" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
