@@ -22,7 +22,9 @@ import javax.inject.Singleton
  * here; the English model still reads unaccented Vietnamese strokes reasonably. */
 enum class RecognitionLanguage(val languageTag: String, val labelRes: Int) {
     ENGLISH("en-US", com.kapi.notes.R.string.recognition_language_english),
-    CHINESE("zh-Hani-CN", com.kapi.notes.R.string.recognition_language_chinese);
+    CHINESE("zh-Hani-CN", com.kapi.notes.R.string.recognition_language_chinese),
+    JAPANESE("ja", com.kapi.notes.R.string.recognition_language_japanese),
+    KOREAN("ko", com.kapi.notes.R.string.recognition_language_korean);
 
     val modelIdentifier: DigitalInkRecognitionModelIdentifier
         get() = requireNotNull(DigitalInkRecognitionModelIdentifier.fromLanguageTag(languageTag)) {

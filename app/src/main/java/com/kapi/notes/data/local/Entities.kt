@@ -64,7 +64,12 @@ data class PageEntity(
     val isBookmarked: Boolean = false,
     val updatedAt: Long,
     val layers: List<PageLayer> = DefaultPageLayers,
-    val activeLayerId: String = DEFAULT_LAYER_ID
+    val activeLayerId: String = DEFAULT_LAYER_ID,
+    // Cached handwriting-recognition result for this page's strokes, refreshed in the background
+    // (not drawn on screen) so Dashboard search can match handwritten content without re-running
+    // ML Kit on every keystroke - see NotesRepositoryImpl.refreshRecognizedText.
+    val recognizedText: String? = null,
+    val recognizedTextUpdatedAt: Long? = null
 )
 
 @Entity(

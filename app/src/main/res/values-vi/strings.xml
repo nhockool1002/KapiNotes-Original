@@ -200,6 +200,8 @@
     <!-- Recognition languages (ocr/HandwritingRecognizer.kt) -->
     <string name="recognition_language_english">Tiếng Anh</string>
     <string name="recognition_language_chinese">Chữ Hán</string>
+    <string name="recognition_language_japanese">Tiếng Nhật</string>
+    <string name="recognition_language_korean">Tiếng Hàn</string>
 
     <!-- EditorScreen.kt -->
     <string name="editor_export_chooser_title">Xuất ghi chú</string>
@@ -240,6 +242,7 @@
     <string name="editor_fullscreen">Toàn màn hình</string>
     <string name="editor_export_pdf">Xuất ghi chú ra PDF</string>
     <string name="editor_export_png">Xuất ảnh PNG (trang hiện tại)</string>
+    <string name="editor_export_all_png">Xuất tất cả trang thành PNG</string>
     <string name="editor_share_view_only_link">Chia sẻ link xem-only (Drive)</string>
     <string name="editor_paper_settings">Cài đặt giấy: loại giấy, xoay, lật</string>
     <string name="editor_paper_style_label">Mẫu giấy</string>

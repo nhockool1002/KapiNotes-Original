@@ -84,6 +84,29 @@ class NoteExporter @Inject constructor(
         }
     }
 
+    /** Same rendering as [exportToPng] but for every page in the note at once, each written to
+     * its own numbered PNG file - for sharing a whole handwritten note as a set of images instead
+     * of a single PDF (e.g. to post pages individually, or for apps that don't preview PDFs well). */
+    suspend fun exportAllPagesAsPng(
+        noteTitle: String,
+        pages: List<NotePage>,
+        contentByPage: Map<String, PageContent>
+    ): Result<List<File>> = withContext(Dispatchers.IO) {
+        runCatching {
+            val exportsDir = File(context.cacheDir, "exports").apply { mkdirs() }
+            val safeTitle = noteTitle.ifBlank { "KapiNote" }.replace(Regex("[^A-Za-z0-9_\\-]"), "_")
+            val batchId = UUID.randomUUID().toString().take(6)
+            pages.sortedBy { it.pageIndex }.mapIndexed { index, page ->
+                val bitmap = android.graphics.Bitmap.createBitmap(page.widthPx, page.heightPx, android.graphics.Bitmap.Config.ARGB_8888)
+                renderPage(Canvas(bitmap), page, contentByPage[page.id] ?: PageContent())
+                val outFile = File(exportsDir, "${safeTitle}_${batchId}_trang${index + 1}.png")
+                outFile.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+                bitmap.recycle()
+                outFile
+            }
+        }
+    }
+
     /** Renders [page] (same [renderPage] used for PDF/PNG export) at a small, fixed size and
      * writes it to a stable per-note path (overwriting any previous thumbnail) - the dashboard's
      * note card thumbnail, kept in sync with the page's actual strokes/images/text instead of

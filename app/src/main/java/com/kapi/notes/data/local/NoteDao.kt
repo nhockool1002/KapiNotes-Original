@@ -64,6 +64,12 @@ interface NoteDao {
     @Update
     suspend fun updatePage(page: PageEntity)
 
+    // Targeted column update (not a full updatePage()) so a background recognition pass that
+    // finishes after the user has already edited something else on the page can't clobber other
+    // fields with stale in-memory values.
+    @Query("UPDATE pages SET recognizedText = :text, recognizedTextUpdatedAt = :updatedAt WHERE id = :pageId")
+    suspend fun updateRecognizedText(pageId: String, text: String?, updatedAt: Long)
+
     @Query("SELECT * FROM strokes WHERE pageId = :pageId ORDER BY createdAt ASC")
     fun observeStrokes(pageId: String): Flow<List<StrokeEntity>>
 

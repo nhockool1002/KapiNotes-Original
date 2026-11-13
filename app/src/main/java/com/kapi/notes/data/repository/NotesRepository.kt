@@ -119,8 +119,15 @@ interface NotesRepository {
     /** Duplicates an entire note (every page + its strokes/stickers/images/text boxes) and returns the new note's id. */
     suspend fun duplicateNote(noteId: String): String
 
-    /** Notes whose title or any text box content contains [query] (case-insensitive). */
+    /** Notes whose title, any text box content, or any page's cached handwriting-recognition
+     * text contains [query] (case-insensitive). */
     suspend fun searchNotes(query: String): List<Note>
+
+    /** Re-runs handwriting recognition over [pageId]'s current strokes as [language] and caches
+     * the result for [searchNotes] to match against - fire-and-forget, never shown on screen.
+     * Safe to call repeatedly (e.g. every time the user leaves a page): overwrites the previous
+     * cache rather than accumulating. */
+    suspend fun refreshRecognizedText(pageId: String, language: com.kapi.notes.ocr.RecognitionLanguage)
 
     /** Appends a new blank page right after [afterPageId] (or at the end when null) and returns its id. */
     suspend fun addPage(noteId: String, afterPageId: String?, paperType: PaperType): String

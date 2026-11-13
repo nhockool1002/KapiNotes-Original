@@ -26,5 +26,11 @@ data class NotePage(
      * page points at one of these by id. Always has at least one entry. */
     val layers: List<PageLayer> = DefaultPageLayers,
     /** Newly drawn/placed content is stamped with this layer's id. */
-    val activeLayerId: String = DEFAULT_LAYER_ID
+    val activeLayerId: String = DEFAULT_LAYER_ID,
+    /** Cached handwriting-recognition result for this page's strokes (see
+     * NotesRepositoryImpl.refreshRecognizedText) - searched by Dashboard search alongside typed
+     * text box content, never shown on screen. Null until the background recognizer has run once,
+     * or if recognition found nothing. */
+    val recognizedText: String? = null,
+    val recognizedTextUpdatedAt: Long? = null
 )

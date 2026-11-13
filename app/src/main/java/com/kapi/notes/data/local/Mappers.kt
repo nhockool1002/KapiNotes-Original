@@ -54,7 +54,9 @@ fun PageEntity.toDomain(): NotePage = NotePage(
     isBookmarked = isBookmarked,
     updatedAt = updatedAt,
     layers = layers,
-    activeLayerId = activeLayerId
+    activeLayerId = activeLayerId,
+    recognizedText = recognizedText,
+    recognizedTextUpdatedAt = recognizedTextUpdatedAt
 )
 
 fun NotePage.toEntity(): PageEntity = PageEntity(
@@ -71,7 +73,9 @@ fun NotePage.toEntity(): PageEntity = PageEntity(
     isBookmarked = isBookmarked,
     updatedAt = updatedAt,
     layers = layers,
-    activeLayerId = activeLayerId
+    activeLayerId = activeLayerId,
+    recognizedText = recognizedText,
+    recognizedTextUpdatedAt = recognizedTextUpdatedAt
 )
 
 fun StrokeEntity.toDomain(): Stroke = Stroke(

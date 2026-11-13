@@ -200,6 +200,8 @@
     <!-- Recognition languages (ocr/HandwritingRecognizer.kt) -->
     <string name="recognition_language_english">English</string>
     <string name="recognition_language_chinese">Chinese</string>
+    <string name="recognition_language_japanese">Japanese</string>
+    <string name="recognition_language_korean">Korean</string>
 
     <!-- EditorScreen.kt -->
     <string name="editor_export_chooser_title">Export note</string>
@@ -240,6 +242,7 @@
     <string name="editor_fullscreen">Fullscreen</string>
     <string name="editor_export_pdf">Export note as PDF</string>
     <string name="editor_export_png">Export image PNG (current page)</string>
+    <string name="editor_export_all_png">Export all pages as PNG</string>
     <string name="editor_share_view_only_link">Share view-only link (Drive)</string>
     <string name="editor_paper_settings">Paper settings: type, rotate, flip</string>
     <string name="editor_paper_style_label">Paper style</string>

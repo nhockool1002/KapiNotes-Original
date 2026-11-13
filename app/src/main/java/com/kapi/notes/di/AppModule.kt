@@ -3,6 +3,7 @@ package com.kapi.notes.di
 import android.content.Context
 import androidx.room.Room
 import com.kapi.notes.data.local.AppDatabase
+import com.kapi.notes.data.local.MIGRATION_9_10
 import com.kapi.notes.data.local.NoteDao
 import com.kapi.notes.data.repository.AuthRepository
 import com.kapi.notes.data.repository.BackupRepository
@@ -25,7 +26,11 @@ object AppModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.DB_NAME)
-            .fallbackToDestructiveMigration()
+            // No fallbackToDestructiveMigration() anymore: every future schema bump MUST add a
+            // real Migration() here (see Migrations.kt) instead. Missing one now fails loudly
+            // (crash on open) rather than silently wiping everyone's local notes - a crash gets
+            // noticed and fixed before release; a silent wipe gets discovered by a user instead.
+            .addMigrations(MIGRATION_9_10)
             .build()
 
     @Provides

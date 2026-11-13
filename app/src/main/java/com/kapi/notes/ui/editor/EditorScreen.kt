@@ -29,6 +29,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -169,8 +170,14 @@ private const val MAX_ZOOM = 4f
 /** Opens a page at a readable, writing-friendly zoom rather than always shrinking it down to fit
  * the whole page on screen - a tall portrait page on a wide tablet is expected to need panning to
  * see every part of it, the same way KiloNotes and other note apps behave; see MIN_ZOOM above for
- * zooming back out to see the whole page at once. */
+ * zooming back out to see the whole page at once. This is a ceiling, not a flat value: the actual
+ * initial zoom is capped to whatever fits the available width (see PREFERRED_ZOOM below) so a
+ * phone-sized screen doesn't open a page zoomed in past its own edges. */
 private const val DEFAULT_ZOOM = 1.5f
+
+/** Small margin so the page doesn't render flush against the clipped container's edges at the
+ * computed fit-to-width zoom. */
+private const val FIT_WIDTH_MARGIN_FACTOR = 0.94f
 
 /** Only tracks pan/zoom once a SECOND finger goes down, leaving every single-finger gesture
  * (drawing, moving objects...) untouched for the DrawingCanvas beneath to handle. Keyed on
@@ -266,6 +273,17 @@ fun EditorScreen(
         }
         context.startActivity(Intent.createChooser(intent, context.getString(R.string.editor_export_chooser_title)))
         viewModel.consumeExportedFile()
+    }
+
+    state.exportedFiles?.let { files ->
+        val uris = ArrayList(files.map { file -> FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file) })
+        val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+            type = "image/png"
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, context.getString(R.string.editor_export_chooser_title)))
+        viewModel.consumeExportedFiles()
     }
 
     var pendingImagePoint by remember { mutableStateOf<Offset?>(null) }
@@ -389,6 +407,7 @@ fun EditorScreen(
                 isExporting = state.isExporting,
                 onExportPdf = viewModel::exportNote,
                 onExportPng = viewModel::exportCurrentPageAsPng,
+                onExportAllPng = viewModel::exportAllPagesAsPng,
                 onOpenLayers = { isLayersPanelOpen = true },
                 stylusOnlyEnabled = state.stylusOnlyEnabled,
                 onToggleStylusOnly = viewModel::toggleStylusOnly
@@ -449,11 +468,25 @@ fun EditorScreen(
         // zoomed page from bleeding into the toolbars, but the floating zoom handle needs to sit
         // flush against the TRUE screen edge, outside that inset - so it lives in this outer Box
         // instead, as a sibling of the (padded/clipped) page box rather than a child of it.
-        androidx.compose.runtime.LaunchedEffect(state.currentPageIndex) {
-            zoom = DEFAULT_ZOOM
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+        // DEFAULT_ZOOM (1.5x) is tuned for a tablet-wide viewport - on a phone-sized container it
+        // can make the page wider than the screen itself, cutting content off at the edges (the
+        // page's own widthPx/heightPx never account for the device it's actually rendered on, see
+        // widthDp/heightDp below). Cap the initial zoom to whatever fits this container's measured
+        // width instead of applying DEFAULT_ZOOM unconditionally, so a tablet still opens at the
+        // same readable 1.5x it always has while a phone opens with the whole page width visible.
+        val containerWidthDp = maxWidth
+        androidx.compose.runtime.LaunchedEffect(state.currentPageIndex, state.currentPage?.widthPx, containerWidthDp) {
+            val pageWidthPx = state.currentPage?.widthPx
+            zoom = if (pageWidthPx != null && pageWidthPx > 0 && containerWidthDp > 0.dp) {
+                val pageWidthDp = pageWidthPx / 2f
+                val fitWidthZoom = (containerWidthDp.value * FIT_WIDTH_MARGIN_FACTOR) / pageWidthDp
+                fitWidthZoom.coerceIn(MIN_ZOOM, DEFAULT_ZOOM)
+            } else {
+                DEFAULT_ZOOM
+            }
             pan = Offset.Zero
         }
-        Box(Modifier.weight(1f).fillMaxWidth()) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -831,6 +864,7 @@ private fun EditorTopBar(
     isExporting: Boolean,
     onExportPdf: () -> Unit,
     onExportPng: () -> Unit,
+    onExportAllPng: () -> Unit,
     onOpenLayers: () -> Unit = {},
     stylusOnlyEnabled: Boolean = false,
     onToggleStylusOnly: () -> Unit = {}
@@ -976,6 +1010,15 @@ private fun EditorTopBar(
                         },
                         enabled = !isExporting,
                         onClick = { isMoreMenuOpen = false; onExportPng() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.editor_export_all_png)) },
+                        leadingIcon = {
+                            if (isExporting) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            else Icon(KapiIcons.Image, contentDescription = null)
+                        },
+                        enabled = !isExporting,
+                        onClick = { isMoreMenuOpen = false; onExportAllPng() }
                     )
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.editor_share_view_only_link)) },

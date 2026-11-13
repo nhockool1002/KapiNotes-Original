@@ -33,7 +33,8 @@ private const val DEFAULT_PAGE_HEIGHT_PX = 2246
 
 @Singleton
 class NotesRepositoryImpl @Inject constructor(
-    private val dao: NoteDao
+    private val dao: NoteDao,
+    private val handwritingRecognizer: com.kapi.notes.ocr.HandwritingRecognizer
 ) : NotesRepository {
 
     override fun observeActiveNotes(): Flow<List<Note>> =
@@ -477,8 +478,19 @@ class NotesRepositoryImpl @Inject constructor(
         val needle = query.trim().lowercase()
         return dao.getAllNotes().filter { !it.isTrashed }.filter { note ->
             note.title.lowercase().contains(needle) ||
-                dao.getPages(note.id).any { page -> dao.getTextBoxes(page.id).any { it.text.lowercase().contains(needle) } }
+                dao.getPages(note.id).any { page ->
+                    dao.getTextBoxes(page.id).any { it.text.lowercase().contains(needle) } ||
+                        page.recognizedText?.lowercase()?.contains(needle) == true
+                }
         }.map { it.toDomain(dao.getPages(it.id).size) }
+    }
+
+    override suspend fun refreshRecognizedText(pageId: String, language: com.kapi.notes.ocr.RecognitionLanguage) {
+        val strokes = dao.getStrokes(pageId).map { it.toDomain() }
+        // Still overwrite with null on an empty/failed result (e.g. the user erased everything
+        // since the last pass) rather than leaving a stale match behind in search.
+        val text = if (strokes.isEmpty()) null else handwritingRecognizer.recognize(strokes, language)
+        dao.updateRecognizedText(pageId, text, System.currentTimeMillis())
     }
 
     override suspend fun touchNote(noteId: String) {

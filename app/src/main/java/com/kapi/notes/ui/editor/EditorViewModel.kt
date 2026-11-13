@@ -79,6 +79,9 @@ data class EditorUiState(
     val isExporting: Boolean = false,
     val exportedFile: File? = null,
     val exportedFileMimeType: String = "application/pdf",
+    /** Set only by exportAllPagesAsPng() - a separate field from [exportedFile] because sharing
+     * several files needs ACTION_SEND_MULTIPLE instead of the single-file ACTION_SEND intent. */
+    val exportedFiles: List<File>? = null,
     val isImportingBackground: Boolean = false,
     val isSharingLink: Boolean = false,
     val shareLink: String? = null,
@@ -203,8 +206,19 @@ class EditorViewModel @Inject constructor(
 
     fun selectPage(index: Int) {
         if (index !in _state.value.pages.indices) return
+        refreshRecognizedTextInBackground(_state.value.currentPage?.id)
         _state.update { it.copy(currentPageIndex = index) }
         viewModelScope.launch { loadPageContent() }
+    }
+
+    /** Fire-and-forget: re-runs handwriting recognition over [pageId]'s strokes and caches the
+     * result for Dashboard search (see NotesRepository.refreshRecognizedText) - never awaited,
+     * never shown on screen, and safe to drop if the ViewModel is cleared before it finishes
+     * (e.g. the user immediately backs out again), since the next edit/visit just retries it. */
+    private fun refreshRecognizedTextInBackground(pageId: String?) {
+        if (pageId == null) return
+        val language = _state.value.effectiveRecognitionLanguage
+        viewModelScope.launch { runCatching { notesRepository.refreshRecognizedText(pageId, language) } }
     }
 
     fun selectTool(tool: EditorTool) {
@@ -1269,6 +1283,30 @@ class EditorViewModel @Inject constructor(
         _state.update { it.copy(exportedFile = null) }
     }
 
+    /** Overflow menu's "Xuất tất cả trang thành PNG" - every page as its own PNG file, shared
+     * together via ACTION_SEND_MULTIPLE (see consumeExportedFiles/EditorScreen's share handling). */
+    fun exportAllPagesAsPng() {
+        viewModelScope.launch {
+            _state.update { it.copy(isExporting = true, error = null) }
+            val pages = _state.value.pages
+            val contentByPage = pages.associate { page ->
+                page.id to com.kapi.notes.pdf.PageContent(
+                    strokes = notesRepository.getStrokes(page.id),
+                    stickers = notesRepository.getStickers(page.id),
+                    images = notesRepository.getImages(page.id),
+                    textBoxes = notesRepository.getTextBoxes(page.id)
+                )
+            }
+            noteExporter.exportAllPagesAsPng(_state.value.note?.title.orEmpty(), pages, contentByPage)
+                .onSuccess { files -> _state.update { it.copy(isExporting = false, exportedFiles = files) } }
+                .onFailure { e -> _state.update { it.copy(isExporting = false, error = e.message ?: context.getString(R.string.editor_export_failed)) } }
+        }
+    }
+
+    fun consumeExportedFiles() {
+        _state.update { it.copy(exportedFiles = null) }
+    }
+
     /** Renders the note's first page to a thumbnail file and points the note's thumbnailPath at
      * it, then runs [onBack] - called from both the back button and the hardware/gesture back,
      * so the dashboard card always reflects actual content instead of a stale/blank placeholder. */
@@ -1284,6 +1322,7 @@ class EditorViewModel @Inject constructor(
     fun saveThumbnailThenBack(onBack: () -> Unit) {
         if (isNavigatingBack) return
         isNavigatingBack = true
+        refreshRecognizedTextInBackground(_state.value.currentPage?.id)
         viewModelScope.launch {
             runCatching { saveThumbnailSnapshot() }
             onBack()

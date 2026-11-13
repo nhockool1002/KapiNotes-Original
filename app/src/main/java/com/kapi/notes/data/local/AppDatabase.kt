@@ -10,7 +10,7 @@ import androidx.room.TypeConverters
         StickerEntity::class, TombstoneEntity::class,
         ImageAttachmentEntity::class, TextBoxEntity::class, AudioClipEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(EnumConverters::class, StrokePointsConverter::class, PageLayersConverter::class)
