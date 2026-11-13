@@ -33,8 +33,8 @@ android {
         // MotionEvent APIs (TOOL_TYPE_STYLUS, pressure, tilt) we rely on everywhere else too.
         minSdk = 26
         targetSdk = 36
-        versionCode = 20
-        versionName = "1.6.4-fix"
+        versionCode = 21
+        versionName = "1.6.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -48,7 +48,7 @@ android {
         buildConfigField(
             "String",
             "GOOGLE_SERVER_CLIENT_ID",
-            "\"440629560986-7itdq5l08fde0nfp4c9ci01a1nhq0v4b.apps.googleusercontent.com\""
+            "\"440629560986-7ltdq5l08fde0nfp4c9ci01a1nhq0v4b.apps.googleusercontent.com\""
         )
 
         // AdMob - ads only for now, no paid "remove ads" tier yet (see AdsGate). The App ID also

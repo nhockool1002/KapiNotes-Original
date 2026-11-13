@@ -13,4 +13,4 @@ bucket_name = "kapinotes-sync"
 # the Worker only accepts Google ID tokens whose "aud" claim is one of these, so a token minted
 # for some other app/client can't be used to read/write this bucket.
 [vars]
-ALLOWED_AUDIENCES = "440629560986-7itdq5l08fde0nfp4c9ci01a1nhq0v4b.apps.googleusercontent.com"
+ALLOWED_AUDIENCES = "440629560986-7ltdq5l08fde0nfp4c9ci01a1nhq0v4b.apps.googleusercontent.com"
