@@ -38,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -47,9 +48,12 @@ import com.kapi.notes.R
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.kapi.notes.domain.model.SyncStatus
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
@@ -60,16 +64,10 @@ fun SettingsScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     val signInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         viewModel.logSignInEvent("Kết quả màn hình chọn tài khoản: resultCode=${result.resultCode} (OK=${Activity.RESULT_OK}, CANCELED=${Activity.RESULT_CANCELED})")
-        // The Drive-scope consent step is often still finishing up (silently, at the Play
-        // services level) at the exact moment this callback fires: getSignedInAccountFromIntent()
-        // can report a failure, or the activity itself can return a non-OK result, even though
-        // the account+scopes end up fully granted a moment later - the user's SECOND tap then
-        // "just works" because it's reading a cache that's already settled. Checking
-        // lastSignedInAccount() as a fallback on ANY failure (not just a non-OK result code)
-        // catches that and completes login in one tap instead of needing a retry.
         val signInResult = if (result.resultCode == Activity.RESULT_OK) {
             runCatching { GoogleSignIn.getSignedInAccountFromIntent(result.data).result }
                 .onFailure { viewModel.logSignInEvent("getSignedInAccountFromIntent lỗi: ${it::class.java.simpleName} - ${it.message}") }
@@ -78,30 +76,56 @@ fun SettingsScreen(
             viewModel.logSignInEvent("Không phải RESULT_OK - người dùng có thể đã huỷ, hoặc Play Services trả về lỗi trước khi mở được màn hình chọn tài khoản")
             Result.failure(IllegalStateException("non-OK activity result"))
         }
-        val fallbackAccount = if (signInResult.isFailure) viewModel.googleAuthManager.lastSignedInAccount() else null
-        if (fallbackAccount != null) viewModel.logSignInEvent("Fallback lastSignedInAccount() tìm thấy: ${fallbackAccount.email}")
-        val account = signInResult.getOrNull() ?: fallbackAccount
-        if (account != null) {
+        val immediateAccount = signInResult.getOrNull()
+        if (immediateAccount != null) {
             viewModel.logSignInEvent("Đăng nhập thành công, đang lưu phiên + đồng bộ lần đầu")
-            viewModel.onGoogleSignInResult(account)
-        } else {
-            val exception = signInResult.exceptionOrNull()
-            val code = (exception as? ApiException)?.statusCode
-            val message = when {
-                // DEVELOPER_ERROR almost always means no OAuth Android client in Google Cloud
-                // Console matches THIS exact (package name, signing SHA-1) pair. Naming the
-                // actual package here saves a guessing round-trip into Cloud Console.
-                code == CommonStatusCodes.DEVELOPER_ERROR ->
-                    context.getString(R.string.settings_oauth_config_error, context.packageName)
-                code != null -> context.getString(R.string.settings_signin_failed_code, code)
-                // No ApiException and not RESULT_OK usually just means the user backed out of the
-                // picker - showing a scary error for a plain cancel would be wrong, but it's still
-                // logged above so "I tapped sign-in and nothing happened" can be told apart from
-                // "I cancelled" by reading the shared log.
-                else -> null
+            viewModel.onGoogleSignInResult(immediateAccount)
+            return@rememberLauncherForActivityResult
+        }
+        coroutineScope.launch {
+            // Play Services can still be settling the signed-in session (silently) for a moment
+            // right after the picker returns: getSignedInAccountFromIntent() can fail even though
+            // lastSignedInAccount() would succeed a beat later. A same-tick check misses that
+            // window entirely, so retry a few times with a short delay before giving up - this is
+            // what makes a single tap actually complete instead of silently doing nothing.
+            var fallbackAccount: GoogleSignInAccount? = null
+            repeat(3) { attempt ->
+                if (fallbackAccount == null) {
+                    delay(400L)
+                    fallbackAccount = viewModel.googleAuthManager.lastSignedInAccount()
+                    if (fallbackAccount != null) {
+                        viewModel.logSignInEvent("Fallback lastSignedInAccount() tìm thấy sau thử lại #${attempt + 1}: ${fallbackAccount?.email}")
+                    }
+                }
             }
-            viewModel.logSignInEvent("Đăng nhập KHÔNG thành công. code=$code, exception=${exception?.let { "${it::class.java.simpleName}: ${it.message}" } ?: "không có"}, thông báo hiển thị cho người dùng=${message ?: "(không hiển thị gì - có thể do người dùng huỷ)"}")
-            viewModel.onGoogleSignInResult(null, message)
+            val account = fallbackAccount
+            if (account != null) {
+                viewModel.logSignInEvent("Đăng nhập thành công (qua fallback), đang lưu phiên + đồng bộ lần đầu")
+                viewModel.onGoogleSignInResult(account)
+            } else {
+                val exception = signInResult.exceptionOrNull()
+                val code = (exception as? ApiException)?.statusCode
+                val message = when {
+                    // DEVELOPER_ERROR almost always means no OAuth Android client in Google Cloud
+                    // Console matches THIS exact (package name, signing SHA-1) pair. Naming the
+                    // actual package here saves a guessing round-trip into Cloud Console.
+                    code == CommonStatusCodes.DEVELOPER_ERROR ->
+                        context.getString(R.string.settings_oauth_config_error, context.packageName)
+                    code != null -> context.getString(R.string.settings_signin_failed_code, code)
+                    // RESULT_OK (the picker genuinely returned) but still no account after retrying
+                    // is a real failure, not a cancel - show something instead of leaving the user
+                    // staring at a Sign-in button that silently did nothing.
+                    result.resultCode == Activity.RESULT_OK ->
+                        context.getString(R.string.settings_signin_failed_generic)
+                    // Non-OK with no exception usually just means the user backed out of the
+                    // picker - showing a scary error for a plain cancel would be wrong, but it's
+                    // still logged above so a real failure can be told apart from a cancel by
+                    // reading the shared log.
+                    else -> null
+                }
+                viewModel.logSignInEvent("Đăng nhập KHÔNG thành công. code=$code, exception=${exception?.let { "${it::class.java.simpleName}: ${it.message}" } ?: "không có"}, thông báo hiển thị cho người dùng=${message ?: "(không hiển thị gì - có thể do người dùng huỷ)"}")
+                viewModel.onGoogleSignInResult(null, message)
+            }
         }
     }
 

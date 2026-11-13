@@ -167,6 +167,7 @@
     <!-- SettingsScreen.kt -->
     <string name="settings_oauth_config_error">OAuth configuration error (DEVELOPER_ERROR): no Android OAuth Client ID matches package \"%1$s\" in Google Cloud Console yet - see README.md section 4</string>
     <string name="settings_signin_failed_code">Sign-in failed (code %1$d)</string>
+    <string name="settings_signin_failed_generic">Sign-in didn\'t complete - please try again</string>
     <string name="settings_save_backup_chooser">Save backup file</string>
     <string name="settings_share_sheet_failed">Couldn\'t open the share sheet: %1$s</string>
     <string name="settings_share_sync_log_chooser">Share sync log</string>

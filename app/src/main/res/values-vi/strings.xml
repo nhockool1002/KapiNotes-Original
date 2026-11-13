@@ -167,6 +167,7 @@
     <!-- SettingsScreen.kt -->
     <string name="settings_oauth_config_error">Lỗi cấu hình OAuth (DEVELOPER_ERROR): chưa có OAuth Client ID (loại Android) khớp với package \"%1$s\" trong Google Cloud Console - xem README.md mục 4</string>
     <string name="settings_signin_failed_code">Đăng nhập thất bại (mã %1$d)</string>
+    <string name="settings_signin_failed_generic">Đăng nhập chưa hoàn tất - vui lòng thử lại</string>
     <string name="settings_save_backup_chooser">Lưu file backup</string>
     <string name="settings_share_sheet_failed">Không mở được hộp thoại chia sẻ: %1$s</string>
     <string name="settings_share_sync_log_chooser">Chia sẻ log đồng bộ</string>

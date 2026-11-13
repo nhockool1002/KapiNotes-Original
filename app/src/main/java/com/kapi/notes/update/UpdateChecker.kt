@@ -31,10 +31,14 @@ data class VersionStatus(
 }
 
 /**
- * The app isn't on Play Store yet, so there is no store update mechanism - this polls the
- * GitHub repo's releases instead. Every new release on GitHub must bump `versionName` in
- * app/build.gradle.kts past the previous one for this comparison to mean anything.
+ * Polls the GitHub repo's releases to prompt users still on a sideloaded build to update.
+ * Now that the app is distributed through Google Play (which has its own in-app update
+ * mechanism, see PlayUpdateChecker), this check is temporarily disabled - [checkStatus] always
+ * reports up to date without hitting the network. Flip [GITHUB_UPDATE_CHECK_ENABLED] back on if
+ * GitHub builds need to be checked again.
  */
+private const val GITHUB_UPDATE_CHECK_ENABLED = false
+
 @Singleton
 class UpdateChecker @Inject constructor() {
 
@@ -45,6 +49,9 @@ class UpdateChecker @Inject constructor() {
      * compares each against the installed version - used both for the mandatory "update
      * available" dialog and for the dashboard's small version badge (green/orange/red). */
     suspend fun checkStatus(): Result<VersionStatus> = withContext(Dispatchers.IO) {
+        if (!GITHUB_UPDATE_CHECK_ENABLED) {
+            return@withContext Result.success(VersionStatus(BuildConfig.VERSION_NAME, 0, null, null, null))
+        }
         runCatching {
             val local = BuildConfig.VERSION_NAME
             val request = Request.Builder()
