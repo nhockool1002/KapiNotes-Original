@@ -86,6 +86,9 @@
     <string name="dashboard_heading_my_notes">Tài liệu gần đây</string>
     <string name="dashboard_upload_local_file">Nhập tệp</string>
     <string name="dashboard_import_error_title">Không nhập được tệp</string>
+    <string name="dashboard_import_progress_title">Đang nhập tệp…</string>
+    <string name="dashboard_import_progress_page">Trang %1$d / %2$d</string>
+    <string name="dashboard_import_progress_preparing">Đang chuẩn bị…</string>
     <string name="dashboard_about">Giới thiệu</string>
     <string name="dashboard_sidebar_settings">Cài đặt</string>
     <string name="dashboard_open_menu">Mở menu</string>

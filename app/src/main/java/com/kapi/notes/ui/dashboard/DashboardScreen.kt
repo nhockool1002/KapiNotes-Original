@@ -70,6 +70,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -344,6 +345,39 @@ fun DashboardScreen(
                 showCreateDialog = false
                 viewModel.createBlankNote(title, paper) { id -> onOpenNote(id) }
             }
+        )
+    }
+
+    // Non-dismissible: a big PDF/doc import can take a while, and the old plain spinner in the
+    // "Import file" button was easy to miss, so a slow import looked indistinguishable from the
+    // app being frozen. This shows real per-page progress once rendering starts (null before
+    // that, while the file is still being read/parsed, so it falls back to an indeterminate bar
+    // instead of claiming a page count it doesn't know yet).
+    if (state.isImportingLocalFile) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.dashboard_import_progress_title)) },
+            text = {
+                Column {
+                    val progress = state.importProgress
+                    if (progress != null) {
+                        LinearProgressIndicator(
+                            progress = { progress.current.toFloat() / progress.total.toFloat() },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            stringResource(R.string.dashboard_import_progress_page, progress.current, progress.total),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    } else {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        Spacer(Modifier.height(8.dp))
+                        Text(stringResource(R.string.dashboard_import_progress_preparing), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {}
         )
     }
 

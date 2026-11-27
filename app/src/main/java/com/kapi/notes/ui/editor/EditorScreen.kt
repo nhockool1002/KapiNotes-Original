@@ -784,6 +784,37 @@ fun EditorScreen(
         )
     }
 
+    // Same reasoning as the Dashboard's local-file import dialog: a big PDF used as a page
+    // background could take a while to render with only a tiny spinner in the paper-type menu as
+    // feedback, which was easy to miss and looked like the app had frozen.
+    if (state.isImportingBackground) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.dashboard_import_progress_title)) },
+            text = {
+                Column {
+                    val progress = state.importProgress
+                    if (progress != null) {
+                        androidx.compose.material3.LinearProgressIndicator(
+                            progress = { progress.current.toFloat() / progress.total.toFloat() },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            stringResource(R.string.dashboard_import_progress_page, progress.current, progress.total),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    } else {
+                        androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        Spacer(Modifier.height(8.dp))
+                        Text(stringResource(R.string.dashboard_import_progress_preparing), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
     state.error?.let { message ->
         AlertDialog(
             onDismissRequest = viewModel::dismissError,

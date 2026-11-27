@@ -12,6 +12,7 @@ import com.kapi.notes.domain.model.PaperType
 import com.kapi.notes.domain.model.SyncStatus
 import com.kapi.notes.domain.model.UserSession
 import com.kapi.notes.pdf.DocumentPageRenderer
+import com.kapi.notes.pdf.ImportProgress
 import com.kapi.notes.update.UpdateChecker
 import com.kapi.notes.update.VersionStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -49,6 +50,7 @@ data class DashboardUiState(
     val syncStatus: SyncStatus = SyncStatus.IDLE,
     val isCreatingNote: Boolean = false,
     val isImportingLocalFile: Boolean = false,
+    val importProgress: ImportProgress? = null,
     val importError: String? = null,
     val versionStatus: VersionStatus? = null,
     val availableLabels: List<NoteLabelFilter> = emptyList(),
@@ -70,6 +72,7 @@ class DashboardViewModel @Inject constructor(
     private val query = MutableStateFlow("")
     private val isCreatingNote = MutableStateFlow(false)
     private val isImportingLocalFile = MutableStateFlow(false)
+    private val importProgress = MutableStateFlow<ImportProgress?>(null)
     private val importError = MutableStateFlow<String?>(null)
     private val versionStatus = MutableStateFlow<VersionStatus?>(null)
     private val selectedLabel = MutableStateFlow<String?>(null)
@@ -134,7 +137,8 @@ class DashboardViewModel @Inject constructor(
             availableLabels = labels,
             selectedLabel = label
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
+    }.combine(importProgress) { state, progress -> state.copy(importProgress = progress) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 
     /** Called once each time the Dashboard becomes visible (including coming back from the
      * Editor after editing a note). A session that's already signed in - restored from a
@@ -181,6 +185,7 @@ class DashboardViewModel @Inject constructor(
     fun importLocalDocument(uri: Uri, displayName: String, mimeType: String?, onImported: (String) -> Unit) {
         viewModelScope.launch {
             isImportingLocalFile.value = true
+            importProgress.value = null
             importError.value = null
             runCatching {
                 val isPdf = mimeType == "application/pdf" || displayName.endsWith(".pdf", ignoreCase = true)
@@ -199,9 +204,11 @@ class DashboardViewModel @Inject constructor(
                 }
             }.onSuccess { noteId ->
                 isImportingLocalFile.value = false
+                importProgress.value = null
                 onImported(noteId)
             }.onFailure { e ->
                 isImportingLocalFile.value = false
+                importProgress.value = null
                 importError.value = e.message ?: context.getString(R.string.dashboard_import_generic_failed)
             }
         }
@@ -216,7 +223,9 @@ class DashboardViewModel @Inject constructor(
 
         val noteIdPlaceholder = UUID.randomUUID().toString()
         val pages = if (isPdf) {
-            pageRenderer.renderPdf(tempFile, noteIdPlaceholder).getOrThrow()
+            pageRenderer.renderPdf(tempFile, noteIdPlaceholder) { rendered, total ->
+                importProgress.value = ImportProgress(rendered, total)
+            }.getOrThrow()
         } else {
             listOf(pageRenderer.renderImage(tempFile, noteIdPlaceholder).getOrThrow())
         }
@@ -251,6 +260,7 @@ class DashboardViewModel @Inject constructor(
         // PDF template to inherit from use exactly these for a BLANK page, so this stays correct
         // as long as that default doesn't change independently of this file.
         pages.forEachIndexed { index, pageText ->
+            importProgress.value = ImportProgress(index + 1, pages.size)
             val pageId = if (index == 0) firstPageId else notesRepository.addPage(noteId, null, PaperType.BLANK)
             notesRepository.addTextBox(
                 com.kapi.notes.domain.model.TextBoxItem(

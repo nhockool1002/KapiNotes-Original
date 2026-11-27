@@ -84,6 +84,7 @@ data class EditorUiState(
      * several files needs ACTION_SEND_MULTIPLE instead of the single-file ACTION_SEND intent. */
     val exportedFiles: List<File>? = null,
     val isImportingBackground: Boolean = false,
+    val importProgress: com.kapi.notes.pdf.ImportProgress? = null,
     val isSharingLink: Boolean = false,
     val shareLink: String? = null,
     val error: String? = null,
@@ -1166,9 +1167,11 @@ class EditorViewModel @Inject constructor(
         val note = _state.value.note ?: return
         val afterPageId = _state.value.currentPage?.id
         viewModelScope.launch {
-            _state.update { it.copy(isImportingBackground = true, error = null) }
+            _state.update { it.copy(isImportingBackground = true, importProgress = null, error = null) }
             runCatching {
-                val rendered = documentPageRenderer.renderPdf(sourceFile, note.id).getOrThrow()
+                val rendered = documentPageRenderer.renderPdf(sourceFile, note.id) { renderedCount, total ->
+                    _state.update { it.copy(importProgress = com.kapi.notes.pdf.ImportProgress(renderedCount, total)) }
+                }.getOrThrow()
                 check(rendered.isNotEmpty()) { context.getString(R.string.editor_pdf_no_pages) }
                 notesRepository.insertBackgroundPages(
                     noteId = note.id,
@@ -1180,10 +1183,10 @@ class EditorViewModel @Inject constructor(
             }.onSuccess {
                 sourceFile.delete()
                 val pages = notesRepository.getPages(note.id)
-                _state.update { it.copy(isImportingBackground = false, pages = pages) }
+                _state.update { it.copy(isImportingBackground = false, importProgress = null, pages = pages) }
             }.onFailure { e ->
                 sourceFile.delete()
-                _state.update { it.copy(isImportingBackground = false, error = e.message ?: context.getString(R.string.editor_pdf_import_failed)) }
+                _state.update { it.copy(isImportingBackground = false, importProgress = null, error = e.message ?: context.getString(R.string.editor_pdf_import_failed)) }
             }
         }
     }
