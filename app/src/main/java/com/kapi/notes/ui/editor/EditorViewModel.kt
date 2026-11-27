@@ -1176,9 +1176,7 @@ class EditorViewModel @Inject constructor(
                 notesRepository.insertBackgroundPages(
                     noteId = note.id,
                     afterPageId = afterPageId,
-                    paths = rendered.map { it.filePath },
-                    widthPx = rendered.first().widthPx,
-                    heightPx = rendered.first().heightPx
+                    pages = rendered
                 )
             }.onSuccess {
                 sourceFile.delete()

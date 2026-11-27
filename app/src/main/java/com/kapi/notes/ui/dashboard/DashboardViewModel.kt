@@ -235,9 +235,7 @@ class DashboardViewModel @Inject constructor(
             title = displayName.substringBeforeLast('.'),
             driveFileId = null,
             driveFileName = displayName,
-            pageBackgroundPaths = pages.map { it.filePath },
-            pageWidthPx = pages.first().widthPx,
-            pageHeightPx = pages.first().heightPx
+            pages = pages
         )
     }
 

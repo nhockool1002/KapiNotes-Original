@@ -107,9 +107,7 @@ class NotesRepositoryImpl @Inject constructor(
         title: String,
         driveFileId: String?,
         driveFileName: String,
-        pageBackgroundPaths: List<String>,
-        pageWidthPx: Int,
-        pageHeightPx: Int
+        pages: List<com.kapi.notes.pdf.RenderedPage>
     ): String {
         val now = System.currentTimeMillis()
         val noteId = UUID.randomUUID().toString()
@@ -121,14 +119,14 @@ class NotesRepositoryImpl @Inject constructor(
                 source = NoteSource.DRIVE_IMPORT,
                 driveFileId = driveFileId,
                 driveFileName = driveFileName,
-                thumbnailPath = pageBackgroundPaths.firstOrNull(),
+                thumbnailPath = pages.firstOrNull()?.filePath,
                 isFavorite = false,
                 isTrashed = false,
                 createdAt = now,
                 updatedAt = now
             )
         )
-        pageBackgroundPaths.forEachIndexed { index, path ->
+        pages.forEachIndexed { index, page ->
             dao.upsertPage(
                 PageEntity(
                     id = UUID.randomUUID().toString(),
@@ -137,9 +135,9 @@ class NotesRepositoryImpl @Inject constructor(
                     paperType = PaperType.BLANK,
                     orientation = PageOrientation.PORTRAIT,
                     flip = PageFlip.NONE,
-                    widthPx = pageWidthPx,
-                    heightPx = pageHeightPx,
-                    backgroundImagePath = path,
+                    widthPx = page.widthPx,
+                    heightPx = page.heightPx,
+                    backgroundImagePath = page.filePath,
                     updatedAt = now
                 )
             )
@@ -414,13 +412,13 @@ class NotesRepositoryImpl @Inject constructor(
         touchNote(page.noteId)
     }
 
-    override suspend fun insertBackgroundPages(noteId: String, afterPageId: String?, paths: List<String>, widthPx: Int, heightPx: Int): List<String> {
+    override suspend fun insertBackgroundPages(noteId: String, afterPageId: String?, pages: List<com.kapi.notes.pdf.RenderedPage>): List<String> {
         val now = System.currentTimeMillis()
-        val pages = dao.getPages(noteId)
-        val insertAt = afterPageId?.let { id -> pages.indexOfFirst { it.id == id } + 1 } ?: pages.size
+        val existingPages = dao.getPages(noteId)
+        val insertAt = afterPageId?.let { id -> existingPages.indexOfFirst { it.id == id } + 1 } ?: existingPages.size
 
-        pages.drop(insertAt).forEach { dao.updatePage(it.copy(pageIndex = it.pageIndex + paths.size)) }
-        val newIds = paths.mapIndexed { offset, path ->
+        existingPages.drop(insertAt).forEach { dao.updatePage(it.copy(pageIndex = it.pageIndex + pages.size)) }
+        val newIds = pages.mapIndexed { offset, page ->
             val newPageId = UUID.randomUUID().toString()
             dao.upsertPage(
                 PageEntity(
@@ -430,9 +428,9 @@ class NotesRepositoryImpl @Inject constructor(
                     paperType = PaperType.BLANK,
                     orientation = PageOrientation.PORTRAIT,
                     flip = PageFlip.NONE,
-                    widthPx = widthPx,
-                    heightPx = heightPx,
-                    backgroundImagePath = path,
+                    widthPx = page.widthPx,
+                    heightPx = page.heightPx,
+                    backgroundImagePath = page.filePath,
                     updatedAt = now
                 )
             )

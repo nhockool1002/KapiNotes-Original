@@ -28,14 +28,16 @@ interface NotesRepository {
     suspend fun createBlankNote(title: String, paperType: PaperType = PaperType.LINED): String
 
     /** Creates a note backed by an already-downloaded/rendered document.
-     * [driveFileId] is null for a document imported from local device storage rather than Drive. */
+     * [driveFileId] is null for a document imported from local device storage rather than Drive.
+     * Each entry in [pages] keeps ITS OWN rendered width/height - a source PDF can freely mix
+     * portrait/landscape or differently-sized pages (common for scanned documents assembled from
+     * multiple sources), and forcing every page to a single shared size would stretch/squeeze
+     * every page that doesn't match it, distorting the image until its content is unreadable. */
     suspend fun createImportedNote(
         title: String,
         driveFileId: String?,
         driveFileName: String,
-        pageBackgroundPaths: List<String>,
-        pageWidthPx: Int,
-        pageHeightPx: Int
+        pages: List<com.kapi.notes.pdf.RenderedPage>
     ): String
 
     suspend fun renameNote(noteId: String, newTitle: String)
@@ -111,7 +113,9 @@ interface NotesRepository {
     /** Inserts one new page per rendered image in [paths], right after [afterPageId] (or at the
      * end when null), each with that image as its background - used to append imported PDF pages
      * into an existing note. Returns the new page ids in order. */
-    suspend fun insertBackgroundPages(noteId: String, afterPageId: String?, paths: List<String>, widthPx: Int, heightPx: Int): List<String>
+    /** Each entry in [pages] keeps its own rendered width/height - see [createImportedNote] for
+     * why a single shared size isn't used. */
+    suspend fun insertBackgroundPages(noteId: String, afterPageId: String?, pages: List<com.kapi.notes.pdf.RenderedPage>): List<String>
 
     /** Stars/unstars a page for the page switcher's quick-jump list. */
     suspend fun setPageBookmark(pageId: String, bookmarked: Boolean)
