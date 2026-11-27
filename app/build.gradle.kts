@@ -33,8 +33,8 @@ android {
         // MotionEvent APIs (TOOL_TYPE_STYLUS, pressure, tilt) we rely on everywhere else too.
         minSdk = 26
         targetSdk = 36
-        versionCode = 21
-        versionName = "1.6.5"
+        versionCode = 22
+        versionName = "1.7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -51,12 +51,11 @@ android {
             "\"440629560986-7ltdq5l08fde0nfp4c9ci01a1nhq0v4b.apps.googleusercontent.com\""
         )
 
-        // AdMob - ads only for now, no paid "remove ads" tier yet (see AdsGate). The App ID also
-        // needs to be duplicated into AndroidManifest.xml's APPLICATION_ID meta-data since the SDK
-        // reads it from there at startup, not from BuildConfig.
-        buildConfigField("String", "ADMOB_APP_ID", "\"ca-app-pub-2312438042296128~7670996988\"")
-        buildConfigField("String", "ADMOB_BANNER_AD_UNIT_ID", "\"ca-app-pub-2312438042296128/6444565289\"")
-        buildConfigField("String", "ADMOB_INTERSTITIAL_AD_UNIT_ID", "\"ca-app-pub-2312438042296128/7566075268\"")
+        // Monetag (replaces AdMob - AdMob's publisher account application was rejected and never
+        // served meaningful ad volume; Monetag has no native Android SDK, so ads only "no paid
+        // remove ads" tier yet (see AdsGate). This Direct Link is opened in a Chrome Custom Tab
+        // from AdsManager at most once every few Editor -> Dashboard back navigations.
+        buildConfigField("String", "MONETAG_DIRECT_LINK_URL", "\"https://uplcm.com/4/12361727\"")
     }
 
     signingConfigs {
@@ -171,9 +170,10 @@ dependencies {
     // the org.apache.httpcomponents-exclusion dance they used to need for R8.
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 
-    // AdMob - banner (Dashboard) + interstitial (Editor -> Dashboard), see AdsGate/AdsManager.
-    // No Billing library yet: there is no paid "remove ads" tier, only the hardcoded allowlist.
-    implementation("com.google.android.gms:play-services-ads:23.6.0")
+    // Monetag ads (see AdsGate/AdsManager) - its Direct Link format is just a URL, opened in a
+    // Chrome Custom Tab instead of a native ad SDK view. No Billing library yet: there is no paid
+    // "remove ads" tier, only the hardcoded allowlist.
+    implementation("androidx.browser:browser:1.8.0")
 
     // Image loading for thumbnails / imported pages
     implementation("io.coil-kt:coil-compose:2.6.0")
