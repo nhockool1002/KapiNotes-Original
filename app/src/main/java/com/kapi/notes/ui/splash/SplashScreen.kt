@@ -32,11 +32,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.kapi.notes.ui.common.KapiBrandMark
 import com.kapi.notes.ui.theme.Kapi100
 import com.kapi.notes.ui.theme.Kapi500
 import com.kapi.notes.ui.theme.Kapi600
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Self-driving splash: animates the brand mark in (bouncy scale-up + fade), holds briefly,
@@ -47,7 +49,7 @@ import kotlinx.coroutines.delay
  * mark with the folded corner + "K" stroke + highlighter accent dots, Outfit for the wordmark.
  */
 @Composable
-fun SplashScreen(onFinished: () -> Unit) {
+fun SplashScreen(onFinished: () -> Unit, viewModel: SplashViewModel = hiltViewModel()) {
     var startAnimation by remember { mutableStateOf(false) }
 
     val scale by animateFloatAsState(
@@ -68,6 +70,11 @@ fun SplashScreen(onFinished: () -> Unit) {
 
     LaunchedEffect(Unit) {
         startAnimation = true
+        // Fire-and-forget: a KapiNotes account (dev1002-api-center) is optional, not required to
+        // use the app, so a slow/unreachable backend must never hold up startup - this just warms
+        // up BackendConnectivity so Login/Signup can show an immediate, accurate status instead of
+        // every attempt starting from BackendConnectivity.UNKNOWN.
+        launch { viewModel.checkConnectivity() }
         delay(1400)
         onFinished()
     }

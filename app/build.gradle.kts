@@ -33,8 +33,8 @@ android {
         // MotionEvent APIs (TOOL_TYPE_STYLUS, pressure, tilt) we rely on everywhere else too.
         minSdk = 26
         targetSdk = 36
-        versionCode = 25
-        versionName = "1.7.2"
+        versionCode = 26
+        versionName = "1.8.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -49,6 +49,26 @@ android {
             "String",
             "GOOGLE_SERVER_CLIENT_ID",
             "\"440629560986-7ltdq5l08fde0nfp4c9ci01a1nhq0v4b.apps.googleusercontent.com\""
+        )
+
+        // KapiNotes account system (separate from Google Sign-In, which is only ever used for
+        // Drive-era/Worker sync) - dev1002-api-center, HMAC-signed per request (see
+        // apicenter/ApiCenterSigner.kt). App ID/Secret here identify THIS APP to the gateway, not
+        // any individual user - every request still needs its own HMAC signature to be accepted,
+        // so this is the same trust model as the sync Worker's audience check, not a user secret.
+        // Read from key.properties (gitignored, same file as the upload keystore credentials)
+        // instead of being hardcoded here - this value must never be committed, since anyone
+        // reading it from a public repo could forge validly-signed requests as this app.
+        buildConfigField("String", "API_CENTER_BASE_URL", "\"https://dev100-api-center.nhutnm.id.vn/api/v1/kapinotes\"")
+        buildConfigField(
+            "String",
+            "API_CENTER_APP_ID",
+            "\"${keystoreProperties.getProperty("apiCenterAppId", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "API_CENTER_APP_SECRET",
+            "\"${keystoreProperties.getProperty("apiCenterAppSecret", "")}\""
         )
 
         // Monetag (replaces AdMob - AdMob's publisher account application was rejected and never

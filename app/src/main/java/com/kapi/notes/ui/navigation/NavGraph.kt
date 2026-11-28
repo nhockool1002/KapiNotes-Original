@@ -6,6 +6,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.kapi.notes.ui.about.AboutScreen
+import com.kapi.notes.ui.auth.LoginScreen
+import com.kapi.notes.ui.auth.SignupScreen
 import com.kapi.notes.ui.common.PlayUpdateHost
 import com.kapi.notes.ui.dashboard.DashboardScreen
 import com.kapi.notes.ui.editor.EditorScreen
@@ -56,10 +58,32 @@ fun KapiNotesNavGraph(
             EditorScreen(onBack = { navController.safePopBackStack() })
         }
         composable(Routes.SETTINGS) {
-            SettingsScreen(onBack = { navController.safePopBackStack() })
+            SettingsScreen(
+                onBack = { navController.safePopBackStack() },
+                onOpenLogin = { navController.navigate(Routes.LOGIN) },
+                onOpenSignup = { navController.navigate(Routes.SIGNUP) }
+            )
         }
         composable(Routes.ABOUT) {
             AboutScreen(onBack = { navController.safePopBackStack() })
+        }
+        composable(Routes.LOGIN) {
+            LoginScreen(
+                onBack = { navController.safePopBackStack() },
+                onLoggedIn = { navController.safePopBackStack() },
+                onOpenSignup = {
+                    navController.navigate(Routes.SIGNUP) { popUpTo(Routes.LOGIN) { inclusive = true } }
+                }
+            )
+        }
+        composable(Routes.SIGNUP) {
+            SignupScreen(
+                onBack = { navController.safePopBackStack() },
+                onSignedUp = { navController.safePopBackStack() },
+                onOpenLogin = {
+                    navController.navigate(Routes.LOGIN) { popUpTo(Routes.SIGNUP) { inclusive = true } }
+                }
+            )
         }
     }
 }

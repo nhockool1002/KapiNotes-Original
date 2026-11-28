@@ -51,6 +51,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
+import com.kapi.notes.domain.model.ApiUserSession
 import com.kapi.notes.domain.model.SyncStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -59,6 +60,8 @@ import java.io.File
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    onOpenLogin: () -> Unit = {},
+    onOpenSignup: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -197,6 +200,14 @@ fun SettingsScreen(
             )
 
             Spacer(Modifier.height(24.dp))
+            KapiAccountSection(
+                apiSession = state.apiSession,
+                onOpenLogin = onOpenLogin,
+                onOpenSignup = onOpenSignup,
+                onLogout = viewModel::logoutApiAccount
+            )
+
+            Spacer(Modifier.height(24.dp))
             Text(stringResource(R.string.settings_section_writing), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             Card(Modifier.fillMaxWidth()) {
@@ -273,6 +284,46 @@ fun SettingsScreen(
             confirmButton = { TextButton(onClick = viewModel::confirmDeleteAllData) { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) } },
             dismissButton = { TextButton(onClick = viewModel::cancelDeleteAllData) { Text(stringResource(R.string.action_cancel)) } }
         )
+    }
+}
+
+/** The dev1002-api-center account system - entirely separate from [AccountSection] above
+ * (Google Sign-In, used only for Drive-era/Worker sync). Optional: this exists for a future
+ * account-based sync to R2, not required to use the app at all. */
+@Composable
+private fun KapiAccountSection(
+    apiSession: ApiUserSession?,
+    onOpenLogin: () -> Unit,
+    onOpenSignup: () -> Unit,
+    onLogout: () -> Unit
+) {
+    Text(stringResource(R.string.settings_section_kapi_account), style = MaterialTheme.typography.titleMedium)
+    Spacer(Modifier.height(4.dp))
+    Text(
+        stringResource(R.string.settings_kapi_account_desc),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(Modifier.height(12.dp))
+
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            if (apiSession == null) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onOpenLogin, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.settings_kapi_sign_in))
+                    }
+                    OutlinedButton(onClick = onOpenSignup, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.settings_kapi_sign_up))
+                    }
+                }
+            } else {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(apiSession.username, style = MaterialTheme.typography.bodyLarge)
+                    TextButton(onClick = onLogout) { Text(stringResource(R.string.settings_sign_out)) }
+                }
+            }
+        }
     }
 }
 

@@ -5,6 +5,8 @@ import androidx.room.Room
 import com.kapi.notes.data.local.AppDatabase
 import com.kapi.notes.data.local.MIGRATION_9_10
 import com.kapi.notes.data.local.NoteDao
+import com.kapi.notes.data.repository.ApiAuthRepository
+import com.kapi.notes.data.repository.ApiAuthRepositoryImpl
 import com.kapi.notes.data.repository.AuthRepository
 import com.kapi.notes.data.repository.BackupRepository
 import com.kapi.notes.data.repository.DriveSyncAuthRepository
@@ -56,4 +58,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAuthRepository(impl: DriveSyncAuthRepository): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindApiAuthRepository(impl: ApiAuthRepositoryImpl): ApiAuthRepository
 }

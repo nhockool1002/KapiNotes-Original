@@ -305,4 +305,26 @@
     <string name="editor_add_new_page">Add new page</string>
     <string name="editor_duplicate_page">Duplicate this page</string>
     <string name="editor_delete_page">Delete this page</string>
+
+    <!-- KapiNotes account (dev1002-api-center) - separate from Google Sign-In/Drive sync -->
+    <string name="settings_section_kapi_account">KapiNotes account</string>
+    <string name="settings_kapi_account_desc">Optional - sign in to sync your notes to the cloud later. Not required to use the app.</string>
+    <string name="settings_kapi_sign_in">Sign in</string>
+    <string name="settings_kapi_sign_up">Create account</string>
+    <string name="auth_username_label">Username</string>
+    <string name="auth_password_label">Password</string>
+    <string name="auth_offline_message">Can\'t reach the server right now</string>
+    <string name="login_headline">Welcome back</string>
+    <string name="login_submit">Sign in</string>
+    <string name="login_no_account">Don\'t have an account?</string>
+    <string name="login_go_signup">Sign up</string>
+    <string name="signup_headline">Create your account</string>
+    <string name="signup_submit">Create account</string>
+    <string name="signup_has_account">Already have an account?</string>
+    <string name="signup_go_login">Sign in</string>
+    <string name="signup_username_hint">3–32 characters, letters/numbers/underscore only</string>
+    <string name="signup_confirm_password_label">Confirm password</string>
+    <string name="signup_error_username_invalid">Username must be 3–32 characters, letters/numbers/underscore only.</string>
+    <string name="signup_error_password_too_short">Password must be at least 8 characters.</string>
+    <string name="signup_error_password_mismatch">Passwords don\'t match.</string>
 </resources>

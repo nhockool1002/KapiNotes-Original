@@ -305,4 +305,26 @@
     <string name="editor_add_new_page">Thêm trang mới</string>
     <string name="editor_duplicate_page">Nhân đôi trang này</string>
     <string name="editor_delete_page">Xóa trang này</string>
+
+    <!-- Tài khoản KapiNotes (dev1002-api-center) - tách biệt với Google Sign-In/đồng bộ Drive -->
+    <string name="settings_section_kapi_account">Tài khoản KapiNotes</string>
+    <string name="settings_kapi_account_desc">Không bắt buộc - đăng nhập để sau này đồng bộ ghi chú lên đám mây. Không đăng nhập vẫn dùng app bình thường.</string>
+    <string name="settings_kapi_sign_in">Đăng nhập</string>
+    <string name="settings_kapi_sign_up">Tạo tài khoản</string>
+    <string name="auth_username_label">Tên đăng nhập</string>
+    <string name="auth_password_label">Mật khẩu</string>
+    <string name="auth_offline_message">Không thể kết nối tới máy chủ</string>
+    <string name="login_headline">Chào mừng trở lại</string>
+    <string name="login_submit">Đăng nhập</string>
+    <string name="login_no_account">Chưa có tài khoản?</string>
+    <string name="login_go_signup">Đăng ký</string>
+    <string name="signup_headline">Tạo tài khoản mới</string>
+    <string name="signup_submit">Tạo tài khoản</string>
+    <string name="signup_has_account">Đã có tài khoản?</string>
+    <string name="signup_go_login">Đăng nhập</string>
+    <string name="signup_username_hint">3–32 ký tự, chỉ gồm chữ/số/gạch dưới</string>
+    <string name="signup_confirm_password_label">Xác nhận mật khẩu</string>
+    <string name="signup_error_username_invalid">Tên đăng nhập phải từ 3–32 ký tự, chỉ gồm chữ/số/gạch dưới.</string>
+    <string name="signup_error_password_too_short">Mật khẩu phải có ít nhất 8 ký tự.</string>
+    <string name="signup_error_password_mismatch">Mật khẩu xác nhận không khớp.</string>
 </resources>

@@ -6,10 +6,12 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kapi.notes.data.datastore.AppSettingsStore
+import com.kapi.notes.data.repository.ApiAuthRepository
 import com.kapi.notes.data.repository.AuthRepository
 import com.kapi.notes.data.repository.BackupRepository
 import com.kapi.notes.domain.model.SyncStatus
 import com.kapi.notes.auth.GoogleAuthManager
+import com.kapi.notes.domain.model.ApiUserSession
 import com.kapi.notes.domain.model.UserSession
 import com.kapi.notes.sync.SyncLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -35,13 +37,15 @@ data class SettingsUiState(
     val showDeleteConfirm: Boolean = false,
     val lastSharedLogFile: File? = null,
     val palmRejectionEnabled: Boolean = true,
-    val stylusOnlyEnabled: Boolean = false
+    val stylusOnlyEnabled: Boolean = false,
+    val apiSession: ApiUserSession? = null
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository,
+    private val apiAuthRepository: ApiAuthRepository,
     private val backupRepository: BackupRepository,
     private val syncLogger: SyncLogger,
     private val appSettingsStore: AppSettingsStore,
@@ -67,8 +71,8 @@ class SettingsViewModel @Inject constructor(
     }
 
     val uiState: StateFlow<SettingsUiState> = combine(
-        accountPart, backupPart, appSettingsStore.palmRejectionEnabled, appSettingsStore.stylusOnlyEnabled
-    ) { account, backup, palmRejection, stylusOnly ->
+        accountPart, backupPart, appSettingsStore.palmRejectionEnabled, appSettingsStore.stylusOnlyEnabled, apiAuthRepository.session
+    ) { account, backup, palmRejection, stylusOnly, apiSession ->
         SettingsUiState(
             session = account.session,
             syncStatus = account.syncStatus,
@@ -80,7 +84,8 @@ class SettingsViewModel @Inject constructor(
             showDeleteConfirm = backup.showDeleteConfirm,
             lastSharedLogFile = backup.lastSharedLogFile,
             palmRejectionEnabled = palmRejection,
-            stylusOnlyEnabled = stylusOnly
+            stylusOnlyEnabled = stylusOnly,
+            apiSession = apiSession
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
@@ -188,5 +193,9 @@ class SettingsViewModel @Inject constructor(
 
     fun setStylusOnlyEnabled(enabled: Boolean) {
         viewModelScope.launch { appSettingsStore.setStylusOnlyEnabled(enabled) }
+    }
+
+    fun logoutApiAccount() {
+        viewModelScope.launch { apiAuthRepository.logout() }
     }
 }
