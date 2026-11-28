@@ -40,6 +40,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -202,9 +203,11 @@ fun SettingsScreen(
             Spacer(Modifier.height(24.dp))
             KapiAccountSection(
                 apiSession = state.apiSession,
+                isSyncing = state.isSyncingApiAccount,
                 onOpenLogin = onOpenLogin,
                 onOpenSignup = onOpenSignup,
-                onLogout = viewModel::logoutApiAccount
+                onLogout = viewModel::logoutApiAccount,
+                onSyncNow = viewModel::syncApiAccountNow
             )
 
             Spacer(Modifier.height(24.dp))
@@ -293,9 +296,11 @@ fun SettingsScreen(
 @Composable
 private fun KapiAccountSection(
     apiSession: ApiUserSession?,
+    isSyncing: Boolean,
     onOpenLogin: () -> Unit,
     onOpenSignup: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onSyncNow: () -> Unit
 ) {
     Text(stringResource(R.string.settings_section_kapi_account), style = MaterialTheme.typography.titleMedium)
     Spacer(Modifier.height(4.dp))
@@ -321,6 +326,15 @@ private fun KapiAccountSection(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(apiSession.username, style = MaterialTheme.typography.bodyLarge)
                     TextButton(onClick = onLogout) { Text(stringResource(R.string.settings_sign_out)) }
+                }
+                Divider(Modifier.padding(vertical = 12.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.settings_kapi_sync_desc), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                    if (isSyncing) {
+                        CircularProgressIndicator(modifier = Modifier.height(20.dp))
+                    } else {
+                        OutlinedButton(onClick = onSyncNow) { Text(stringResource(R.string.settings_kapi_sync_now)) }
+                    }
                 }
             }
         }

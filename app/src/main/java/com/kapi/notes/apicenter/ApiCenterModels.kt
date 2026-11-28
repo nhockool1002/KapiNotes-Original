@@ -36,6 +36,11 @@ data class SignupData(
     val username: String
 )
 
+@Serializable
+data class SyncUploadData(
+    val updated_at: String? = null
+)
+
 /** Carries the API's own [code]/[message] (already a user-facing Vietnamese sentence per the
  * docs, e.g. "Username hoặc mật khẩu không đúng.") so the UI never has to invent its own copy
  * for a server-side validation/business error - only a transport-level failure (timeout, no

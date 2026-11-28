@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.kapi.notes.R
 import com.kapi.notes.apicenter.ApiCenterException
 import com.kapi.notes.data.repository.ApiAuthRepository
+import com.kapi.notes.data.repository.ApiSyncRepository
 import com.kapi.notes.data.repository.BackendConnectivity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -35,7 +36,8 @@ data class SignupUiState(
 @HiltViewModel
 class SignupViewModel @Inject constructor(
     @ApplicationContext private val context: android.content.Context,
-    private val repository: ApiAuthRepository
+    private val repository: ApiAuthRepository,
+    private val syncRepository: ApiSyncRepository
 ) : ViewModel() {
 
     private val username = MutableStateFlow("")
@@ -86,7 +88,9 @@ class SignupViewModel @Inject constructor(
                     // Signup doesn't return a token (see API docs §5) - log the new account in
                     // right away so a successful signup lands the user signed in, not back at
                     // another form asking for the same credentials they just typed.
-                    repository.login(username.value.trim(), password.value).getOrThrow()
+                    val session = repository.login(username.value.trim(), password.value).getOrThrow()
+                    runCatching { syncRepository.downloadAndMerge() }
+                    session
                 }
                 .onSuccess { onSuccess() }
                 .onFailure { e ->

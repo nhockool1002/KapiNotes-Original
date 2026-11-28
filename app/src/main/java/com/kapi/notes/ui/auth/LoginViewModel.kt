@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kapi.notes.apicenter.ApiCenterException
 import com.kapi.notes.data.repository.ApiAuthRepository
+import com.kapi.notes.data.repository.ApiSyncRepository
 import com.kapi.notes.data.repository.BackendConnectivity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +28,8 @@ data class LoginUiState(
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val repository: ApiAuthRepository
+    private val repository: ApiAuthRepository,
+    private val syncRepository: ApiSyncRepository
 ) : ViewModel() {
 
     private val username = MutableStateFlow("")
@@ -54,7 +56,13 @@ class LoginViewModel @Inject constructor(
             isLoading.value = true
             error.value = null
             repository.login(username.value.trim(), password.value)
-                .onSuccess { onSuccess() }
+                .onSuccess {
+                    // Best-effort, never blocks landing the user back on Settings - merging in
+                    // whatever's already on R2 (if anything) is a nice-to-have on login, not a
+                    // precondition for having successfully signed in.
+                    runCatching { syncRepository.downloadAndMerge() }
+                    onSuccess()
+                }
                 .onFailure { e ->
                     error.value = (e as? ApiCenterException)?.message ?: e.message
                 }

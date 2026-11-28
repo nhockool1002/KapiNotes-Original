@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kapi.notes.data.datastore.AppSettingsStore
 import com.kapi.notes.data.repository.ApiAuthRepository
+import com.kapi.notes.data.repository.ApiSyncRepository
 import com.kapi.notes.data.repository.AuthRepository
 import com.kapi.notes.data.repository.BackupRepository
 import com.kapi.notes.domain.model.SyncStatus
@@ -38,7 +39,8 @@ data class SettingsUiState(
     val lastSharedLogFile: File? = null,
     val palmRejectionEnabled: Boolean = true,
     val stylusOnlyEnabled: Boolean = false,
-    val apiSession: ApiUserSession? = null
+    val apiSession: ApiUserSession? = null,
+    val isSyncingApiAccount: Boolean = false
 )
 
 @HiltViewModel
@@ -46,6 +48,7 @@ class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository,
     private val apiAuthRepository: ApiAuthRepository,
+    private val apiSyncRepository: ApiSyncRepository,
     private val backupRepository: BackupRepository,
     private val syncLogger: SyncLogger,
     private val appSettingsStore: AppSettingsStore,
@@ -59,6 +62,7 @@ class SettingsViewModel @Inject constructor(
     private val lastExportedFile = MutableStateFlow<File?>(null)
     private val showDeleteConfirm = MutableStateFlow(false)
     private val lastSharedLogFile = MutableStateFlow<File?>(null)
+    private val isSyncingApiAccount = MutableStateFlow(false)
 
     private data class AccountPart(val session: UserSession?, val syncStatus: SyncStatus, val isLoggingIn: Boolean, val loginError: String?)
     private data class BackupPart(val isWorkingOnBackup: Boolean, val backupMessage: String?, val lastExportedFile: File?, val showDeleteConfirm: Boolean, val lastSharedLogFile: File?)
@@ -87,7 +91,8 @@ class SettingsViewModel @Inject constructor(
             stylusOnlyEnabled = stylusOnly,
             apiSession = apiSession
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
+    }.combine(isSyncingApiAccount) { state, syncing -> state.copy(isSyncingApiAccount = syncing) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
     fun onGoogleSignInResult(account: GoogleSignInAccount?, errorMessage: String? = null) {
         if (account == null) {
@@ -197,5 +202,18 @@ class SettingsViewModel @Inject constructor(
 
     fun logoutApiAccount() {
         viewModelScope.launch { apiAuthRepository.logout() }
+    }
+
+    /** "Đồng bộ ngay" for the KapiNotes account card - pushes the current local data up to R2,
+     * overwriting whatever was there (mirrors the editing-time autosave in KapiNotesApp, just
+     * triggered on demand instead of waiting for the next periodic tick). */
+    fun syncApiAccountNow() {
+        viewModelScope.launch {
+            isSyncingApiAccount.value = true
+            apiSyncRepository.uploadNow()
+                .onSuccess { backupMessage.value = context.getString(R.string.settings_kapi_sync_success) }
+                .onFailure { backupMessage.value = context.getString(R.string.settings_sync_failed, it.message) }
+            isSyncingApiAccount.value = false
+        }
     }
 }

@@ -1,6 +1,8 @@
 package com.kapi.notes
 
 import android.app.Application
+import com.kapi.notes.data.repository.ApiAuthRepository
+import com.kapi.notes.data.repository.ApiSyncRepository
 import com.kapi.notes.data.repository.AuthRepository
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +28,8 @@ private val SYNC_INTERVAL_MS = 3 * 60 * 1000L
 class KapiNotesApp : Application() {
 
     @Inject lateinit var authRepository: AuthRepository
+    @Inject lateinit var apiAuthRepository: ApiAuthRepository
+    @Inject lateinit var apiSyncRepository: ApiSyncRepository
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
@@ -35,6 +39,13 @@ class KapiNotesApp : Application() {
                 delay(SYNC_INTERVAL_MS)
                 if (authRepository.session.firstOrNull() != null) {
                     runCatching { authRepository.syncNow() }
+                }
+                // Separate, independent account - pushes local notes to R2 while the user is
+                // actively editing (this loop runs the whole time the app process is alive, not
+                // just on Dashboard) whenever a KapiNotes account is signed in. Never required:
+                // signing in here is entirely optional, so a failure/no-session here is silent.
+                if (apiAuthRepository.session.firstOrNull() != null) {
+                    runCatching { apiSyncRepository.uploadNow() }
                 }
             }
         }

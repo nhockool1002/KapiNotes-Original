@@ -311,6 +311,9 @@
     <string name="settings_kapi_account_desc">Optional - sign in to sync your notes to the cloud later. Not required to use the app.</string>
     <string name="settings_kapi_sign_in">Sign in</string>
     <string name="settings_kapi_sign_up">Create account</string>
+    <string name="settings_kapi_sync_desc">Push your local notes to the cloud now</string>
+    <string name="settings_kapi_sync_now">Sync now</string>
+    <string name="settings_kapi_sync_success">Synced to cloud.</string>
     <string name="auth_username_label">Username</string>
     <string name="auth_password_label">Password</string>
     <string name="auth_offline_message">Can\'t reach the server right now</string>

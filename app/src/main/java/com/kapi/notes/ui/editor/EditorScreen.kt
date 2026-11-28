@@ -168,9 +168,17 @@ private const val MIN_ZOOM = 0.5f
 private const val MAX_ZOOM = 4f
 
 /** Fallback only, used the one time a page's own dimensions aren't known yet (e.g. mid-creation) -
- * the real initial zoom is always computed to fit the whole page in view (see the "contain fit"
- * LaunchedEffect below), not a flat value. */
+ * the real initial zoom is computed below, not a flat value. */
 private const val DEFAULT_ZOOM = 1.5f
+
+/** How many times taller the page would render, at a plain fit-to-width zoom, than the viewport
+ * actually is before it counts as "unusually long" (e.g. several sheets scanned/photographed
+ * together into one tall image) rather than just a normal portrait page that's expected to need
+ * some vertical panning. Below this, fit-to-width wins even if it leaves the page taller than the
+ * screen - that's normal and matches every other note-taking app; past it, the first thing visible
+ * would be a near-useless sliver of the page, so fit-to-height wins instead so the whole page is
+ * visible up front (still freely pinch-zoomable in afterwards). */
+private const val LONG_PAGE_ASPECT_THRESHOLD = 2f
 
 /** Horizontal padding applied to the (unpadded) BoxWithConstraints container before the page is
  * drawn - see the inner Box's `.padding(...)` below. The fit-to-width math has to subtract this
@@ -472,19 +480,14 @@ fun EditorScreen(
         // flush against the TRUE screen edge, outside that inset - so it lives in this outer Box
         // instead, as a sibling of the (padded/clipped) page box rather than a child of it.
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-        // "Contain" fit: pick whichever of width/height needs MORE shrinking so the WHOLE page is
-        // visible on first open, then let the user pinch-zoom in from there - the previous
-        // width-only fit had two failure modes this fixes at once:
-        //  1. On a big tablet, fitting only to width and then capping at a flat DEFAULT_ZOOM(1.5x)
-        //     left large unused margins instead of actually filling the viewport, looking "too
-        //     small" - there was never a reason to cap below what actually fits.
-        //  2. A page whose source scan/photo is unusually tall (e.g. several sheets photographed
-        //     together into one long image) fit to width alone still towers far past the visible
-        //     height, so the very first thing the user sees is a tiny sliver of it - reading it
-        //     meant endless scrolling before the shape of the whole page was even clear. Fitting
-        //     by whichever dimension is the real constraint (here, height) shows the entire page
-        //     shrunk down up front, exactly like opening a long image in any normal viewer - still
-        //     freely zoomable in afterwards for the parts that need reading up close.
+        // Fit to width by default (fills the screen the way every normal page is expected to -
+        // some vertical panning on a tall portrait page is normal and fine, same as any other
+        // note-taking app), but fall back to fitting the whole page's HEIGHT when fitting to
+        // width would leave it far taller than the viewport (see LONG_PAGE_ASPECT_THRESHOLD) -
+        // e.g. several sheets photographed/scanned together into one unusually long page. Without
+        // that fallback, the very first thing visible for such a page is a near-useless tiny
+        // sliver of it; with it, the whole page is visible shrunk down up front, exactly like
+        // opening a long image in any normal viewer - still freely pinch-zoomable in afterwards.
         val containerWidthDp = maxWidth
         val containerHeightDp = maxHeight
         androidx.compose.runtime.LaunchedEffect(state.currentPageIndex, state.currentPage?.widthPx, state.currentPage?.heightPx, containerWidthDp, containerHeightDp, state.isFullscreen) {
@@ -500,7 +503,12 @@ fun EditorScreen(
                 val pageHeightDp = pageHeightPx / 2f
                 val fitWidthZoom = availableWidthDp / pageWidthDp
                 val fitHeightZoom = availableHeightDp / pageHeightDp
-                minOf(fitWidthZoom, fitHeightZoom).coerceIn(MIN_ZOOM, MAX_ZOOM)
+                val zoomCandidate = if (fitHeightZoom < fitWidthZoom / LONG_PAGE_ASPECT_THRESHOLD) {
+                    fitHeightZoom
+                } else {
+                    fitWidthZoom
+                }
+                zoomCandidate.coerceIn(MIN_ZOOM, MAX_ZOOM)
             } else {
                 DEFAULT_ZOOM
             }

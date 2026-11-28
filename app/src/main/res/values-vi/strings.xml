@@ -311,6 +311,9 @@
     <string name="settings_kapi_account_desc">Không bắt buộc - đăng nhập để sau này đồng bộ ghi chú lên đám mây. Không đăng nhập vẫn dùng app bình thường.</string>
     <string name="settings_kapi_sign_in">Đăng nhập</string>
     <string name="settings_kapi_sign_up">Tạo tài khoản</string>
+    <string name="settings_kapi_sync_desc">Đẩy ghi chú local lên đám mây ngay bây giờ</string>
+    <string name="settings_kapi_sync_now">Đồng bộ ngay</string>
+    <string name="settings_kapi_sync_success">Đã đồng bộ lên đám mây.</string>
     <string name="auth_username_label">Tên đăng nhập</string>
     <string name="auth_password_label">Mật khẩu</string>
     <string name="auth_offline_message">Không thể kết nối tới máy chủ</string>
