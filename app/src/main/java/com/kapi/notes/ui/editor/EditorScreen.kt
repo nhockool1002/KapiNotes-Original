@@ -167,12 +167,9 @@ import java.util.UUID
 private const val MIN_ZOOM = 0.5f
 private const val MAX_ZOOM = 4f
 
-/** Opens a page at a readable, writing-friendly zoom rather than always shrinking it down to fit
- * the whole page on screen - a tall portrait page on a wide tablet is expected to need panning to
- * see every part of it, the same way KiloNotes and other note apps behave; see MIN_ZOOM above for
- * zooming back out to see the whole page at once. This is a ceiling, not a flat value: the actual
- * initial zoom is capped to whatever fits the available width (see PREFERRED_ZOOM below) so a
- * phone-sized screen doesn't open a page zoomed in past its own edges. */
+/** Fallback only, used the one time a page's own dimensions aren't known yet (e.g. mid-creation) -
+ * the real initial zoom is always computed to fit the whole page in view (see the "contain fit"
+ * LaunchedEffect below), not a flat value. */
 private const val DEFAULT_ZOOM = 1.5f
 
 /** Horizontal padding applied to the (unpadded) BoxWithConstraints container before the page is
@@ -475,21 +472,35 @@ fun EditorScreen(
         // flush against the TRUE screen edge, outside that inset - so it lives in this outer Box
         // instead, as a sibling of the (padded/clipped) page box rather than a child of it.
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-        // DEFAULT_ZOOM (1.5x) is tuned for a tablet-wide viewport - on a phone-sized container it
-        // can make the page wider than the screen itself, cutting content off at the edges (the
-        // page's own widthPx/heightPx never account for the device it's actually rendered on, see
-        // widthDp/heightDp below). Cap the initial zoom to whatever fits this container's measured
-        // width instead of applying DEFAULT_ZOOM unconditionally, so a tablet still opens at the
-        // same readable 1.5x it always has while a phone opens with the whole page width visible.
+        // "Contain" fit: pick whichever of width/height needs MORE shrinking so the WHOLE page is
+        // visible on first open, then let the user pinch-zoom in from there - the previous
+        // width-only fit had two failure modes this fixes at once:
+        //  1. On a big tablet, fitting only to width and then capping at a flat DEFAULT_ZOOM(1.5x)
+        //     left large unused margins instead of actually filling the viewport, looking "too
+        //     small" - there was never a reason to cap below what actually fits.
+        //  2. A page whose source scan/photo is unusually tall (e.g. several sheets photographed
+        //     together into one long image) fit to width alone still towers far past the visible
+        //     height, so the very first thing the user sees is a tiny sliver of it - reading it
+        //     meant endless scrolling before the shape of the whole page was even clear. Fitting
+        //     by whichever dimension is the real constraint (here, height) shows the entire page
+        //     shrunk down up front, exactly like opening a long image in any normal viewer - still
+        //     freely zoomable in afterwards for the parts that need reading up close.
         val containerWidthDp = maxWidth
-        androidx.compose.runtime.LaunchedEffect(state.currentPageIndex, state.currentPage?.widthPx, containerWidthDp, state.isFullscreen) {
+        val containerHeightDp = maxHeight
+        androidx.compose.runtime.LaunchedEffect(state.currentPageIndex, state.currentPage?.widthPx, state.currentPage?.heightPx, containerWidthDp, containerHeightDp, state.isFullscreen) {
             val pageWidthPx = state.currentPage?.widthPx
-            zoom = if (pageWidthPx != null && pageWidthPx > 0 && containerWidthDp > 0.dp) {
-                val horizontalPadding = if (state.isFullscreen) PAGE_CONTAINER_PADDING_FULLSCREEN_DP else PAGE_CONTAINER_PADDING_DP
-                val availableWidthDp = containerWidthDp.value - horizontalPadding * 2f
+            val pageHeightPx = state.currentPage?.heightPx
+            zoom = if (pageWidthPx != null && pageWidthPx > 0 && pageHeightPx != null && pageHeightPx > 0 &&
+                containerWidthDp > 0.dp && containerHeightDp > 0.dp
+            ) {
+                val padding = if (state.isFullscreen) PAGE_CONTAINER_PADDING_FULLSCREEN_DP else PAGE_CONTAINER_PADDING_DP
+                val availableWidthDp = containerWidthDp.value - padding * 2f
+                val availableHeightDp = containerHeightDp.value - padding * 2f
                 val pageWidthDp = pageWidthPx / 2f
+                val pageHeightDp = pageHeightPx / 2f
                 val fitWidthZoom = availableWidthDp / pageWidthDp
-                fitWidthZoom.coerceIn(MIN_ZOOM, DEFAULT_ZOOM)
+                val fitHeightZoom = availableHeightDp / pageHeightDp
+                minOf(fitWidthZoom, fitHeightZoom).coerceIn(MIN_ZOOM, MAX_ZOOM)
             } else {
                 DEFAULT_ZOOM
             }
